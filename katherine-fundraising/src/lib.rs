@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap};
-use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Balance};
+use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas};
 
 pub mod account;
 pub use crate::account::*;
@@ -9,6 +9,8 @@ pub mod types;
 pub use crate::types::*;
 
 mod internal;
+
+const GAS: Gas = 20_000_000_000_000;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -52,7 +54,7 @@ impl KatherineFundraising {
                 self.transfer_back_to_account(account_id, &mut account)
             }
         } else {
-            unimplemented!()
+            self.internal_stake_funds()
         }
     }
 

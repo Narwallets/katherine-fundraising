@@ -1,6 +1,7 @@
 use crate::*;
 use near_sdk::{log, AccountId};
 use near_sdk::Promise;
+use near_sdk::serde_json::{json};
 
 pub use crate::types::*;
 
@@ -25,7 +26,6 @@ impl KatherineFundraising {
 
     pub(crate) fn internal_deposit_attached_near_into(&mut self, account_id: AccountId) {
         let amount = env::attached_deposit();
-
         let mut account = self.internal_get_account(&account_id);
 
         account.available += amount;
@@ -59,7 +59,18 @@ impl KatherineFundraising {
     pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {
         let available: Balance = account.available;
         Promise::new(account_id.to_string()).transfer(available);
-        account.available = 0;
+        account.available -= available;
+        self.total_available -= available;
         self.internal_update_account(&account_id, &account);
+    }
+
+    pub(crate) fn internal_stake_funds(&mut self) {
+        let metapool: AccountId = String::from("meta-v2.pool.testnet");
+        Promise::new(metapool.to_string()).function_call(
+            b"deposit_and_stake".to_vec(),
+            json!({}).to_string().as_bytes().to_vec(),
+            self.total_available,
+            GAS,
+        );
     }
 }
