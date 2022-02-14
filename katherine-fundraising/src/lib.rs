@@ -47,6 +47,7 @@ impl KatherineFundraising {
         self.internal_deposit();
     }
 
+    /// Only the owner can call this function, after the due date has passed.
     pub fn evaluate_at_due(&mut self) {
         if self.total_available < self.staking_goal {
             for (account_id, _) in self.accounts.to_vec().iter() {
