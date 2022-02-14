@@ -2,6 +2,10 @@
 
 Allow any project to bootstrap liquidity through staking on Meta Pool.
 
+Contract Logic:
+
+![Katherine Contract Logic](media/logic.png)
+
 ## Build the contract
 
 Run the `build.sh` script.
