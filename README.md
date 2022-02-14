@@ -41,3 +41,32 @@ near view $CONTRACT_NAME get_contract_total_available '{}'
 
 
 near call $CONTRACT_NAME evaluate_at_due --accountId huxley.testnet 
+
+
+## Deploy local Node
+
+The `local_near` command is part of the Kurtosis development environment: https://docs.near.org/docs/tools/kurtosis-localnet.
+
+1. Build the contract
+
+```sh
+RUSTFLAGS='-C link-arg=-s' cargo +stable build --all --target wasm32-unknown-unknown --release
+```
+
+2. Deploy the contract in a local node
+
+https://docs.near.org/docs/tools/near-cli#near-deploy
+
+```sh
+cd katherine-fundraising
+
+local_near deploy --accountId jomsox.test.near --wasmFile target/wasm32-unknown-unknown/release/katherine_fundraising.wasm --initFunction new --initArgs '{"owner_id": "jomsox.test.near", "staking_goal": 10000}'
+```
+
+3. Deposit to the contract
+
+https://docs.near.org/docs/tools/near-cli#near-call
+
+```sh
+local_near call jomsox.test.near deposit_and_stake --accountId jomsox.test.near --deposit 2
+```
