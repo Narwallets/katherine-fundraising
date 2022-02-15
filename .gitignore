@@ -17,4 +17,6 @@ Cargo.lock
 .*.sw?
 .vscode
 *.bak
+neardev/
+res/
 
