@@ -6,6 +6,14 @@ Contract Logic:
 
 ![Katherine Contract Logic](media/logic.png)
 
+## Contract Functions
+
+create_project() - Kickstarter
+
+user_withdrawal() - User
+get_back_rewards() - Kickstarter
+
+
 ## Build the contract
 
 Run the `build.sh` script.
