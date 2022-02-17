@@ -5,6 +5,8 @@ pub use crate::utils::*;
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq)]
 pub struct Account {
+    pub ready_to_fund: Balance,
+    pub locked: Balance,
     pub available: u128,
 }
 
