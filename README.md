@@ -10,8 +10,8 @@ Contract Logic:
 
 When a user deposits to fund a project, all of their stNEAR tokens are `ready_to_fund`.
 
-If the project is unsuccessful, fund are moved from `ready_to_fund` to `available`.
-If project is successful, funds are moved from `ready_to_fund` to `locked`. When the locking period ends, fund are move backed from `locked` to `available`. Note that less stNEAR will move back, however the value in NEAR will be the same.
+- If the project is unsuccessful, fund are moved from `ready_to_fund` to `available`.
+- If project is successful, funds are moved from `ready_to_fund` to `locked`. When the locking period ends, fund are move backed from `locked` to `available`. Note that less stNEAR will move back, however the value in NEAR will be the same.
 
 
 ```text
