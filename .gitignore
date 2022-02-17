@@ -13,10 +13,6 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
-<<<<<<< HEAD
-neardev/
-res/
-=======
 .sw?
 .*.sw?
 .vscode
@@ -24,4 +20,3 @@ res/
 neardev/
 res/
 
->>>>>>> dev

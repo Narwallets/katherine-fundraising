@@ -32,7 +32,7 @@ pub struct Kickstarter {
     pub vesting_timestamp: Timestamp,
     /// How much time should pass before releasing the project tokens
     pub cliff_timestamp: Timestamp,
-};
+}
 
 /// Kickstarter project
 /// TODO...

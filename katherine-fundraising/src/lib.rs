@@ -1,12 +1,15 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap};
-use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas};
+use near_sdk::{Promise, env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas};
 
 pub mod account;
 pub use crate::account::*;
 
 pub mod types;
 pub use crate::types::*;
+
+pub mod utils;
+pub use crate::utils::*;
 
 mod internal;
 
@@ -47,7 +50,17 @@ impl KatherineFundraising {
         self.internal_deposit();
     }
 
-    /// Only the owner can call this function, after the due date has passed.
+    /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
+    pub fn withdraw(&mut self, amount: Balance) -> Promise {
+        self.internal_withdraw(amount)
+    }
+    /// Withdraws ALL from from "UNSTAKED" balance *TO MIMIC core-contracts/staking-pool .- core-contracts/staking-pool only has "unstaked" to withdraw from
+    pub fn withdraw_all(&mut self) -> Promise {
+        let account = self.internal_get_account(&env::predecessor_account_id());
+        self.internal_withdraw(account.available)
+    }
+
+    /// RELOCATE! Only the owner can call this function, after the due date has passed.
     pub fn evaluate_at_due(&mut self) {
         if self.total_available < self.staking_goal {
             for (account_id, _) in self.accounts.to_vec().iter() {

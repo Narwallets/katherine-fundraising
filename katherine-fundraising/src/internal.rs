@@ -73,4 +73,13 @@ impl KatherineFundraising {
             GAS,
         );
     }
+
+    pub(crate) fn internal_withdraw(&mut self, requested_amount: Balance) -> Promise {
+        let account_id = env::predecessor_account_id();
+        let mut account = self.internal_get_account(&account_id);
+
+        let amount = account.take_from_available(requested_amount, self);
+        self.internal_update_account(&account_id, &account);
+        Promise::new(account_id)
+    }
 }

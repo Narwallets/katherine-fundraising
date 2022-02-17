@@ -8,10 +8,13 @@ Contract Logic:
 
 ## Contract Functions
 
+```text
 create_project() - Kickstarter
+deposit_and_stake() - User
 
 user_withdrawal() - User
 get_back_rewards() - Kickstarter
+```
 
 
 ## Build the contract
