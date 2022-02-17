@@ -12,8 +12,11 @@ pub mod utils;
 pub use crate::utils::*;
 
 mod internal;
+mod metapool;
 
 const GAS: Gas = 20_000_000_000_000;
+// const METAPOOL_CONTRACT_ADDRESS: AccountId = String::from("meta-v2.pool.testnet");
+
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -29,6 +32,8 @@ pub struct KatherineFundraising {
     
     /// min amount accepted as deposit or stake
     pub min_deposit_amount: Balance,
+
+    pub metapool_contract_address: AccountId,
 }
 
 #[near_bindgen]
@@ -42,12 +47,15 @@ impl KatherineFundraising {
             total_available: 0,
             staking_goal: staking_goal * NEAR,
             min_deposit_amount: 1 * NEAR,
+            metapool_contract_address: String::from("meta-v2.pool.testnet"),
         }
     }
 
     #[payable]
-    pub fn deposit_and_stake(&mut self) {
-        self.internal_deposit();
+    pub fn deposit_and_stake(&mut self, amount: Balance) {
+        let supporter: AccountId = env::predecessor_account_id();
+        let supporter_stnear: Promise = self.take_supporter_stnear(supporter, amount);
+        self.internal_deposit(amount);
     }
 
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.

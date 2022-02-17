@@ -15,13 +15,17 @@ impl Default for Account {
     fn default() -> Self {
         Self {
             available: 0,
+            ready_to_fund: 0,
+            locked: 0,
         }
     }
 }
 impl Account {
     /// when the account.is_empty() it will be removed
     pub fn is_empty(&self) -> bool {
-        return self.available == 0;
+        return self.available == 0
+               && self.ready_to_fund == 0
+               && self.locked == 0;
     }
 
     pub(crate) fn take_from_available(

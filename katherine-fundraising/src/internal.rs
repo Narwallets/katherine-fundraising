@@ -6,7 +6,7 @@ use near_sdk::serde_json::{json};
 pub use crate::types::*;
 
 impl KatherineFundraising {
-    pub fn assert_min_deposit_amount(&self, amount: u128) {
+    pub fn assert_min_deposit_amount(&self, amount: Balance) {
         assert!(
             amount >= self.min_deposit_amount,
             "minimum deposit amount is {}",
@@ -19,13 +19,12 @@ impl KatherineFundraising {
 /* Internal methods staking-pool trait */
 /***************************************/
 impl KatherineFundraising {
-    pub(crate) fn internal_deposit(&mut self) {
-        self.assert_min_deposit_amount(env::attached_deposit());
-        self.internal_deposit_attached_near_into(env::predecessor_account_id());
+    pub(crate) fn internal_deposit(&mut self, amount: Balance) {
+        self.assert_min_deposit_amount(amount);
+        self.internal_deposit_stnear_into(env::predecessor_account_id(), amount);
     }
 
-    pub(crate) fn internal_deposit_attached_near_into(&mut self, account_id: AccountId) {
-        let amount = env::attached_deposit();
+    pub(crate) fn internal_deposit_stnear_into(&mut self, account_id: AccountId, amount: Balance) {
         let mut account = self.internal_get_account(&account_id);
 
         account.available += amount;
@@ -56,6 +55,16 @@ impl KatherineFundraising {
         }
     }
 
+    pub(crate) fn internal_supporter_deposit(
+        &mut self,
+        account_id: &AccountId,
+        amount: &Balance,
+        kickstarter_id: String
+    ) -> Result<Balance, Balance> {
+        let account = self.internal_get_account(account_id);
+        Ok(account.available)
+    }
+
     pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {
         let available: Balance = account.available;
         Promise::new(account_id.to_string()).transfer(available);
@@ -65,8 +74,7 @@ impl KatherineFundraising {
     }
 
     pub(crate) fn internal_stake_funds(&mut self) {
-        let metapool: AccountId = String::from("meta-v2.pool.testnet");
-        Promise::new(metapool.to_string()).function_call(
+        Promise::new(self.metapool_contract_address.clone().to_string()).function_call(
             b"deposit_and_stake".to_vec(),
             json!({}).to_string().as_bytes().to_vec(),
             self.total_available,
