@@ -24,43 +24,53 @@ impl KatherineFundraising {
         self.internal_deposit_stnear_into(env::predecessor_account_id(), amount);
     }
 
-    pub(crate) fn internal_deposit_stnear_into(&mut self, account_id: AccountId, amount: Balance) {
-        let mut account = self.internal_get_account(&account_id);
+    pub(crate) fn internal_deposit_stnear_into(&mut self, supporter_id: AccountId, amount: Balance) {
+        let mut supporter = self.internal_get_account(&supporter_id);
 
-        account.available += amount;
+        supporter.available += amount;
         self.total_available += amount;
 
-        self.internal_update_account(&account_id, &account);
+        self.internal_update_supporter(&supporter_id, &supporter);
 
         log!(
             "{} deposited into @{}'s account. New available balance is {}",
             amount,
-            account_id,
-            account.available
+            supporter_id,
+            supporter.available
         );
     }
 
-    /// Inner method to get the given account or a new default value account.
-    pub(crate) fn internal_get_account(&self, account_id: &AccountId) -> Account {
-        self.accounts.get(account_id).unwrap_or_default()
+    /// Inner method to get the given supporter or a new default value supporter.
+    pub(crate) fn internal_get_account(&self, supporter_id: &AccountId) -> Supporter {
+        self.supporters.get(supporter_id).unwrap_or_default()
     }
 
-    /// Inner method to save the given account for a given account ID.
-    /// If the account balances are 0, the account is deleted instead to release storage.
-    pub(crate) fn internal_update_account(&mut self, account_id: &AccountId, account: &Account) {
-        if account.is_empty() {
-            self.accounts.remove(account_id);
+    /// Inner method to save the given supporter for a given supporter ID.
+    /// If the supporter balances are 0, the supporter is deleted instead to release storage.
+    pub(crate) fn internal_update_supporter(&mut self, supporter_id: &AccountId, supporter: &Supporter) {
+        if supporter.is_empty() {
+            self.supporters.remove(supporter_id);
         } else {
-            self.accounts.insert(account_id, &account); //insert_or_update
+            self.supporters.insert(supporter_id, &supporter); //insert_or_update
         }
+    }
+
+    pub(crate) fn internal_get_kickstarter(&self, kickstarter_id: &u32) -> Option<Kickstarter> {
+        self.kickstarters.get(kickstarter_id)
     }
 
     pub(crate) fn internal_supporter_deposit(
         &mut self,
-        account_id: &AccountId,
+        supporter_id: &AccountId,
         amount: &Balance,
         kickstarter_id: String
-    ) -> Result<Balance, Balance> {
+    ) -> Result<Balance, String> {
+        let kickstarter_id: u32 = match kickstarter_id.parse::<u32>() {
+            Ok(_id) => _id,
+            Err(_) => return Err("Invalid Kickstarter id.".into()),
+        };
+
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         let account = self.internal_get_account(account_id);
         Ok(account.available)
     }

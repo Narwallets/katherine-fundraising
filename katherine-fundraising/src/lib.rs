@@ -2,8 +2,11 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap};
 use near_sdk::{Promise, env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas};
 
-pub mod account;
-pub use crate::account::*;
+pub mod supporter;
+pub use crate::supporter::*;
+
+pub mod kickstarter;
+pub use crate::kickstarter::*;
 
 pub mod types;
 pub use crate::types::*;
@@ -24,7 +27,9 @@ pub struct KatherineFundraising {
 
     pub owner_id: AccountId,
 
-    pub accounts: UnorderedMap<AccountId, Account>,
+    pub supporters: UnorderedMap<AccountId, Supporter>,
+
+    pub kickstarters: UnorderedMap<u32, Kickstarter>,
 
     pub total_available: Balance,
 

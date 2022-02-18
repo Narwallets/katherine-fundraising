@@ -32,7 +32,7 @@ impl FungibleTokenReceiver for KatherineFundraising {
 
         match self.internal_supporter_deposit(sender_id.as_ref(), &amount.0, msg) {
             Ok(unused_amount) => PromiseOrValue::Value(U128::from(unused_amount)),
-            Err(unused_amount) => PromiseOrValue::Value(U128::from(unused_amount)) 
+            Err(_) => PromiseOrValue::Value(U128::from(amount)) 
         }
     }
 }
