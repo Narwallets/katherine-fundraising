@@ -66,17 +66,22 @@ impl KatherineFundraising {
             Err(_) => return Err("Invalid Kickstarter id.".into()),
         };
 
-        let kickstarter: Kickstarter = match self.kickstarters.get(&kickstarter_id) {
+        let mut kickstarter: Kickstarter = match self.kickstarters.get(&kickstarter_id) {
             Some(kickstarter) => kickstarter,
             None => return Err("Kickstarter id not found.".into()),
         };
 
-        // This logic works only for projects funding one bye one.
-        let mut supporter = self.internal_get_supporter(supporter_id);
+        let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.ready_to_fund += amount;
-        kickstarter
+        let new_ticket = Ticket {
+            supporter_id: supporter_id.clone(),
+            stnear_amount: amount.clone(),
+            spot_near_value: 0, // TODO: Get the real spot NEAR value for the deposited stNEAR.
+        };
+        kickstarter.supporter_tickets.push(new_ticket);
 
-        Ok(supporter.available)
+        let unused_amount: Balance = 0;
+        Ok(unused_amount)
     }
 
     // pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {

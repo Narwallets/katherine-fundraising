@@ -2,7 +2,6 @@ use crate::*;
 use near_sdk::{AccountId, Timestamp};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{near_bindgen, PanicOnDefault};
-use itertools::Itertools;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -64,9 +63,14 @@ pub struct Kickstarter {
 /// TODO:
 impl Kickstarter {
     pub fn get_supporter_ids(&self) -> Vec<AccountId> {
-        let mut supporter_ids: Vec<AccountId> = self.supporter_tickets.into_iter().map(|p| p.supporter_id).collect();
+        let mut supporter_ids: Vec<AccountId> = self.supporter_tickets.clone().into_iter().map(|p| p.supporter_id).collect();
         supporter_ids.sort_unstable();
         supporter_ids.dedup();
         supporter_ids
+    }
+
+    pub fn get_total_amount(&self) -> Balance {
+        let total_amount: Vec<Balance> = self.supporter_tickets.clone().into_iter().map(|p| p.stnear_amount).collect();
+        total_amount.into_iter().sum()
     }
 }
