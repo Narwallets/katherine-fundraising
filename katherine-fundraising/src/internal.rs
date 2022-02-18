@@ -55,10 +55,6 @@ impl KatherineFundraising {
         }
     }
 
-    pub(crate) fn internal_get_kickstarter(&self, kickstarter_id: &u32) -> Option<Kickstarter> {
-        self.kickstarters.get(kickstarter_id)
-    }
-
     pub(crate) fn internal_supporter_deposit(
         &mut self,
         supporter_id: &AccountId,
@@ -75,7 +71,11 @@ impl KatherineFundraising {
             None => return Err("Kickstarter id not found.".into()),
         };
 
-        let supporter = self.internal_get_supporter(supporter_id);
+        // This logic works only for projects funding one bye one.
+        let mut supporter = self.internal_get_supporter(supporter_id);
+        supporter.ready_to_fund += amount;
+        kickstarter
+
         Ok(supporter.available)
     }
 

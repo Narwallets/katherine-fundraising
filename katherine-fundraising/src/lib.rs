@@ -11,6 +11,9 @@ pub use crate::kickstarter::*;
 pub mod goal;
 pub use crate::goal::*;
 
+pub mod ticket;
+pub use crate::ticket::*;
+
 pub mod types;
 pub use crate::types::*;
 

@@ -2,6 +2,7 @@ use crate::*;
 use near_sdk::{AccountId, Timestamp};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{near_bindgen, PanicOnDefault};
+use near_sdk::collections::LookupSet;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -18,8 +19,8 @@ pub struct Kickstarter {
     /// TODO: Goals
     pub goals: Vec<Goal>,
 
-    /// TODO: All the Funders of the project
-    pub supporters: Vec<Supporter>,
+    /// TODO: All the Supporter tickets of the project
+    pub supporter_tickets: Vec<Ticket>,
 
     /// TODO: Owner
     pub owner: AccountId,
@@ -62,4 +63,7 @@ pub struct Kickstarter {
 
 /// TODO:
 impl Kickstarter {
+    pub fn get_supporter_ids(&self) -> LookupSet<AccountId> {
+        let mut supporter_ids:LookupSet<AccountId> = LookupSet::new(b"A".to_vec());
+        let supporter_ids: LookupSet<AccountId> = self.supporter_tickets.into_iter().map(|p| p.supporter_id).collect();
 }
