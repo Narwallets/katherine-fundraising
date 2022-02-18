@@ -1,8 +1,10 @@
 use crate::*;
 use near_sdk::{AccountId, Timestamp};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::{near_bindgen, PanicOnDefault};
 
-#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq)]
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Kickstarter {
     /// Unique ID identifier
     pub id: u32,
@@ -17,7 +19,7 @@ pub struct Kickstarter {
     pub goals: Vec<Goal>,
 
     /// TODO: All the Funders of the project
-    pub funders: Vec<Funder>,
+    pub supporters: Vec<Supporter>,
 
     /// TODO: Owner
     pub owner: AccountId,

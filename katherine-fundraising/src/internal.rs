@@ -25,7 +25,7 @@ impl KatherineFundraising {
     }
 
     pub(crate) fn internal_deposit_stnear_into(&mut self, supporter_id: AccountId, amount: Balance) {
-        let mut supporter = self.internal_get_account(&supporter_id);
+        let mut supporter = self.internal_get_supporter(&supporter_id);
 
         supporter.available += amount;
         self.total_available += amount;
@@ -41,7 +41,7 @@ impl KatherineFundraising {
     }
 
     /// Inner method to get the given supporter or a new default value supporter.
-    pub(crate) fn internal_get_account(&self, supporter_id: &AccountId) -> Supporter {
+    pub(crate) fn internal_get_supporter(&self, supporter_id: &AccountId) -> Supporter {
         self.supporters.get(supporter_id).unwrap_or_default()
     }
 
@@ -70,34 +70,38 @@ impl KatherineFundraising {
             Err(_) => return Err("Invalid Kickstarter id.".into()),
         };
 
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        let account = self.internal_get_account(account_id);
-        Ok(account.available)
+        let kickstarter: Kickstarter = match self.kickstarters.get(&kickstarter_id) {
+            Some(kickstarter) => kickstarter,
+            None => return Err("Kickstarter id not found.".into()),
+        };
+
+        let supporter = self.internal_get_supporter(supporter_id);
+        Ok(supporter.available)
     }
 
-    pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {
-        let available: Balance = account.available;
-        Promise::new(account_id.to_string()).transfer(available);
-        account.available -= available;
-        self.total_available -= available;
-        self.internal_update_account(&account_id, &account);
-    }
+    // pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {
+    //     let available: Balance = account.available;
+    //     Promise::new(account_id.to_string()).transfer(available);
+    //     account.available -= available;
+    //     self.total_available -= available;
+    //     self.internal_update_account(&account_id, &account);
+    // }
 
-    pub(crate) fn internal_stake_funds(&mut self) {
-        Promise::new(self.metapool_contract_address.clone().to_string()).function_call(
-            b"deposit_and_stake".to_vec(),
-            json!({}).to_string().as_bytes().to_vec(),
-            self.total_available,
-            GAS,
-        );
-    }
+    // pub(crate) fn internal_stake_funds(&mut self) {
+    //     Promise::new(self.metapool_contract_address.clone().to_string()).function_call(
+    //         b"deposit_and_stake".to_vec(),
+    //         json!({}).to_string().as_bytes().to_vec(),
+    //         self.total_available,
+    //         GAS,
+    //     );
+    // }
 
     pub(crate) fn internal_withdraw(&mut self, requested_amount: Balance) -> Promise {
-        let account_id = env::predecessor_account_id();
-        let mut account = self.internal_get_account(&account_id);
+        let supporter_id = env::predecessor_account_id();
+        let mut supporter = self.internal_get_supporter(&supporter_id);
 
-        let amount = account.take_from_available(requested_amount, self);
-        self.internal_update_account(&account_id, &account);
-        Promise::new(account_id)
+        let amount = supporter.take_from_available(requested_amount, self);
+        self.internal_update_supporter(&supporter_id, &supporter);
+        Promise::new(supporter_id)
     }
 }
