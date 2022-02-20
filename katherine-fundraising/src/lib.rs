@@ -66,7 +66,7 @@ impl KatherineFundraising {
     #[payable]
     pub fn deposit_and_stake(&mut self, amount: Balance) {
         let supporter: AccountId = env::predecessor_account_id();
-        let supporter_stnear: Promise = self.take_supporter_stnear(supporter, amount);
+        // let supporter_stnear: Promise = self.take_supporter_stnear(supporter, amount);
         self.internal_deposit(amount);
     }
 

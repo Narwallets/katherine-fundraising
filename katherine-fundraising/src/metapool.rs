@@ -8,12 +8,6 @@ use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 
 pub use crate::types::*;
 
-impl KatherineFundraising {
-    pub(crate) fn take_supporter_stnear(&mut self, supporter: AccountId, amount: Balance) -> Promise {
-        Promise::new(self.metapool_contract_address.clone())
-    }
-}
-
 #[near_bindgen]
 impl FungibleTokenReceiver for KatherineFundraising {
     fn ft_on_transfer(

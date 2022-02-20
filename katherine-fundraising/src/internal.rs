@@ -71,6 +71,11 @@ impl KatherineFundraising {
             None => return Err("Kickstarter id not found.".into()),
         };
 
+        let current_timestamp = env::block_timestamp();
+        if current_timestamp >= kickstarter.close_timestamp || current_timestamp < kickstarter.open_timestamp {
+            return Err("Not within the funding period.".into())
+        }
+
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.ready_to_fund += amount;
         let new_ticket = Ticket {

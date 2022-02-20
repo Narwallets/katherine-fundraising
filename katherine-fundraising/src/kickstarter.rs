@@ -36,10 +36,10 @@ pub struct Kickstarter {
     /// Finish Timestamp of the project. This date is set if the project met its goals
     pub finish_timestamp: Timestamp,
 
-    /// Opening date to recieve deposits. TODO: more detail here
+    /// Opening date to recieve deposits from supporters. TODO: more detail here
     pub open_timestamp: Timestamp,
 
-    /// Closing date for recieving deposits. TODO: more detail here
+    /// Closing date for recieving deposits from supporters. TODO: more detail here
     pub close_timestamp: Timestamp,
 
     /// How much time the project will be active, this also means how much time the stnear tokens
