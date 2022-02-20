@@ -73,7 +73,7 @@ impl KatherineFundraising {
 
         let current_timestamp = env::block_timestamp();
         if current_timestamp >= kickstarter.close_timestamp || current_timestamp < kickstarter.open_timestamp {
-            return Err("Not within the funding period.".into())
+            return Err("Not within the funding period.".into());
         }
 
         let mut supporter = self.internal_get_supporter(&supporter_id);
