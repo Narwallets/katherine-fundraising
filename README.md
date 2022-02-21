@@ -50,6 +50,7 @@ near call $CONTRACT_NAME evaluate_at_due --accountId huxley.testnet
 ## Deploy local Node
 
 The `local_near` command is part of the Kurtosis development environment: https://docs.near.org/docs/tools/kurtosis-localnet.
+To install the kurtosis CLI follow the installation documentation: https://docs.kurtosistech.com/installation.html
 
 1. Build the contract
 
@@ -74,3 +75,10 @@ https://docs.near.org/docs/tools/near-cli#near-call
 ```sh
 local_near call jomsox.test.near deposit_and_stake --accountId jomsox.test.near --deposit 2
 ```
+
+
+# References
+
+* https://github.com/Narwallets/meta-pool
+* https://docs.near.org/docs/tools/kurtosis-localnet
+* https://docs.kurtosistech.com/installation.html
