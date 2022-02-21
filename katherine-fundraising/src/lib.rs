@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap};
-use near_sdk::{Promise, env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas};
+use near_sdk::{log, Promise, env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas};
 
 pub mod supporter;
 pub use crate::supporter::*;
@@ -35,7 +35,7 @@ pub struct KatherineFundraising {
 
     pub supporters: UnorderedMap<AccountId, Supporter>,
 
-    pub kickstarters: UnorderedMap<u32, Kickstarter>,
+    pub kickstarters: UnorderedMap<KickstarterId, Kickstarter>,
 
     pub total_available: Balance,
 
@@ -80,17 +80,34 @@ impl KatherineFundraising {
         self.internal_withdraw(supporter.available)
     }
 
-    /// RELOCATE! Only the owner can call this function, after the due date has passed.
     pub fn evaluate_at_due(&mut self) {
-        if self.total_available < self.staking_goal {
-            for (supporter_id, _) in self.supporters.to_vec().iter() {
-                let mut supporter = self.internal_get_supporter(&supporter_id);
-                // self.transfer_back_to_account(account_id, &mut account)
+        let current_timestamp = env::block_timestamp();
+        for (kickstarter_id, kickstarter) in self.kickstarters.to_vec().iter() {
+            if kickstarter.active && kickstarter.finish_timestamp > current_timestamp {
+                let mut kickstarter = self.internal_get_kickstarter(&kickstarter_id);
+                if self.internal_evaluate_goals(&kickstarter) {
+                    log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
+                    kickstarter.active = false;
+                    kickstarter.succesful = true;
+                    self.internal_locking_supporters_funds(&kickstarter)
+                } else {
+                    log!("The project {} with id: {} was unsuccessful!", kickstarter.name, kickstarter_id);
+                    kickstarter.active = false;
+                    kickstarter.succesful = false;
+                    self.internal_freeing_supporters_funds(&kickstarter)
+                }
             }
-        } else {
-            unimplemented!()
-            // self.internal_stake_funds()
         }
+
+        // if self.total_available < self.staking_goal {
+        //     for (supporter_id, _) in self.supporters.to_vec().iter() {
+        //         let mut supporter = self.internal_get_supporter(&supporter_id);
+        //         // self.transfer_back_to_account(account_id, &mut account)
+        //     }
+        // } else {
+        //     unimplemented!()
+        //     // self.internal_stake_funds()
+        // }
     }
 
     /*****************************/

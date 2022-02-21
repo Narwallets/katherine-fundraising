@@ -7,7 +7,7 @@ use near_sdk::{near_bindgen, PanicOnDefault};
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Kickstarter {
     /// Unique ID identifier
-    pub id: u32,
+    pub id: KickstarterId,
 
     /// Name of the kickstarter project
     pub name: String,
@@ -24,7 +24,7 @@ pub struct Kickstarter {
     /// TODO: Owner
     pub owner: AccountId,
 
-    /// True if the kickstart project is active
+    /// True if the kickstart project is active and waiting for funding.
     pub active: bool,
 
     /// True if the kickstart project met the goals

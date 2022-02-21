@@ -55,6 +55,21 @@ impl KatherineFundraising {
         }
     }
 
+    /// Inner method to get the given kickstarter.
+    pub(crate) fn internal_get_kickstarter(&self, kickstarter_id: &KickstarterId) -> Kickstarter {
+        self.kickstarters.get(kickstarter_id).expect("Unknown kickstarter id")
+    }
+
+    /// Inner method to save the given kickstarter for a given KickstarterID.
+    /// If the supporter balances are 0, the supporter is deleted instead to release storage.
+    //pub(crate) fn internal_update_supporter(&mut self, supporter_id: &AccountId, supporter: &Supporter) {
+    //    if supporter.is_empty() {
+    //        self.supporters.remove(supporter_id);
+    //    } else {
+    //        self.supporters.insert(supporter_id, &supporter); //insert_or_update
+    //    }
+    //}
+
     pub(crate) fn internal_supporter_deposit(
         &mut self,
         supporter_id: &AccountId,
@@ -87,6 +102,18 @@ impl KatherineFundraising {
 
         let unused_amount: Balance = 0;
         Ok(unused_amount)
+    }
+
+    pub(crate) fn internal_evaluate_goals(&mut self, kickstarter: &Kickstarter) -> bool {
+        true
+    }
+
+    pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
+        unimplemented!()
+    }
+
+    pub(crate) fn internal_freeing_supporters_funds(&mut self, kickstarter: &Kickstarter) {
+        unimplemented!()
     }
 
     // pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {
