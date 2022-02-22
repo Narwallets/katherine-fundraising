@@ -1,7 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
-use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas, Timestamp};
-
+use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
 
 pub mod supporter;
 pub use crate::supporter::*;
@@ -9,14 +8,8 @@ pub use crate::supporter::*;
 pub mod kickstarter;
 pub use crate::kickstarter::*;
 
-pub mod goal;
-pub use crate::goal::*;
-
 pub mod ticket;
 pub use crate::ticket::*;
-
-pub mod kickstarter;
-pub use crate::kickstarter::*;
 
 pub mod funder;
 pub use crate::funder::*;
@@ -45,10 +38,8 @@ pub struct KatherineFundraising {
 
     pub supporters: UnorderedMap<AccountId, Supporter>,
 
-    pub kickstarters: UnorderedMap<u32, Kickstarter>,
-
     /// Kickstarter list
-¡    pub kickstarters: Vector<Kickstarter>,
+    pub kickstarters: Vector<Kickstarter>,
 
     pub total_available: Balance,
 
@@ -142,6 +133,7 @@ impl KatherineFundraising {
             owner: env::predecessor_account_id(),
             active: true,
             succesful: false,
+            supporter_tickets: Vec::new(),
             creation_timestamp: env::block_timestamp(),
             //TODO: get this from arguments
             finish_timestamp: env::block_timestamp(),
@@ -181,6 +173,7 @@ impl KatherineFundraising {
             slug: slug,
             goals: Vec::new(),
             funders: Vec::new(),
+            supporter_tickets: Vec::new(),
             owner: env::predecessor_account_id(),
             active: true,
             succesful: false,

@@ -61,12 +61,12 @@ impl KatherineFundraising {
         amount: &Balance,
         kickstarter_id: String
     ) -> Result<Balance, String> {
-        let kickstarter_id: u32 = match kickstarter_id.parse::<u32>() {
+        let kickstarter_id = match kickstarter_id.parse::<u64>() {
             Ok(_id) => _id,
             Err(_) => return Err("Invalid Kickstarter id.".into()),
         };
 
-        let mut kickstarter: Kickstarter = match self.kickstarters.get(&kickstarter_id) {
+        let mut kickstarter: Kickstarter = match self.kickstarters.get(kickstarter_id) {
             Some(kickstarter) => kickstarter,
             None => return Err("Kickstarter id not found.".into()),
         };

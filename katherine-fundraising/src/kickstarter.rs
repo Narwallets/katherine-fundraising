@@ -17,6 +17,9 @@ pub struct Kickstarter {
     /// TODO: Goals
     pub goals: Vec<Goal>,
 
+    /// TODO: Funders
+    pub funders: Vec<Funder>,
+
     /// TODO: All the Supporter tickets of the project
     pub supporter_tickets: Vec<Ticket>,
 
@@ -59,6 +62,7 @@ impl Default for Kickstarter {
             slug: "".to_string(),
             goals: Vec::new(),
             funders: Vec::new(),
+            supporter_tickets: Vec::new(),
             owner: env::predecessor_account_id(),
             active: false,
             succesful: false,
