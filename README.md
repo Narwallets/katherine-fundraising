@@ -8,7 +8,7 @@ Contract Logic:
 
 The Ticket system:
 
-![Katherine Contract Logic](media/logic2.svg)
+![Ticket System](media/logic2.png)
 
 ## Contract Functions
 
