@@ -104,16 +104,26 @@ impl KatherineFundraising {
         Ok(unused_amount)
     }
 
-    pub(crate) fn internal_evaluate_goals(&mut self, kickstarter: &Kickstarter) -> bool {
-        true
+    pub(crate) fn internal_evaluate_goals(&self, kickstarter: &Kickstarter) -> bool {
+        unimplemented!()
     }
 
     pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
-        unimplemented!()
+        let funding_map = kickstarter.get_supporters_funding_map();
+        for (supporter_id, total) in funding_map.to_vec().iter() {
+            let mut supporter = self.internal_get_supporter(supporter_id);
+            supporter.ready_to_fund -= total;
+            supporter.locked += total;
+        }
     }
 
     pub(crate) fn internal_freeing_supporters_funds(&mut self, kickstarter: &Kickstarter) {
-        unimplemented!()
+        let funding_map = kickstarter.get_supporters_funding_map();
+        for (supporter_id, total) in funding_map.to_vec().iter() {
+            let mut supporter = self.internal_get_supporter(supporter_id);
+            supporter.ready_to_fund -= total;
+            supporter.available += total;
+        }
     }
 
     // pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {

@@ -2,6 +2,7 @@ use crate::*;
 use near_sdk::{AccountId, Timestamp};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{near_bindgen, PanicOnDefault};
+use near_sdk::collections::{UnorderedMap};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -59,7 +60,6 @@ pub struct Kickstarter {
     }
 }*/
 
-
 /// TODO:
 impl Kickstarter {
     pub fn get_supporter_ids(&self) -> Vec<AccountId> {
@@ -67,6 +67,21 @@ impl Kickstarter {
         supporter_ids.sort_unstable();
         supporter_ids.dedup();
         supporter_ids
+    }
+
+    pub fn get_supporters_funding_map(&self) -> UnorderedMap<AccountId, Balance> {
+        let mut funding_map: UnorderedMap<AccountId, Balance> = UnorderedMap::new(b"A".to_vec());
+        for tx in self.supporter_tickets.clone().into_iter() {
+            let supporter_id: AccountId = tx.supporter_id;
+            let ticket_blance: Balance = tx.stnear_amount;
+            let current_total: Balance = match funding_map.get(&supporter_id) {
+                Some(total) => total,
+                None => 0,
+            };
+            let new_total: Balance = current_total + ticket_blance;
+            funding_map.insert(&supporter_id, &new_total);
+        }
+        funding_map
     }
 
     pub fn get_total_amount(&self) -> Balance {
