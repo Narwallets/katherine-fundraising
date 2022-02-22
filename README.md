@@ -4,7 +4,11 @@ Allow any project to bootstrap liquidity through staking on Meta Pool.
 
 Contract Logic:
 
-![Katherine Contract Logic](media/logic-2.png)
+![Katherine Contract Logic](media/logic1.png)
+
+The Ticket system:
+
+![Katherine Contract Logic](media/logic2.svg)
 
 ## Contract Functions
 
