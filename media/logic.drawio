@@ -1,104 +1,119 @@
 <mxfile host="65bd71144e">
     <diagram id="bX7EOOADEytLh77N1e9f" name="Page-1">
-        <mxGraphModel dx="1058" dy="679" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="840" dy="715" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="7" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="3" target="6">
+                <mxCell id="7" value="" style="edgeStyle=none;html=1;" parent="1" source="3" target="6" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="3" value="Deploy Katherine with Kickstarter &lt;b&gt;Goals&lt;/b&gt; and Parameters" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="320" y="40" width="120" height="60" as="geometry"/>
+                <mxCell id="3" value="Opening contract for user&amp;nbsp;&lt;b&gt;funding&lt;/b&gt;, only in stNEAR." style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="190" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="9" value="No" style="edgeStyle=none;html=1;" edge="1" parent="1" source="6" target="8">
+                <mxCell id="9" value="No" style="edgeStyle=none;html=1;" parent="1" source="6" target="8" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="Yes" style="edgeStyle=none;html=1;" edge="1" parent="1" source="6" target="10">
+                <mxCell id="11" value="Yes" style="edgeStyle=none;html=1;" parent="1" source="6" target="10" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="13" value="" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="6" target="12">
+                <mxCell id="13" value="" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="6" target="12" edge="1">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="200" y="290" as="targetPoint"/>
+                        <mxPoint x="200" y="440" as="targetPoint"/>
                         <Array as="points">
-                            <mxPoint x="380" y="320"/>
-                            <mxPoint x="200" y="320"/>
+                            <mxPoint x="380" y="470"/>
+                            <mxPoint x="200" y="470"/>
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="15" value="" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="6" target="14">
+                <mxCell id="15" value="" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="6" target="14" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <Array as="points">
-                            <mxPoint x="380" y="320"/>
-                            <mxPoint x="560" y="320"/>
+                            <mxPoint x="380" y="470"/>
+                            <mxPoint x="560" y="470"/>
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="6" value="Goal reached?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="340" y="170" width="80" height="80" as="geometry"/>
+                <mxCell id="6" value="Goal reached?" style="rhombus;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="340" y="320" width="80" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="Return funds back to users." style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="480" y="180" width="120" height="60" as="geometry"/>
+                <mxCell id="8" value="&lt;b&gt;Unsuccessful!&lt;br&gt;&lt;/b&gt;Freeing stNEAR to the users. And the rewards for the Kickstarter." style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="327.5" width="140" height="65" as="geometry"/>
                 </mxCell>
-                <mxCell id="32" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="10" target="31">
+                <mxCell id="32" value="" style="edgeStyle=none;html=1;" parent="1" source="10" target="31" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="10" value="&lt;b&gt;IOU Rewards:&lt;/b&gt;&lt;br&gt;- $Token&lt;br&gt;- Cliff and linear release" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="320" y="340" width="120" height="80" as="geometry"/>
+                <mxCell id="10" value="&lt;b&gt;IOU Rewards:&lt;/b&gt;&lt;br&gt;- $TOKEN_X&lt;br&gt;- Cliff and linear release" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="490" width="120" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="30" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="12" target="29">
+                <mxCell id="30" value="" style="edgeStyle=none;html=1;" parent="1" source="12" target="29" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="&lt;b&gt;Near IOU:&lt;/b&gt;&lt;br&gt;- User_owner&lt;br&gt;- Kickstarter&lt;br&gt;- NEAR value&lt;br&gt;- Unlocking date" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="140" y="340" width="120" height="80" as="geometry"/>
+                <mxCell id="12" value="&lt;b&gt;Near IOU:&lt;/b&gt;&lt;br&gt;- User_owner&lt;br&gt;- Kickstarter&lt;br&gt;- NEAR value&lt;br&gt;- Unlocking date" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="490" width="120" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="17" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="14" target="16">
+                <mxCell id="17" value="" style="edgeStyle=none;html=1;" parent="1" source="14" target="16" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="14" value="&lt;b&gt;Meta Pool Contract:&lt;br&gt;&lt;/b&gt;- deposit_and_stake()&lt;br&gt;- stNEAR" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="500" y="340" width="120" height="80" as="geometry"/>
+                <mxCell id="14" value="&lt;b&gt;Meta Pool Contract:&lt;br&gt;&lt;/b&gt;- deposit_and_stake()&lt;br&gt;- stNEAR" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="490" width="120" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="34" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="16" target="33">
+                <mxCell id="34" value="" style="edgeStyle=none;html=1;" parent="1" source="16" target="33" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="16" value="stNEAR Valut:&lt;br&gt;- Freeing stNear.&lt;br&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="500" y="510" width="120" height="60" as="geometry"/>
+                <mxCell id="16" value="stNEAR Vault:&lt;br&gt;- Freeing stNEAR." style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="660" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="22" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="18" target="16">
+                <mxCell id="22" value="" style="edgeStyle=none;html=1;" parent="1" source="18" target="16" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="23" value="Pull Funds" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="22">
+                <mxCell id="23" value="Pull Funds" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="22" vertex="1" connectable="0">
                     <mxGeometry x="-0.3274" y="2" relative="1" as="geometry">
                         <mxPoint as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="18" value="Kickstarter" style="aspect=fixed;html=1;points=[];align=center;image;fontSize=12;image=img/lib/azure2/azure_stack/User_Subscriptions.svg;" vertex="1" parent="1">
-                    <mxGeometry x="700" y="507" width="68" height="66" as="geometry"/>
+                <mxCell id="18" value="Kickstarter" style="aspect=fixed;html=1;points=[];align=center;image;fontSize=12;image=img/lib/azure2/azure_stack/User_Subscriptions.svg;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="657" width="68" height="66" as="geometry"/>
                 </mxCell>
-                <mxCell id="27" value="" style="edgeStyle=none;html=1;dashed=1;dashPattern=1 1;shape=link;" edge="1" parent="1" source="25">
+                <mxCell id="27" value="" style="edgeStyle=none;html=1;dashed=1;dashPattern=1 1;shape=link;" parent="1" source="25" edge="1">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="690" y="152" as="targetPoint"/>
+                        <mxPoint x="690" y="277" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="25" value="Locking Date" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.lock_protected;" vertex="1" parent="1">
-                    <mxGeometry x="75" y="133" width="28" height="37" as="geometry"/>
+                <mxCell id="25" value="Locking Date" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.lock_protected;" parent="1" vertex="1">
+                    <mxGeometry x="75" y="258" width="28" height="37" as="geometry"/>
                 </mxCell>
-                <mxCell id="28" value="" style="edgeStyle=none;html=1;dashed=1;dashPattern=1 1;shape=link;" edge="1" parent="1">
+                <mxCell id="28" value="" style="edgeStyle=none;html=1;dashed=1;dashPattern=1 1;shape=link;" parent="1" edge="1">
                     <mxGeometry relative="1" as="geometry">
-                        <mxPoint x="103" y="600.0016472545757" as="sourcePoint"/>
-                        <mxPoint x="690" y="600.49" as="targetPoint"/>
+                        <mxPoint x="103" y="750.0016472545757" as="sourcePoint"/>
+                        <mxPoint x="690" y="750.49" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="24" value="Unlocking Date" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.lock_unprotected;" vertex="1" parent="1">
-                    <mxGeometry x="70" y="560" width="38" height="55" as="geometry"/>
+                <mxCell id="24" value="Unlocking Date" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.lock_unprotected;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="710" width="38" height="55" as="geometry"/>
                 </mxCell>
-                <mxCell id="29" value="&lt;b&gt;Pay IOU Options:&lt;br&gt;&lt;/b&gt;- get stNEAR&lt;br&gt;- Liquid-Unstake&lt;br&gt;- Delayed-Unstake" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="140" y="630" width="120" height="60" as="geometry"/>
+                <mxCell id="29" value="&lt;b&gt;Pay IOU Options:&lt;br&gt;&lt;/b&gt;- get stNEAR&lt;br&gt;- Liquid-Unstake&lt;br&gt;- Delayed-Unstake" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="780" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="31" value="Deliver IOU Rewards minus Katherine Fee" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="320" y="630" width="120" height="60" as="geometry"/>
+                <mxCell id="31" value="Deliver IOU Rewards minus Katherine Fee" style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="780" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="33" value="Remaining stNear must cover ALL responsibilities IOU." style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="500" y="630" width="120" height="60" as="geometry"/>
+                <mxCell id="33" value="Remaining stNear must cover ALL responsibilities IOU." style="whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="780" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="35" target="3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" value="Kickstarter &lt;b&gt;create&lt;/b&gt;&amp;nbsp;goals, and reward parameters." style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="50" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="" style="edgeStyle=none;html=1;dashed=1;dashPattern=1 1;shape=link;" edge="1" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="690" y="170.49" as="targetPoint"/>
+                        <mxPoint x="103" y="170.0016472545757" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="40" value="Funding period" style="fillColor=#28A8E0;verticalLabelPosition=bottom;sketch=0;html=1;strokeColor=#ffffff;verticalAlign=top;align=center;points=[[0.145,0.145,0],[0.5,0,0],[0.855,0.145,0],[1,0.5,0],[0.855,0.855,0],[0.5,1,0],[0.145,0.855,0],[0,0.5,0]];pointerEvents=1;shape=mxgraph.cisco_safe.compositeIcon;bgIcon=ellipse;resIcon=mxgraph.cisco_safe.capability.time_synchronization;" vertex="1" parent="1">
+                    <mxGeometry x="65" y="147" width="43" height="43" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

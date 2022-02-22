@@ -6,6 +6,23 @@ Contract Logic:
 
 ![Katherine Contract Logic](media/logic.png)
 
+## Contract Functions
+
+When a user deposits to fund a project, all of their stNEAR tokens are `ready_to_fund`.
+
+- If the project is unsuccessful, fund are moved from `ready_to_fund` to `available`.
+- If the project is successful, funds are moved from `ready_to_fund` to `locked`. When the locking period ends, fund are move backed from `locked` to `available`. Note that less stNEAR will move back, however the value in NEAR will be the same.
+
+
+```text
+create_project() - Kickstarter
+deposit_and_stake() - User
+
+user_withdrawa() - User
+get_back_rewards() - Kickstarter
+```
+
+
 ## Build the contract
 
 Run the `build.sh` script.
@@ -75,6 +92,7 @@ near view dev-1645463427632-85695251757474 list_kickstarters --accountId imcsk8.
 ## Deploy local Node
 
 The `local_near` command is part of the Kurtosis development environment: https://docs.near.org/docs/tools/kurtosis-localnet.
+To install the kurtosis CLI follow the installation documentation: https://docs.kurtosistech.com/installation.html
 
 1. Build the contract
 
@@ -99,3 +117,9 @@ https://docs.near.org/docs/tools/near-cli#near-call
 ```sh
 local_near call jomsox.test.near deposit_and_stake --accountId jomsox.test.near --deposit 2
 ```
+
+# References
+
+* https://github.com/Narwallets/meta-pool
+* https://docs.near.org/docs/tools/kurtosis-localnet
+* https://docs.kurtosistech.com/installation.html
