@@ -1,10 +1,12 @@
 use crate::*;
 use near_sdk::{AccountId, Timestamp};
+use near_sdk::serde::{Serialize, Deserialize};
 
-#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize, Debug, PartialEq)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Kickstarter {
     /// Unique ID identifier
-    pub id: u32,
+    pub id: u64,
     /// Name of the kickstarter project
     pub name: String,
     /// TODO: documentation for slug
@@ -32,16 +34,30 @@ pub struct Kickstarter {
     pub vesting_timestamp: Timestamp,
     /// How much time should pass before releasing the project tokens
     pub cliff_timestamp: Timestamp,
-};
+}
 
 /// Kickstarter project
 /// TODO...
-/*impl Default for Kickstarter {
+impl Default for Kickstarter {
     fn default() -> Self {
         Self {
+            id: 0,
+            name: "".to_string(),
+            slug: "".to_string(),
+            goals: Vec::new(),
+            funders: Vec::new(),
+            owner: env::predecessor_account_id(),
+            active: false,
+            succesful: false,
+            creation_timestamp: env::block_timestamp(),
+            finish_timestamp: env::block_timestamp(),
+            open_timestamp: env::block_timestamp(),
+            close_timestamp: env::block_timestamp(),
+            vesting_timestamp: env::block_timestamp(),
+            cliff_timestamp: env::block_timestamp(),
         }
     }
-}*/
+}
 
 
 /// TODO:
