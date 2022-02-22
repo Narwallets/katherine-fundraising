@@ -88,4 +88,8 @@ impl Kickstarter {
         let total_amount: Vec<Balance> = self.supporter_tickets.clone().into_iter().map(|p| p.stnear_amount).collect();
         total_amount.into_iter().sum()
     }
+
+    pub fn evaluate_goals(&self) -> bool {
+        unimplemented!()
+    }
 }

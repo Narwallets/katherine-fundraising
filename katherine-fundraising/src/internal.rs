@@ -24,6 +24,10 @@ impl KatherineFundraising {
         self.internal_deposit_stnear_into(env::predecessor_account_id(), amount);
     }
 
+    pub(crate) fn internal_update_near_stnear_ratio(&mut self) {
+
+    }
+
     pub(crate) fn internal_deposit_stnear_into(&mut self, supporter_id: AccountId, amount: Balance) {
         let mut supporter = self.internal_get_supporter(&supporter_id);
 
@@ -104,8 +108,24 @@ impl KatherineFundraising {
         Ok(unused_amount)
     }
 
-    pub(crate) fn internal_evaluate_goals(&self, kickstarter: &Kickstarter) -> bool {
-        unimplemented!()
+    pub(crate) fn internal_evaluate_at_due(&mut self) {
+        let current_timestamp = env::block_timestamp();
+        for (kickstarter_id, kickstarter) in self.kickstarters.to_vec().iter() {
+            if kickstarter.active && kickstarter.finish_timestamp < current_timestamp {
+                let mut kickstarter = self.internal_get_kickstarter(&kickstarter_id);
+                if kickstarter.evaluate_goals() {
+                    log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
+                    kickstarter.active = false;
+                    kickstarter.succesful = true;
+                    self.internal_locking_supporters_funds(&kickstarter)
+                } else {
+                    log!("The project {} with id: {} was unsuccessful!", kickstarter.name, kickstarter_id);
+                    kickstarter.active = false;
+                    kickstarter.succesful = false;
+                    self.internal_freeing_supporters_funds(&kickstarter)
+                }
+            }
+        }
     }
 
     pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {

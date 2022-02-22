@@ -80,34 +80,16 @@ impl KatherineFundraising {
         self.internal_withdraw(supporter.available)
     }
 
-    pub fn evaluate_at_due(&mut self) {
-        let current_timestamp = env::block_timestamp();
-        for (kickstarter_id, kickstarter) in self.kickstarters.to_vec().iter() {
-            if kickstarter.active && kickstarter.finish_timestamp < current_timestamp {
-                let mut kickstarter = self.internal_get_kickstarter(&kickstarter_id);
-                if self.internal_evaluate_goals(&kickstarter) {
-                    log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
-                    kickstarter.active = false;
-                    kickstarter.succesful = true;
-                    self.internal_locking_supporters_funds(&kickstarter)
-                } else {
-                    log!("The project {} with id: {} was unsuccessful!", kickstarter.name, kickstarter_id);
-                    kickstarter.active = false;
-                    kickstarter.succesful = false;
-                    self.internal_freeing_supporters_funds(&kickstarter)
-                }
-            }
-        }
+    pub fn heartbeat(&mut self) {
+        /*  
+            Katherine's heartbeat 💓 must run every day:
+                - Update the $NEAR / $stNEAR ratio, getting the value from Meta Pool.
+                - Check if the funding period of a Kickstarter ends and evaluate the goals:
+                    - If goals are met, project is successful and the funds are locked.
+                    - If project is unsuccessful, funds are immediately freed to the supporters.
+        */
+        self.internal_update_near_stnear_ratio();
 
-        // if self.total_available < self.staking_goal {
-        //     for (supporter_id, _) in self.supporters.to_vec().iter() {
-        //         let mut supporter = self.internal_get_supporter(&supporter_id);
-        //         // self.transfer_back_to_account(account_id, &mut account)
-        //     }
-        // } else {
-        //     unimplemented!()
-        //     // self.internal_stake_funds()
-        // }
     }
 
     /*****************************/
