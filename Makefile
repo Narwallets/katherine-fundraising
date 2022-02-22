@@ -1,7 +1,10 @@
 #
-# Makefile for libcfdi
+# Makefile for katherine fundraising
 #
 
+ifndef NEAR_ACCOUNT
+NEAR_ACCOUNT="kate_test_account.testnet"
+endif
 
 lint:
 	cargo clippy --all-targets --all-features -- -D warnings
@@ -11,6 +14,13 @@ build:
 	echo "Building katherine fundrising"
 	RUSTFLAGS='-C link-arg=-s' cargo +stable build --all --target wasm32-unknown-unknown --release
 	cp target/wasm32-unknown-unknown/release/katherine_fundraising.wasm res/
+
+publish-dev: build
+	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising.wasm
+
+publish-dev-init: build
+	rm -rf neardev/
+	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising.wasm --initFunction new --initArgs '{"owner_id": "${NEAR_ACCOUNT}", "staking_goal": 10}'
 
 install:
 	cp target/release/libcfdi.so /usr/local/lib64/
