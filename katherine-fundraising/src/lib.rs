@@ -83,7 +83,7 @@ impl KatherineFundraising {
     pub fn evaluate_at_due(&mut self) {
         let current_timestamp = env::block_timestamp();
         for (kickstarter_id, kickstarter) in self.kickstarters.to_vec().iter() {
-            if kickstarter.active && kickstarter.finish_timestamp > current_timestamp {
+            if kickstarter.active && kickstarter.finish_timestamp < current_timestamp {
                 let mut kickstarter = self.internal_get_kickstarter(&kickstarter_id);
                 if self.internal_evaluate_goals(&kickstarter) {
                     log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
