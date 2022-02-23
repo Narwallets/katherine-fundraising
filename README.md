@@ -28,12 +28,18 @@ get_back_rewards() - Kickstarter
 Run the `build.sh` script.
 
 ```sh
-./build.sh
+make build
 ```
 
 ## Deploy the contract in Testnet
 
 https://docs.near.org/docs/tools/near-cli#near-deploy
+
+### Initialize contract
+
+```sh
+NEAR_ACCOUNT="imcsk8.testnet" make publish-dev-init
+```
 
 ```sh
 export NEAR_ENV=testnet
@@ -42,6 +48,11 @@ rm -rf neardev/ && near dev-deploy --wasmFile res/katherine_fundraising.wasm --i
 ```
 
 A new account will be created for the contract. Note how the last command exported CONTRACT_NAME.
+
+### Upload changes to the contract
+```sh
+NEAR_ACCOUNT="imcsk8.testnet" make publish-dev
+```
 
 ## Deposit to the contract
 
@@ -63,6 +74,20 @@ near view $CONTRACT_NAME get_contract_total_available '{}'
 
 near call $CONTRACT_NAME evaluate_at_due --accountId huxley.testnet 
 
+## Kickstarters
+
+### Create kickstarter
+
+```sh
+near call dev-1645463337931-68562022007060 create_kickstarter '{"name": "test kickstarter 2", "slug": "test-kickstarter2", "finish_timestamp": 0, "open_timestamp": 0, "close_timestamp": 0, "vesting_timestamp": 0, "cliff_timestamp": 0}'  --accountId imcsk8.testnet 
+```
+
+### List kickstarters
+
+```sh
+near view dev-1645463427632-85695251757474 list_kickstarters --accountId imcsk8.testnet
+
+```
 
 ## Deploy local Node
 
@@ -92,7 +117,6 @@ https://docs.near.org/docs/tools/near-cli#near-call
 ```sh
 local_near call jomsox.test.near deposit_and_stake --accountId jomsox.test.near --deposit 2
 ```
-
 
 # References
 
