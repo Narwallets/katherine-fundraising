@@ -17,10 +17,14 @@ pub struct Kickstarter {
     /// TODO: Goals
     pub goals: Vec<Goal>,
 
-    /// TODO: Funders
-    pub funders: Vec<Funder>,
+    /// TODO: Supporters
+    pub supporter: Vec<Funder>,
+
+    pub deposits: UnorderedMap<AccountId, Deposit>,
 
     /// TODO: All the Supporter tickets of the project
+    /// move this to the lib.rs file to optimize 
+    /// the key would be the account_id + kickstarter id + amount
     pub supporter_tickets: Vec<Ticket>,
 
     /// TODO: Owner
@@ -31,6 +35,9 @@ pub struct Kickstarter {
 
     /// True if the kickstart project met the goals
     pub succesful: bool,
+
+    /// Spot near
+    pub spotnear: u128,
 
     /// Creation date of the project
     pub creation_timestamp: Timestamp,
@@ -45,35 +52,11 @@ pub struct Kickstarter {
     pub close_timestamp: Timestamp,
 
     /// How much time the project will be active, this also means how much time the stnear tokens
-    /// will be blocked
+    /// will be locked
     pub vesting_timestamp: Timestamp,
 
     /// How much time should pass before releasing the project tokens
     pub cliff_timestamp: Timestamp,
-}
-
-/// Kickstarter project
-/// TODO...
-impl Default for Kickstarter {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            name: "".to_string(),
-            slug: "".to_string(),
-            goals: Vec::new(),
-            funders: Vec::new(),
-            supporter_tickets: Vec::new(),
-            owner: env::predecessor_account_id(),
-            active: false,
-            succesful: false,
-            creation_timestamp: env::block_timestamp(),
-            finish_timestamp: env::block_timestamp(),
-            open_timestamp: env::block_timestamp(),
-            close_timestamp: env::block_timestamp(),
-            vesting_timestamp: env::block_timestamp(),
-            cliff_timestamp: env::block_timestamp(),
-        }
-    }
 }
 
 

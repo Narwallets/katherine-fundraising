@@ -25,26 +25,6 @@ pub struct Goal {
 }
 
 
-
-/// Goal
-/// TODO...
-impl Default for Goal {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            name: "".to_string(),
-            goal: 0,
-            goal_timestamp: 0,
-            funders: Vec::new(),
-            tokens_to_release: 0,
-            start_delivery_timestamp: 0,
-            finish_delivery_timestamp: 0,
-
-        }
-    }
-}
-
-
 /// TODO:
 impl Goal {
 }

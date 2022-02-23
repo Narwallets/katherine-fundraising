@@ -11,9 +11,6 @@ pub use crate::kickstarter::*;
 pub mod ticket;
 pub use crate::ticket::*;
 
-pub mod funder;
-pub use crate::funder::*;
-
 pub mod goal;
 pub use crate::goal::*;
 
