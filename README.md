@@ -10,6 +10,11 @@ The Ticket system:
 
 ![Ticket System](media/logic2.png)
 
+## Important Assumptions
+
+- Supporters after doing a deposit to a Kickstarter, could recover the funds before they get locked.
+- Goal 1 gets all the stNEAR obtained if the Goal 2 is not met.
+
 ## Contract Functions
 
 When a user deposits to fund a project, all of their stNEAR tokens are `ready_to_fund`.
