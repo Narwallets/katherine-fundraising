@@ -19,10 +19,10 @@ pub struct Goal {
     pub tokens_to_release: u128,
     /// Kickstarter Token denomination.
     pub tokens_denomination: IOUNoteDenomination,
-    /// Date for starting the delivery of stNEARs if the goal was matched
-    pub start_delivery_timestamp: Timestamp,
-    /// Date for finish the delivery of stNEARs
-    pub finish_delivery_timestamp: Timestamp,
+    /// Date for starting the delivery of the Kickstarter Tokens if the goal was matched
+    pub cliff_timestamp: Timestamp,
+    /// Date for finish the delivery of the Kickstarter Tokens
+    pub end_timestamp: Timestamp,
 }
 
 
@@ -52,8 +52,8 @@ impl KatherineFundraising {
             goal_timestamp: env::block_timestamp(),
             tokens_to_release: tokens_to_release,
             tokens_denomination: IOUNoteDenomination::KickstarterToken(tokens_denomination),
-            start_delivery_timestamp: env::block_timestamp(),
-            finish_delivery_timestamp: env::block_timestamp(),
+            cliff_timestamp: env::block_timestamp(),
+            end_timestamp: env::block_timestamp(),
         };
         kickstarter.goals.push(g);
         self.kickstarters.replace(kickstarter_id, &kickstarter);

@@ -144,10 +144,11 @@ impl KatherineFundraising {
                 supporter_id,
                 &kickstarter.id,
                 &kickstarter.convert_stnear_to_token_shares(total),
-                IOUNoteDenomination::NEAR,
-                kickstarter.cliff_timestamp,
-                kickstarter.vesting_timestamp,
+                kickstarter.get_token_denomination().clone(),
+                kickstarter.get_reward_cliff_timestamp(),
+                kickstarter.get_reward_end_timestamp(),
             );
+            supporter.iou_note_ids.push(&iou_note_id);
         }
     }
 

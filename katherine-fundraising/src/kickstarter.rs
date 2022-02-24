@@ -4,6 +4,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{near_bindgen, PanicOnDefault};
 use near_sdk::collections::{UnorderedMap};
 
+use crate::iou_note::IOUNoteDenomination;
+
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Kickstarter {
     /// Unique ID identifier
@@ -96,6 +98,12 @@ impl Kickstarter {
         unimplemented!()
     }
 
+    pub fn get_goal(&self) -> &Goal {
+        self.goals
+            .get(self.winner_goal_id.expect("No goal defined") as usize)
+            .expect("Incorrect goal index") 
+    }
+
     // WARNING: This is only callable by Katherine.
     pub fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
         let current_supporter_deposit = match self.deposits.get(&supporter_id) {
@@ -114,10 +122,7 @@ impl Kickstarter {
     }
 
     pub fn get_tokens_to_release(&self) -> Balance {
-        self.goals
-            .get(self.winner_goal_id.expect("No goal defined") as usize)
-            .expect("Incorrect goal index")
-            .tokens_to_release
+        self.get_goal().tokens_to_release
     }
 
     pub fn get_total_supporters_rewards(&self) -> Balance {
@@ -134,5 +139,17 @@ impl Kickstarter {
         let tokens_rewards = self.get_total_supporters_rewards();
         let total_support = self.get_total_amount();
         amount_in_stnear * tokens_rewards / total_support
+    }
+
+    pub fn get_token_denomination(&self) -> &IOUNoteDenomination {
+        &self.get_goal().tokens_denomination 
+    }
+
+    pub fn get_reward_cliff_timestamp(&self) -> Timestamp {
+        self.get_goal().cliff_timestamp
+    }
+
+    pub fn get_reward_end_timestamp(&self) -> Timestamp {
+        self.get_goal().end_timestamp 
     }
 }
