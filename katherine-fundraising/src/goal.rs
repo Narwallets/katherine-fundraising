@@ -3,6 +3,7 @@ use near_sdk::{AccountId, Timestamp};
 use near_sdk::serde::{Serialize, Deserialize};
 
 use std::convert::TryFrom;
+use crate::iou_note::IOUNoteDenomination;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -16,6 +17,8 @@ pub struct Goal {
     pub goal_timestamp: Timestamp,
     /// How many tokens are for this 
     pub tokens_to_release: u128,
+    /// Kickstarter Token denomination.
+    pub tokens_denomination: IOUNoteDenomination,
     /// Date for starting the delivery of stNEARs if the goal was matched
     pub start_delivery_timestamp: Timestamp,
     /// Date for finish the delivery of stNEARs
@@ -36,6 +39,7 @@ impl KatherineFundraising {
         goal: u128,
         goal_timestamp: Timestamp,
         tokens_to_release: u128,
+        tokens_denomination: String,
         start_delivery_timestamp: Timestamp,
         finish_delivery_timestamp: Timestamp) {
 
@@ -47,6 +51,7 @@ impl KatherineFundraising {
             //TODO: set this to an argument
             goal_timestamp: env::block_timestamp(),
             tokens_to_release: tokens_to_release,
+            tokens_denomination: IOUNoteDenomination::KickstarterToken(tokens_denomination),
             start_delivery_timestamp: env::block_timestamp(),
             finish_delivery_timestamp: env::block_timestamp(),
         };

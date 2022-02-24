@@ -19,5 +19,5 @@ pub struct IOUNote {
     pub supporter_id: AccountId,
     pub kickstarter_id: KickstarterId,
     pub cliff_timestamp: Timestamp,
-    pub free_all_timestamp: Timestamp,
+    pub end_timestamp: Timestamp,
 }

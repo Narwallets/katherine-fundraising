@@ -18,6 +18,11 @@ pub struct Kickstarter {
     /// TODO: Goals
     pub goals: Vec<Goal>,
 
+    pub winner_goal_id: Option<u8>,
+
+    /// Katherine fee is denominated in Kickstarter Tokens.
+    pub katherine_fee: Option<Balance>,
+
     /// TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
     pub supporters: Vec<Supporter>,
 
@@ -99,5 +104,35 @@ impl Kickstarter {
         };
         let new_total: Balance = current_supporter_deposit + amount;
         self.deposits.insert(&supporter_id, &new_total);
+    }
+
+    pub fn convert_stnear_to_near(&self, amount_in_stnear: &Balance) -> Balance {
+        // WARNING: This operation must be enhaced.
+        let rate = self.stnear_value_in_near.expect("Conversion rate has not been stablished!");
+        let amount_in_near = amount_in_stnear / rate;
+        amount_in_near
+    }
+
+    pub fn get_tokens_to_release(&self) -> Balance {
+        self.goals
+            .get(self.winner_goal_id.expect("No goal defined") as usize)
+            .expect("Incorrect goal index")
+            .tokens_to_release
+    }
+
+    pub fn get_total_supporters_rewards(&self) -> Balance {
+        self.get_tokens_to_release() - self.katherine_fee.expect("Katherine fee must be denominated at goal evaluation")
+    }
+
+    pub fn set_katherine_fee(&self) -> Balance {
+        unimplemented!()
+    }
+
+    pub fn convert_stnear_to_token_shares(&self, amount_in_stnear: &Balance) -> Balance {
+        // WARNING: This operation must be enhaced.
+        // This is a Rule of Three calculation to get the shares.
+        let tokens_rewards = self.get_total_supporters_rewards();
+        let total_support = self.get_total_amount();
+        amount_in_stnear * tokens_rewards / total_support
     }
 }

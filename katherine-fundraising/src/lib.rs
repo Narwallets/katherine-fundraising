@@ -46,6 +46,9 @@ pub struct KatherineFundraising {
     pub min_deposit_amount: Balance,
 
     pub metapool_contract_address: AccountId,
+
+    // Katherine fee is a % of the Kickstarter Token rewards.
+    pub katherine_fee_percent: f32, // TODO: How should we handle this?
 }
 
 #[near_bindgen]
@@ -61,6 +64,7 @@ impl KatherineFundraising {
             total_available: 0,
             min_deposit_amount: 1 * NEAR,
             metapool_contract_address: String::from("meta-v2.pool.testnet"),
+            katherine_fee_percent: 0.1
         }
     }
 
@@ -127,6 +131,8 @@ impl KatherineFundraising {
             name,
             slug,
             goals: Vec::new(),
+            winner_goal_id: None,
+            katherine_fee: None,
             supporters: Vec::new(),
             deposits: UnorderedMap::new(b"A".to_vec()),
             owner_id,
@@ -182,6 +188,8 @@ impl KatherineFundraising {
             name,
             slug,
             goals: Vec::new(),
+            winner_goal_id: None,
+            katherine_fee: None,
             supporters: Vec::new(),
             deposits: UnorderedMap::new(b"A".to_vec()),
             owner_id,

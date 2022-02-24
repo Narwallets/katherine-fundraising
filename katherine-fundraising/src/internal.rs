@@ -125,11 +125,29 @@ impl KatherineFundraising {
     pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
         let deposits = kickstarter.get_deposits();
         for (supporter_id, total) in deposits.to_vec().iter() {
-            let iou_note_id = self.internal_create_iou_note(supporter_id, kickstarter, total, IOUNoteDenomination::NEAR);
+            // Disperse NEAR denominated IOU Note.
+            let iou_note_id = self.internal_create_iou_note(
+                supporter_id,
+                &kickstarter.id,
+                &kickstarter.convert_stnear_to_near(total),
+                IOUNoteDenomination::NEAR,
+                kickstarter.cliff_timestamp,
+                kickstarter.vesting_timestamp,
+            );
             let mut supporter = self.internal_get_supporter(supporter_id);
             supporter.total_in_deposits -= total;
-            supporter.locked += total;
+            supporter.locked += total; // <- Not sure if we should keep track of this value.
             supporter.iou_note_ids.push(&iou_note_id);
+
+            // Disperse Kickstarter Token denominated IOU Note.
+            let iou_note_id = self.internal_create_iou_note(
+                supporter_id,
+                &kickstarter.id,
+                &kickstarter.convert_stnear_to_token_shares(total),
+                IOUNoteDenomination::NEAR,
+                kickstarter.cliff_timestamp,
+                kickstarter.vesting_timestamp,
+            );
         }
     }
 
@@ -145,18 +163,20 @@ impl KatherineFundraising {
     pub(crate) fn internal_create_iou_note(
         &mut self,
         supporter_id: &SupporterId,
-        kickstarter: &Kickstarter,
+        kickstarter_id: &KickstarterId,
         amount: &Balance,
         denomination: IOUNoteDenomination,
+        cliff_timestamp: Timestamp,
+        end_timestamp: Timestamp,
     ) -> IOUNoteId {
         let iou_note = IOUNote {
             id: self.iou_notes.len(),
             amount: amount.clone(),
             denomination,
             supporter_id: supporter_id.clone(),
-            kickstarter_id: kickstarter.id,
-            cliff_timestamp: kickstarter.cliff_timestamp,
-            free_all_timestamp: kickstarter.vesting_timestamp,
+            kickstarter_id: kickstarter_id.clone(),
+            cliff_timestamp,
+            end_timestamp,
         };
         self.iou_notes.push(&iou_note);
         iou_note.id
