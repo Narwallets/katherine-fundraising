@@ -3,6 +3,8 @@ use near_sdk::{log, AccountId};
 use near_sdk::Promise;
 use near_sdk::serde_json::{json};
 
+use crate::iou_note::IOUNoteDenomination;
+
 pub use crate::types::*;
 
 impl KatherineFundraising {
@@ -22,10 +24,6 @@ impl KatherineFundraising {
     pub(crate) fn internal_deposit(&mut self, amount: Balance) {
         self.assert_min_deposit_amount(amount);
         self.internal_deposit_stnear_into(env::predecessor_account_id(), amount);
-    }
-
-    pub(crate) fn internal_update_near_stnear_ratio(&mut self) {
-
     }
 
     pub(crate) fn internal_deposit_stnear_into(&mut self, supporter_id: AccountId, amount: Balance) {
@@ -60,7 +58,7 @@ impl KatherineFundraising {
     }
 
     /// Inner method to get the given kickstarter.
-    pub(crate) fn internal_get_kickstarter(&self, kickstarter_id: &KickstarterId) -> Kickstarter {
+    pub(crate) fn internal_get_kickstarter(&self, kickstarter_id: KickstarterId) -> Kickstarter {
         self.kickstarters.get(kickstarter_id).expect("Unknown kickstarter id")
     }
 
@@ -80,12 +78,12 @@ impl KatherineFundraising {
         amount: &Balance,
         kickstarter_id: String
     ) -> Result<Balance, String> {
-        let kickstarter_id: u32 = match kickstarter_id.parse::<u32>() {
+        let kickstarter_id = match kickstarter_id.parse::<KickstarterId>() {
             Ok(_id) => _id,
             Err(_) => return Err("Invalid Kickstarter id.".into()),
         };
 
-        let mut kickstarter: Kickstarter = match self.kickstarters.get(&kickstarter_id) {
+        let mut kickstarter: Kickstarter = match self.kickstarters.get(kickstarter_id) {
             Some(kickstarter) => kickstarter,
             None => return Err("Kickstarter id not found.".into()),
         };
@@ -96,23 +94,19 @@ impl KatherineFundraising {
         }
 
         let mut supporter = self.internal_get_supporter(&supporter_id);
-        supporter.ready_to_fund += amount;
-        let new_ticket = Ticket {
-            supporter_id: supporter_id.clone(),
-            stnear_amount: amount.clone(),
-            spot_near_value: 0, // TODO: Get the real spot NEAR value for the deposited stNEAR.
-        };
-        kickstarter.supporter_tickets.push(new_ticket);
+        supporter.total_in_deposits += amount;
+        kickstarter.update_supporter_deposits(&supporter_id, amount);
 
         let unused_amount: Balance = 0;
         Ok(unused_amount)
     }
 
     pub(crate) fn internal_evaluate_at_due(&mut self) {
-        let current_timestamp = env::block_timestamp();
-        for (kickstarter_id, kickstarter) in self.kickstarters.to_vec().iter() {
-            if kickstarter.active && kickstarter.finish_timestamp < current_timestamp {
-                let mut kickstarter = self.internal_get_kickstarter(&kickstarter_id);
+        let active_projects: Vec<Kickstarter> = self.kickstarters.to_vec().into_iter().filter(|kickstarter| kickstarter.active).collect();
+        for kickstarter in active_projects.iter() {
+            if kickstarter.close_timestamp <= env::block_timestamp() {
+                let kickstarter_id = kickstarter.id;
+                let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
                 if kickstarter.evaluate_goals() {
                     log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
                     kickstarter.active = false;
@@ -129,21 +123,43 @@ impl KatherineFundraising {
     }
 
     pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
-        let funding_map = kickstarter.get_supporters_funding_map();
-        for (supporter_id, total) in funding_map.to_vec().iter() {
+        let deposits = kickstarter.get_deposits();
+        for (supporter_id, total) in deposits.to_vec().iter() {
+            let iou_note_id = self.internal_create_iou_note(supporter_id, kickstarter, total, IOUNoteDenomination::NEAR);
             let mut supporter = self.internal_get_supporter(supporter_id);
-            supporter.ready_to_fund -= total;
+            supporter.total_in_deposits -= total;
             supporter.locked += total;
+            supporter.iou_note_ids.push(&iou_note_id);
         }
     }
 
     pub(crate) fn internal_freeing_supporters_funds(&mut self, kickstarter: &Kickstarter) {
-        let funding_map = kickstarter.get_supporters_funding_map();
-        for (supporter_id, total) in funding_map.to_vec().iter() {
+        let deposits = kickstarter.get_deposits();
+        for (supporter_id, total) in deposits.to_vec().iter() {
             let mut supporter = self.internal_get_supporter(supporter_id);
-            supporter.ready_to_fund -= total;
+            supporter.total_in_deposits -= total;
             supporter.available += total;
         }
+    }
+
+    pub(crate) fn internal_create_iou_note(
+        &mut self,
+        supporter_id: &SupporterId,
+        kickstarter: &Kickstarter,
+        amount: &Balance,
+        denomination: IOUNoteDenomination,
+    ) -> IOUNoteId {
+        let iou_note = IOUNote {
+            id: self.iou_notes.len(),
+            amount: amount.clone(),
+            denomination,
+            supporter_id: supporter_id.clone(),
+            kickstarter_id: kickstarter.id,
+            cliff_timestamp: kickstarter.cliff_timestamp,
+            free_all_timestamp: kickstarter.vesting_timestamp,
+        };
+        self.iou_notes.push(&iou_note);
+        iou_note.id
     }
 
     // pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {

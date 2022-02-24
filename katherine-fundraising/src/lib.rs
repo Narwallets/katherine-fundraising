@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap};
-use near_sdk::{log, Promise, env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas};
+use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
 
 pub mod supporter;
 pub use crate::supporter::*;
@@ -8,11 +8,11 @@ pub use crate::supporter::*;
 pub mod kickstarter;
 pub use crate::kickstarter::*;
 
+pub mod iou_note;
+pub use crate::iou_note::*;
+
 pub mod goal;
 pub use crate::goal::*;
-
-pub mod ticket;
-pub use crate::ticket::*;
 
 pub mod types;
 pub use crate::types::*;
@@ -35,12 +35,13 @@ pub struct KatherineFundraising {
 
     pub supporters: UnorderedMap<AccountId, Supporter>,
 
-    pub kickstarters: UnorderedMap<KickstarterId, Kickstarter>,
+    pub iou_notes: Vector<IOUNote>,
+
+    /// Kickstarter list
+    pub kickstarters: Vector<Kickstarter>,
 
     pub total_available: Balance,
 
-    pub staking_goal: Balance,
-    
     /// min amount accepted as deposit or stake
     pub min_deposit_amount: Balance,
 
@@ -55,9 +56,9 @@ impl KatherineFundraising {
         Self {
             owner_id,
             supporters: UnorderedMap::new(b"A".to_vec()),
-            kickstarters: UnorderedMap::new(b"A".to_vec()),
+            iou_notes: Vector::new(b"Note".to_vec()),
+            kickstarters: Vector::new(b"Kickstarters".to_vec()),
             total_available: 0,
-            staking_goal: staking_goal * NEAR,
             min_deposit_amount: 1 * NEAR,
             metapool_contract_address: String::from("meta-v2.pool.testnet"),
         }
@@ -65,6 +66,7 @@ impl KatherineFundraising {
 
     #[payable]
     pub fn deposit_and_stake(&mut self, amount: Balance) {
+        unimplemented!();
         let supporter: AccountId = env::predecessor_account_id();
         // let supporter_stnear: Promise = self.take_supporter_stnear(supporter, amount);
         self.internal_deposit(amount);
@@ -82,14 +84,14 @@ impl KatherineFundraising {
 
     pub fn heartbeat(&mut self) {
         /*  
+            UPDATE what the heartbeat does!
             Katherine's heartbeat 💓 must run every day:
                 - Update the $NEAR / $stNEAR ratio, getting the value from Meta Pool.
                 - Check if the funding period of a Kickstarter ends and evaluate the goals:
                     - If goals are met, project is successful and the funds are locked.
                     - If project is unsuccessful, funds are immediately freed to the supporters.
         */
-        self.internal_update_near_stnear_ratio();
-
+        self.internal_evaluate_at_due();
     }
 
     /*****************************/
@@ -103,5 +105,97 @@ impl KatherineFundraising {
 
     pub fn get_contract_total_available(&self) -> U128String {
         self.total_available.into()
+    }
+
+    /*****************************/
+    /*   Kickstarter functions   */
+    /*****************************/
+
+    /// Creates a new kickstarter entry in persistent storage
+    pub fn create_kickstarter(&mut self, 
+        name: String,
+        slug: String,
+        owner_id: AccountId,
+        finish_timestamp: Timestamp,
+        open_timestamp: Timestamp,
+        close_timestamp: Timestamp,
+        vesting_timestamp: Timestamp,
+        cliff_timestamp: Timestamp) {
+
+        let kickstarter = Kickstarter {
+            id: self.kickstarters.len(),
+            name,
+            slug,
+            goals: Vec::new(),
+            supporters: Vec::new(),
+            deposits: UnorderedMap::new(b"A".to_vec()),
+            owner_id,
+            active: true,
+            succesful: false,
+            stnear_value_in_near: None,
+            creation_timestamp: env::block_timestamp(),
+            finish_timestamp,
+            open_timestamp,
+            close_timestamp,
+            vesting_timestamp,
+            cliff_timestamp,
+        };
+
+        self.kickstarters.push(&kickstarter);
+    }
+
+    /// Returns a list of the kickstarter entries
+    pub fn get_kickstarters(&self) -> Vec<Kickstarter> {
+        self.kickstarters.to_vec()
+    }
+
+    pub fn delete_kickstarter(&mut self, id: KickstarterId) {
+        panic!("Kickstarter must not be deleted!");
+        self.kickstarters.swap_remove(id);
+    }
+
+    /// Update a kickstarter
+    pub fn update_kickstarter(&mut self, 
+        id: KickstarterId,
+        name: String,
+        slug: String,
+        owner_id: AccountId,
+        finish_timestamp: Timestamp,
+        open_timestamp: Timestamp,
+        close_timestamp: Timestamp,
+        vesting_timestamp: Timestamp,
+        cliff_timestamp: Timestamp) {
+
+        let old_kickstarter = self.kickstarters.get(id).expect("Kickstarter Id not found!");
+        
+        assert!(
+            old_kickstarter.open_timestamp <= env::block_timestamp(),
+            "Changes are not allow after the funding period started!"
+        );
+        assert!(
+            self.owner_id != env::predecessor_account_id(),
+            "Only Katherine owner is allowed to modify the project!"
+        );
+
+        let kickstarter = Kickstarter {
+            id,
+            name,
+            slug,
+            goals: Vec::new(),
+            supporters: Vec::new(),
+            deposits: UnorderedMap::new(b"A".to_vec()),
+            owner_id,
+            active: true,
+            succesful: false,
+            stnear_value_in_near: None,
+            creation_timestamp: env::block_timestamp(),
+            finish_timestamp,
+            open_timestamp,
+            close_timestamp,
+            vesting_timestamp,
+            cliff_timestamp,
+        };
+
+        self.kickstarters.replace(id, &kickstarter);
     }
 }
