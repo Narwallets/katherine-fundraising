@@ -1,13 +1,15 @@
 use crate::*;
+use near_sdk::collections::{UnorderedMap, Vector};
 
 pub use crate::types::*;
 pub use crate::utils::*;
 
-#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct Supporter {
-    pub ready_to_fund: Balance,
+    pub total_in_deposits: Balance,
     pub locked: Balance,
     pub available: u128,
+    pub iou_note_ids: Vector<IOUNoteId>,
 }
 
 /// Supporter account on this contract
@@ -15,8 +17,9 @@ impl Default for Supporter {
     fn default() -> Self {
         Self {
             available: 0,
-            ready_to_fund: 0,
+            total_in_deposits: 0,
             locked: 0,
+            iou_note_ids: Vector::new(b"IOU".to_vec()),
         }
     }
 }
@@ -24,7 +27,7 @@ impl Supporter {
     /// when the supporter.is_empty() it will be removed
     pub fn is_empty(&self) -> bool {
         return self.available == 0
-               && self.ready_to_fund == 0
+               && self.total_in_deposits == 0
                && self.locked == 0;
     }
 

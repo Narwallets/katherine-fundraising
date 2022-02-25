@@ -1,12 +1,15 @@
 use crate::*;
 use near_sdk::{AccountId, Timestamp};
-use near_sdk::serde::{Serialize, Deserialize};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::{near_bindgen, PanicOnDefault};
+use near_sdk::collections::{UnorderedMap};
 
-#[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize, Debug, PartialEq)]
-#[serde(crate = "near_sdk::serde")]
+use crate::iou_note::IOUNoteDenomination;
+
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Kickstarter {
     /// Unique ID identifier
-    pub id: u64,
+    pub id: KickstarterId,
 
     /// Name of the kickstarter project
     pub name: String,
@@ -17,27 +20,28 @@ pub struct Kickstarter {
     /// TODO: Goals
     pub goals: Vec<Goal>,
 
-    /// TODO: Supporters
-    pub supporter: Vec<Funder>,
+    pub winner_goal_id: Option<u8>,
 
-    pub deposits: UnorderedMap<AccountId, Deposit>,
+    /// Katherine fee is denominated in Kickstarter Tokens.
+    pub katherine_fee: Option<Balance>,
 
-    /// TODO: All the Supporter tickets of the project
-    /// move this to the lib.rs file to optimize 
-    /// the key would be the account_id + kickstarter id + amount
-    pub supporter_tickets: Vec<Ticket>,
+    /// TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
+    pub supporters: Vec<Supporter>,
+
+    /// Deposits during the funding period.
+    pub deposits: UnorderedMap<SupporterId, Balance>,
 
     /// TODO: Owner
-    pub owner: AccountId,
+    pub owner_id: AccountId,
 
-    /// True if the kickstart project is active
+    /// True if the kickstart project is active and waiting for funding.
     pub active: bool,
 
     /// True if the kickstart project met the goals
-    pub succesful: bool,
+    pub successful: bool,
 
     /// Spot near
-    pub spotnear: u128,
+    pub stnear_value_in_near: Option<Balance>,
 
     /// Creation date of the project
     pub creation_timestamp: Timestamp,
@@ -63,14 +67,89 @@ pub struct Kickstarter {
 /// TODO:
 impl Kickstarter {
     pub fn get_supporter_ids(&self) -> Vec<AccountId> {
-        let mut supporter_ids: Vec<AccountId> = self.supporter_tickets.clone().into_iter().map(|p| p.supporter_id).collect();
-        supporter_ids.sort_unstable();
-        supporter_ids.dedup();
-        supporter_ids
+        let mut supporter_ids: Vec<AccountId> = self.deposits.to_vec().into_iter().map(|p| p.0).collect();
+        // supporter_ids.sort_unstable();
+        // supporter_ids.dedup();
+        supporter_ids.to_vec()
+    }
+
+    pub fn get_deposits(&self) -> &UnorderedMap<AccountId, Balance> {
+        &self.deposits
+        // let mut funding_map: UnorderedMap<AccountId, Balance> = UnorderedMap::new(b"A".to_vec());
+        // for tx in self.supporter_tickets.clone().into_iter() {
+        //     let supporter_id: AccountId = tx.supporter_id;
+        //     let ticket_blance: Balance = tx.stnear_amount;
+        //     let current_total: Balance = match funding_map.get(&supporter_id) {
+        //         Some(total) => total,
+        //         None => 0,
+        //     };
+        //     let new_total: Balance = current_total + ticket_blance;
+        //     funding_map.insert(&supporter_id, &new_total);
+        // }
+        // funding_map
     }
 
     pub fn get_total_amount(&self) -> Balance {
-        let total_amount: Vec<Balance> = self.supporter_tickets.clone().into_iter().map(|p| p.stnear_amount).collect();
+        let total_amount: Vec<Balance> = self.deposits.to_vec().into_iter().map(|p| p.1).collect();
         total_amount.into_iter().sum()
+    }
+
+    pub fn evaluate_goals(&self) -> bool {
+        unimplemented!()
+    }
+
+    pub fn get_goal(&self) -> &Goal {
+        self.goals
+            .get(self.winner_goal_id.expect("No goal defined") as usize)
+            .expect("Incorrect goal index") 
+    }
+
+    // WARNING: This is only callable by Katherine.
+    pub fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
+        let current_supporter_deposit = match self.deposits.get(&supporter_id) {
+            Some(total) => total,
+            None => 0,
+        };
+        let new_total: Balance = current_supporter_deposit + amount;
+        self.deposits.insert(&supporter_id, &new_total);
+    }
+
+    pub fn convert_stnear_to_near(&self, amount_in_stnear: &Balance) -> Balance {
+        // WARNING: This operation must be enhaced.
+        let rate = self.stnear_value_in_near.expect("Conversion rate has not been stablished!");
+        let amount_in_near = amount_in_stnear / rate;
+        amount_in_near
+    }
+
+    pub fn get_tokens_to_release(&self) -> Balance {
+        self.get_goal().tokens_to_release
+    }
+
+    pub fn get_total_supporters_rewards(&self) -> Balance {
+        self.get_tokens_to_release() - self.katherine_fee.expect("Katherine fee must be denominated at goal evaluation")
+    }
+
+    pub fn set_katherine_fee(&self) -> Balance {
+        unimplemented!()
+    }
+
+    pub fn convert_stnear_to_token_shares(&self, amount_in_stnear: &Balance) -> Balance {
+        // WARNING: This operation must be enhaced.
+        // This is a Rule of Three calculation to get the shares.
+        let tokens_rewards = self.get_total_supporters_rewards();
+        let total_support = self.get_total_amount();
+        amount_in_stnear * tokens_rewards / total_support
+    }
+
+    pub fn get_token_denomination(&self) -> &IOUNoteDenomination {
+        &self.get_goal().tokens_denomination 
+    }
+
+    pub fn get_reward_cliff_timestamp(&self) -> Timestamp {
+        self.get_goal().cliff_timestamp
+    }
+
+    pub fn get_reward_end_timestamp(&self) -> Timestamp {
+        self.get_goal().end_timestamp 
     }
 }

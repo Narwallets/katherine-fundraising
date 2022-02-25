@@ -3,6 +3,8 @@ use near_sdk::{log, AccountId};
 use near_sdk::Promise;
 use near_sdk::serde_json::{json};
 
+use crate::iou_note::IOUNoteDenomination;
+
 pub use crate::types::*;
 
 impl KatherineFundraising {
@@ -55,13 +57,28 @@ impl KatherineFundraising {
         }
     }
 
+    /// Inner method to get the given kickstarter.
+    pub(crate) fn internal_get_kickstarter(&self, kickstarter_id: KickstarterId) -> Kickstarter {
+        self.kickstarters.get(kickstarter_id).expect("Unknown kickstarter id")
+    }
+
+    /// Inner method to save the given kickstarter for a given KickstarterID.
+    /// If the supporter balances are 0, the supporter is deleted instead to release storage.
+    //pub(crate) fn internal_update_supporter(&mut self, supporter_id: &AccountId, supporter: &Supporter) {
+    //    if supporter.is_empty() {
+    //        self.supporters.remove(supporter_id);
+    //    } else {
+    //        self.supporters.insert(supporter_id, &supporter); //insert_or_update
+    //    }
+    //}
+
     pub(crate) fn internal_supporter_deposit(
         &mut self,
         supporter_id: &AccountId,
         amount: &Balance,
         kickstarter_id: String
     ) -> Result<Balance, String> {
-        let kickstarter_id = match kickstarter_id.parse::<u64>() {
+        let kickstarter_id = match kickstarter_id.parse::<KickstarterId>() {
             Ok(_id) => _id,
             Err(_) => return Err("Invalid Kickstarter id.".into()),
         };
@@ -77,16 +94,95 @@ impl KatherineFundraising {
         }
 
         let mut supporter = self.internal_get_supporter(&supporter_id);
-        supporter.ready_to_fund += amount;
-        let new_ticket = Ticket {
-            supporter_id: supporter_id.clone(),
-            stnear_amount: amount.clone(),
-            spot_near_value: 0, // TODO: Get the real spot NEAR value for the deposited stNEAR.
-        };
-        kickstarter.supporter_tickets.push(new_ticket);
+        supporter.total_in_deposits += amount;
+        kickstarter.update_supporter_deposits(&supporter_id, amount);
 
         let unused_amount: Balance = 0;
         Ok(unused_amount)
+    }
+
+    pub(crate) fn internal_evaluate_at_due(&mut self) {
+        let active_projects: Vec<Kickstarter> = self.kickstarters.to_vec().into_iter().filter(|kickstarter| kickstarter.active).collect();
+        for kickstarter in active_projects.iter() {
+            if kickstarter.close_timestamp <= env::block_timestamp() {
+                let kickstarter_id = kickstarter.id;
+                let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+                if kickstarter.evaluate_goals() {
+                    log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
+                    kickstarter.active = false;
+                    kickstarter.successful = true;
+                    self.internal_locking_supporters_funds(&kickstarter)
+                } else {
+                    log!("The project {} with id: {} was unsuccessful!", kickstarter.name, kickstarter_id);
+                    kickstarter.active = false;
+                    kickstarter.successful = false;
+                    // Instead of freeing funds, if successful is false, then deposits are available for users.
+                    // self.internal_freeing_supporters_funds(&kickstarter)
+                }
+            }
+        }
+    }
+
+    pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
+        let deposits = kickstarter.get_deposits();
+        for (supporter_id, total) in deposits.to_vec().iter() {
+            // Disperse NEAR denominated IOU Note.
+            let iou_note_id = self.internal_create_iou_note(
+                supporter_id,
+                &kickstarter.id,
+                &kickstarter.convert_stnear_to_near(total),
+                IOUNoteDenomination::NEAR,
+                kickstarter.cliff_timestamp,
+                kickstarter.vesting_timestamp,
+            );
+            let mut supporter = self.internal_get_supporter(supporter_id);
+            supporter.total_in_deposits -= total;
+            supporter.locked += total; // <- Not sure if we should keep track of this value.
+            supporter.iou_note_ids.push(&iou_note_id);
+
+            // Disperse Kickstarter Token denominated IOU Note.
+            let iou_note_id = self.internal_create_iou_note(
+                supporter_id,
+                &kickstarter.id,
+                &kickstarter.convert_stnear_to_token_shares(total),
+                kickstarter.get_token_denomination().clone(),
+                kickstarter.get_reward_cliff_timestamp(),
+                kickstarter.get_reward_end_timestamp(),
+            );
+            supporter.iou_note_ids.push(&iou_note_id);
+        }
+    }
+
+    pub(crate) fn internal_freeing_supporters_funds(&mut self, kickstarter: &Kickstarter) {
+        /// These are too many operations just to free the funds!
+        let deposits = kickstarter.get_deposits();
+        for (supporter_id, total) in deposits.to_vec().iter() {
+            let mut supporter = self.internal_get_supporter(supporter_id);
+            supporter.total_in_deposits -= total;
+            supporter.available += total;
+        }
+    }
+
+    pub(crate) fn internal_create_iou_note(
+        &mut self,
+        supporter_id: &SupporterId,
+        kickstarter_id: &KickstarterId,
+        amount: &Balance,
+        denomination: IOUNoteDenomination,
+        cliff_timestamp: Timestamp,
+        end_timestamp: Timestamp,
+    ) -> IOUNoteId {
+        let iou_note = IOUNote {
+            id: self.iou_notes.len(),
+            amount: amount.clone(),
+            denomination,
+            supporter_id: supporter_id.clone(),
+            kickstarter_id: kickstarter_id.clone(),
+            cliff_timestamp,
+            end_timestamp,
+        };
+        self.iou_notes.push(&iou_note);
+        iou_note.id
     }
 
     // pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {
