@@ -110,13 +110,14 @@ impl KatherineFundraising {
                 if kickstarter.evaluate_goals() {
                     log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
                     kickstarter.active = false;
-                    kickstarter.succesful = true;
+                    kickstarter.successful = true;
                     self.internal_locking_supporters_funds(&kickstarter)
                 } else {
                     log!("The project {} with id: {} was unsuccessful!", kickstarter.name, kickstarter_id);
                     kickstarter.active = false;
-                    kickstarter.succesful = false;
-                    self.internal_freeing_supporters_funds(&kickstarter)
+                    kickstarter.successful = false;
+                    // Instead of freeing funds, if successful is false, then deposits are available for users.
+                    // self.internal_freeing_supporters_funds(&kickstarter)
                 }
             }
         }
@@ -153,6 +154,7 @@ impl KatherineFundraising {
     }
 
     pub(crate) fn internal_freeing_supporters_funds(&mut self, kickstarter: &Kickstarter) {
+        /// These are too many operations just to free the funds!
         let deposits = kickstarter.get_deposits();
         for (supporter_id, total) in deposits.to_vec().iter() {
             let mut supporter = self.internal_get_supporter(supporter_id);

@@ -38,7 +38,7 @@ pub struct Kickstarter {
     pub active: bool,
 
     /// True if the kickstart project met the goals
-    pub succesful: bool,
+    pub successful: bool,
 
     /// Spot near
     pub stnear_value_in_near: Option<Balance>,
