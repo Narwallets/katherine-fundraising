@@ -55,7 +55,7 @@ impl KatherineFundraising {
             cliff_timestamp: env::block_timestamp(),
             end_timestamp: env::block_timestamp(),
         };
-        kickstarter.goals.push(g);
+        kickstarter.goals.push(&g);
         self.kickstarters.replace(kickstarter_id, &kickstarter);
     }
 }

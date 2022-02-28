@@ -2,7 +2,7 @@ use crate::*;
 use near_sdk::{AccountId, Timestamp};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{near_bindgen, PanicOnDefault};
-use near_sdk::collections::{UnorderedMap};
+use near_sdk::collections::{UnorderedMap, Vector};
 
 use crate::iou_note::IOUNoteDenomination;
 
@@ -18,7 +18,7 @@ pub struct Kickstarter {
     pub slug: String,
 
     /// TODO: Goals
-    pub goals: Vec<Goal>,
+    pub goals: Vector<Goal>,
 
     pub winner_goal_id: Option<u8>,
 
@@ -61,6 +61,13 @@ pub struct Kickstarter {
 
     /// How much time should pass before releasing the project tokens
     pub cliff_timestamp: Timestamp,
+
+    /// Kickstarter Token contract address.
+    pub token_contract_address: AccountId,
+
+    /// Total available and locked deposited tokens by the Kickstarter.
+    pub available_tokens: Balance,
+    pub locked_tokens: Balance,
 }
 
 
@@ -89,18 +96,37 @@ impl Kickstarter {
         // funding_map
     }
 
-    pub fn get_total_amount(&self) -> Balance {
+    pub fn get_total_deposited_amount(&self) -> Balance {
         let total_amount: Vec<Balance> = self.deposits.to_vec().into_iter().map(|p| p.1).collect();
         total_amount.into_iter().sum()
     }
 
-    pub fn evaluate_goals(&self) -> bool {
-        unimplemented!()
+    pub fn evaluate_goals(&mut self) -> bool {
+        if let None = self.winner_goal_id {
+            let total_deposits = self.get_total_deposited_amount();
+            let mut achieved_goals: Vec<Goal> = self.goals
+                .to_vec()
+                .into_iter()
+                .filter(|goal| goal.goal <= total_deposits)
+                .collect();
+
+            if achieved_goals.len() > 0 {
+                achieved_goals.sort_by_key(|goal| goal.goal);
+                let winner_goal = achieved_goals.last().unwrap();
+                self.winner_goal_id = Some(winner_goal.id as u8);
+                return true;
+            } else {
+                return false;
+            }
+
+        } else {
+            panic!("Kickstarter already has a winning goal!");
+        }
     }
 
-    pub fn get_goal(&self) -> &Goal {
+    pub fn get_goal(&self) -> Goal {
         self.goals
-            .get(self.winner_goal_id.expect("No goal defined") as usize)
+            .get(self.winner_goal_id.expect("No goal defined") as u64)
             .expect("Incorrect goal index") 
     }
 
@@ -137,12 +163,12 @@ impl Kickstarter {
         // WARNING: This operation must be enhaced.
         // This is a Rule of Three calculation to get the shares.
         let tokens_rewards = self.get_total_supporters_rewards();
-        let total_support = self.get_total_amount();
+        let total_support = self.get_total_deposited_amount();
         amount_in_stnear * tokens_rewards / total_support
     }
 
-    pub fn get_token_denomination(&self) -> &IOUNoteDenomination {
-        &self.get_goal().tokens_denomination 
+    pub fn get_token_denomination(&self) -> IOUNoteDenomination {
+        self.get_goal().tokens_denomination 
     }
 
     pub fn get_reward_cliff_timestamp(&self) -> Timestamp {

@@ -124,13 +124,14 @@ impl KatherineFundraising {
         open_timestamp: Timestamp,
         close_timestamp: Timestamp,
         vesting_timestamp: Timestamp,
-        cliff_timestamp: Timestamp) {
-
+        cliff_timestamp: Timestamp,
+        token_contract_address: AccountId,
+    ) {
         let kickstarter = Kickstarter {
             id: self.kickstarters.len(),
             name,
             slug,
-            goals: Vec::new(),
+            goals: Vector::new(b"Goal".to_vec()),
             winner_goal_id: None,
             katherine_fee: None,
             supporters: Vec::new(),
@@ -145,6 +146,9 @@ impl KatherineFundraising {
             close_timestamp,
             vesting_timestamp,
             cliff_timestamp,
+            token_contract_address,
+            available_tokens: 0,
+            locked_tokens: 0,
         };
 
         self.kickstarters.push(&kickstarter);
@@ -170,8 +174,9 @@ impl KatherineFundraising {
         open_timestamp: Timestamp,
         close_timestamp: Timestamp,
         vesting_timestamp: Timestamp,
-        cliff_timestamp: Timestamp) {
-
+        cliff_timestamp: Timestamp,
+        token_contract_address: AccountId,
+    ) {
         let old_kickstarter = self.kickstarters.get(id).expect("Kickstarter Id not found!");
         
         assert!(
@@ -187,7 +192,7 @@ impl KatherineFundraising {
             id,
             name,
             slug,
-            goals: Vec::new(),
+            goals: Vector::new(b"Goal".to_vec()),
             winner_goal_id: None,
             katherine_fee: None,
             supporters: Vec::new(),
@@ -202,6 +207,9 @@ impl KatherineFundraising {
             close_timestamp,
             vesting_timestamp,
             cliff_timestamp,
+            token_contract_address,
+            available_tokens: 0,
+            locked_tokens: 0,
         };
 
         self.kickstarters.replace(id, &kickstarter);
