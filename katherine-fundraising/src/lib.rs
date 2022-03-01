@@ -154,10 +154,10 @@ impl KatherineFundraising {
         self.kickstarters.push(&kickstarter);
     }
 
-    /// Returns a list of the kickstarter entries
-    pub fn get_kickstarters(&self) -> Vec<Kickstarter> {
-        self.kickstarters.to_vec()
-    }
+    // /// Returns a list of the kickstarter entries
+    // pub fn get_kickstarters(&self) -> Vec<Kickstarter> {
+    //     self.kickstarters.to_vec()
+    // }
 
     pub fn delete_kickstarter(&mut self, id: KickstarterId) {
         panic!("Kickstarter must not be deleted!");
