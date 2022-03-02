@@ -148,7 +148,7 @@ impl KatherineFundraising {
 
     pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
         let deposits = kickstarter.get_deposits();
-        for (supporter_id, total) in deposits.to_vec().iter() {
+        for (supporter_id, total) in deposits.iter() {
             // Disperse NEAR denominated IOU Note.
             let iou_note_id = self.internal_create_iou_note(
                 supporter_id,
