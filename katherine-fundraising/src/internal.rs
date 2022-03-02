@@ -76,18 +76,8 @@ impl KatherineFundraising {
         &mut self,
         supporter_id: &AccountId,
         amount: &Balance,
-        kickstarter_id: String
+        kickstarter: &mut Kickstarter
     ) -> Result<Balance, String> {
-        let kickstarter_id = match kickstarter_id.parse::<KickstarterId>() {
-            Ok(_id) => _id,
-            Err(_) => return Err("Invalid Kickstarter id.".into()),
-        };
-
-        let mut kickstarter: Kickstarter = match self.kickstarters.get(kickstarter_id) {
-            Some(kickstarter) => kickstarter,
-            None => return Err("Kickstarter id not found.".into()),
-        };
-
         let current_timestamp = env::block_timestamp();
         if current_timestamp >= kickstarter.close_timestamp || current_timestamp < kickstarter.open_timestamp {
             return Err("Not within the funding period.".into());
@@ -97,18 +87,51 @@ impl KatherineFundraising {
         supporter.total_in_deposits += amount;
         kickstarter.update_supporter_deposits(&supporter_id, amount);
 
-        let unused_amount: Balance = 0;
-        Ok(unused_amount)
+        // Return unused amount.
+        Ok(0)
+    }
+
+    pub(crate) fn internal_kickstarter_deposit(
+        &mut self,
+        amount: &Balance,
+        kickstarter: &mut Kickstarter    
+    ) -> Result<Balance, String> {
+        assert_eq!(
+            &env::predecessor_account_id(),
+            &kickstarter.token_contract_address,
+            "Deposited tokens do not correspond to the Kickstarter contract."
+        );
+
+        let current_timestamp = env::block_timestamp();
+        if current_timestamp > kickstarter.open_timestamp {
+            return Err("Kickstarter Tokens should be provided before the funding period starts.".into());
+        }
+
+        kickstarter.available_tokens += amount;
+
+        // Return unused amount.
+        Ok(0)
     }
 
     pub(crate) fn internal_evaluate_at_due(&mut self) {
-        let active_projects: Vec<Kickstarter> = self.kickstarters.to_vec().into_iter().filter(|kickstarter| kickstarter.active).collect();
+        // TODO: While this function is running all deposits/withdraws must be frozen.
+        let active_projects: Vec<Kickstarter> = self.kickstarters
+            .to_vec()
+            .into_iter()
+            .filter(|kickstarter| kickstarter.active)
+            .collect();
         for kickstarter in active_projects.iter() {
             if kickstarter.close_timestamp <= env::block_timestamp() {
                 let kickstarter_id = kickstarter.id;
                 let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
                 if kickstarter.evaluate_goals() {
+                    assert!(
+                        kickstarter.available_tokens > kickstarter.get_tokens_to_release(),
+                        "Not enough available tokens to back the supporters rewards"
+                    );
+
                     log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
+                    kickstarter.set_katherine_fee();
                     kickstarter.active = false;
                     kickstarter.successful = true;
                     self.internal_locking_supporters_funds(&kickstarter)

@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::*;
 use near_sdk::{log, AccountId, Balance, PromiseOrValue};
 use near_sdk::Promise;
@@ -16,15 +18,27 @@ impl FungibleTokenReceiver for KatherineFundraising {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        // Verifying that we were called by fungible token contract that we expect.
-        assert_eq!(
-            &env::predecessor_account_id(),
-            &self.metapool_contract_address,
-            "Only supports the one fungible token contract"
-        );
-        log!("in {} tokens from @{} ft_on_transfer, msg = {}", amount.0, sender_id.as_ref(), msg);
+        let kickstarter_id = match msg.parse::<KickstarterId>() {
+            Ok(_id) => _id,
+            Err(_) => panic!("Invalid Kickstarter id.".into()),
+        };
 
-        match self.internal_supporter_deposit(sender_id.as_ref(), &amount.0, msg) {
+        let mut kickstarter: Kickstarter = match self.kickstarters.get(kickstarter_id) {
+            Some(kickstarter) => kickstarter,
+            None => panic!("Kickstarter id not found.".into()),
+        };
+
+        let result = if env::predecessor_account_id() == self.metapool_contract_address {
+            // Deposit is in stNEAR.
+            log!("DEPOSIT: {} stNEAR deposited from {} to Kickstarter id {}", amount.0, sender_id.as_ref(), msg);
+            self.internal_supporter_deposit(sender_id.as_ref(), &amount.0, &mut kickstarter) 
+        } else {
+            // Deposit is in a Kickstarter Token.
+            log!("DEPOSIT: {} tokens deposited from {} to Kickstarter id {}", amount.0, sender_id.as_ref(), msg);
+            self.internal_kickstarter_deposit(&amount.0, &mut kickstarter)
+        };
+
+        match result {
             Ok(unused_amount) => PromiseOrValue::Value(U128::from(unused_amount)),
             Err(_) => PromiseOrValue::Value(U128::from(amount.0)) 
         }
