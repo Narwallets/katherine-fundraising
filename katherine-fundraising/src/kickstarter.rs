@@ -80,6 +80,10 @@ impl Kickstarter {
         supporter_ids.to_vec()
     }
 
+    pub fn get_total_supporters(&self) -> u64 {
+        self.deposits.len()
+    }
+
     pub fn get_deposits(&self) -> &UnorderedMap<AccountId, Balance> {
         &self.deposits
         // let mut funding_map: UnorderedMap<AccountId, Balance> = UnorderedMap::new(b"A".to_vec());
@@ -107,11 +111,11 @@ impl Kickstarter {
             let mut achieved_goals: Vec<Goal> = self.goals
                 .to_vec()
                 .into_iter()
-                .filter(|goal| goal.goal <= total_deposits)
+                .filter(|goal| goal.desired_amount <= total_deposits)
                 .collect();
 
             if achieved_goals.len() > 0 {
-                achieved_goals.sort_by_key(|goal| goal.goal);
+                achieved_goals.sort_by_key(|goal| goal.desired_amount);
                 let winner_goal = achieved_goals.last().unwrap();
                 self.winner_goal_id = Some(winner_goal.id as u8);
                 return true;
@@ -122,6 +126,13 @@ impl Kickstarter {
         } else {
             panic!("Kickstarter already has a winning goal!");
         }
+    }
+
+    pub fn simple_evaluate_goals(&self) -> bool {
+        let total_deposits = self.get_total_deposited_amount();
+        self.goals
+            .iter()
+            .any(|goal| goal.desired_amount >= total_deposits)
     }
 
     pub fn get_goal(&self) -> Goal {
@@ -151,7 +162,7 @@ impl Kickstarter {
         self.get_goal().tokens_to_release
     }
 
-    pub fn get_total_supporters_rewards(&self) -> Balance {
+    pub fn get_total_rewards_for_supporters(&self) -> Balance {
         self.get_tokens_to_release() - self.katherine_fee.expect("Katherine fee must be denominated at goal evaluation")
     }
 
@@ -162,7 +173,7 @@ impl Kickstarter {
     pub fn convert_stnear_to_token_shares(&self, amount_in_stnear: &Balance) -> Balance {
         // WARNING: This operation must be enhaced.
         // This is a Rule of Three calculation to get the shares.
-        let tokens_rewards = self.get_total_supporters_rewards();
+        let tokens_rewards = self.get_total_rewards_for_supporters();
         let total_support = self.get_total_deposited_amount();
         amount_in_stnear * tokens_rewards / total_support
     }

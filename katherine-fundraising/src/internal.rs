@@ -151,23 +151,23 @@ impl KatherineFundraising {
         for (supporter_id, total) in deposits.iter() {
             // Disperse NEAR denominated IOU Note.
             let iou_note_id = self.internal_create_iou_note(
-                supporter_id,
+                &supporter_id,
                 &kickstarter.id,
-                &kickstarter.convert_stnear_to_near(total),
+                &kickstarter.convert_stnear_to_near(&total),
                 IOUNoteDenomination::NEAR,
                 kickstarter.cliff_timestamp,
                 kickstarter.vesting_timestamp,
             );
-            let mut supporter = self.internal_get_supporter(supporter_id);
+            let mut supporter = self.internal_get_supporter(&supporter_id);
             supporter.total_in_deposits -= total;
             supporter.locked += total; // <- Not sure if we should keep track of this value.
             supporter.iou_note_ids.push(&iou_note_id);
 
             // Disperse Kickstarter Token denominated IOU Note.
             let iou_note_id = self.internal_create_iou_note(
-                supporter_id,
+                &supporter_id,
                 &kickstarter.id,
-                &kickstarter.convert_stnear_to_token_shares(total),
+                &kickstarter.convert_stnear_to_token_shares(&total),
                 kickstarter.get_token_denomination().clone(),
                 kickstarter.get_reward_cliff_timestamp(),
                 kickstarter.get_reward_end_timestamp(),

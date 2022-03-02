@@ -112,6 +112,33 @@ impl KatherineFundraising {
     }
 
     /*****************************/
+    /*    Robot View methods     */
+    /*****************************/
+
+    pub fn get_kickstarter_ids_ready_to_eval(&self) -> Vec<KickstarterIdJSON> {
+        self.kickstarters
+            .iter()
+            .filter(|kickstarter| {
+                kickstarter.active && kickstarter.close_timestamp <= env::block_timestamp()
+            })
+            .map(|kickstarter| KickstarterIdJSON::from(kickstarter.id))
+            .collect()
+    }
+
+    pub fn get_successful_kickstarters_from(&self, kickstarter_ids: Vec<KickstarterIdJSON>) -> Vec<KickstarterJSON> {
+        let ids: Vec<KickstarterId> = kickstarter_ids.iter().map(|id| KickstarterId::from(*id)).collect();
+        self.kickstarters
+            .iter()
+            .filter(|kickstarter| {
+                ids.contains(&kickstarter.id) && kickstarter.simple_evaluate_goals()
+            })
+            .map(|kickstarter| {
+                KickstarterJSON { kickstarter_id: kickstarter.id.into() }
+            })
+            .collect()
+    }
+
+    /*****************************/
     /*   Kickstarter functions   */
     /*****************************/
 
