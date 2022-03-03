@@ -27,9 +27,11 @@ pub struct Kickstarter {
 
     /// TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
     pub supporters: Vec<Supporter>,
+    pub total_supporters: u64,
 
     /// Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
+    pub total_deposited: Balance,
 
     /// TODO: Owner
     pub owner_id: AccountId,
@@ -100,18 +102,19 @@ impl Kickstarter {
         // funding_map
     }
 
+    /// Deprecated!
     pub fn get_total_deposited_amount(&self) -> Balance {
-        let total_amount: Vec<Balance> = self.deposits.to_vec().into_iter().map(|p| p.1).collect();
-        total_amount.into_iter().sum()
+        self.total_deposited
+        //let total_amount: Vec<Balance> = self.deposits.to_vec().into_iter().map(|p| p.1).collect();
+        //total_amount.into_iter().sum()
     }
 
     pub fn evaluate_goals(&mut self) -> bool {
         if let None = self.winner_goal_id {
-            let total_deposits = self.get_total_deposited_amount();
             let mut achieved_goals: Vec<Goal> = self.goals
                 .to_vec()
                 .into_iter()
-                .filter(|goal| goal.desired_amount <= total_deposits)
+                .filter(|goal| goal.desired_amount <= self.total_deposited)
                 .collect();
 
             if achieved_goals.len() > 0 {
@@ -129,10 +132,9 @@ impl Kickstarter {
     }
 
     pub fn simple_evaluate_goals(&self) -> bool {
-        let total_deposits = self.get_total_deposited_amount();
         self.goals
             .iter()
-            .any(|goal| goal.desired_amount >= total_deposits)
+            .any(|goal| goal.desired_amount >= self.total_deposited)
     }
 
     pub fn get_goal(&self) -> Goal {
@@ -145,7 +147,10 @@ impl Kickstarter {
     pub fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
         let current_supporter_deposit = match self.deposits.get(&supporter_id) {
             Some(total) => total,
-            None => 0,
+            None => {
+                self.total_supporters += 1;
+                0
+            },
         };
         let new_total: Balance = current_supporter_deposit + amount;
         self.deposits.insert(&supporter_id, &new_total);
@@ -174,8 +179,7 @@ impl Kickstarter {
         // WARNING: This operation must be enhaced.
         // This is a Rule of Three calculation to get the shares.
         let tokens_rewards = self.get_total_rewards_for_supporters();
-        let total_support = self.get_total_deposited_amount();
-        amount_in_stnear * tokens_rewards / total_support
+        amount_in_stnear * tokens_rewards / self.total_deposited
     }
 
     pub fn get_token_denomination(&self) -> IOUNoteDenomination {

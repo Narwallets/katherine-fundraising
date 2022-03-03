@@ -26,7 +26,7 @@ impl KatherineFundraising {
         self.internal_deposit_stnear_into(env::predecessor_account_id(), amount);
     }
 
-    pub(crate) fn internal_deposit_stnear_into(&mut self, supporter_id: AccountId, amount: Balance) {
+    pub(crate) fn internal_deposit_stnear_into(&mut self, supporter_id: SupporterId, amount: Balance) {
         let mut supporter = self.internal_get_supporter(&supporter_id);
 
         supporter.available += amount;
@@ -43,13 +43,13 @@ impl KatherineFundraising {
     }
 
     /// Inner method to get the given supporter or a new default value supporter.
-    pub(crate) fn internal_get_supporter(&self, supporter_id: &AccountId) -> Supporter {
+    pub(crate) fn internal_get_supporter(&self, supporter_id: &SupporterId) -> Supporter {
         self.supporters.get(supporter_id).unwrap_or_default()
     }
 
     /// Inner method to save the given supporter for a given supporter ID.
     /// If the supporter balances are 0, the supporter is deleted instead to release storage.
-    pub(crate) fn internal_update_supporter(&mut self, supporter_id: &AccountId, supporter: &Supporter) {
+    pub(crate) fn internal_update_supporter(&mut self, supporter_id: &SupporterId, supporter: &Supporter) {
         if supporter.is_empty() {
             self.supporters.remove(supporter_id);
         } else {
@@ -85,6 +85,7 @@ impl KatherineFundraising {
 
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.total_in_deposits += amount;
+        kickstarter.total_deposited += amount;
         kickstarter.update_supporter_deposits(&supporter_id, amount);
 
         // Return unused amount.
