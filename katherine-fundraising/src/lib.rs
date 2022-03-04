@@ -114,32 +114,41 @@ impl KatherineFundraising {
     /*****************************/
     /*    Robot View methods     */
     /*****************************/
+    
+    pub fn get_total_kickstarters(&self) -> U64String {
+        U64String::from(self.kickstarters.len())
+    }
 
-    pub fn get_kickstarter_ids_ready_to_eval(&self, limit: usize) -> Vec<KickstarterIdJSON> {
-        self.kickstarters
-            .iter()
-            .filter(|kickstarter| {
-                kickstarter.active && kickstarter.close_timestamp <= env::block_timestamp()
-            })
-            .map(|kickstarter| KickstarterIdJSON::from(kickstarter.id))
-            .take(limit)
-            .collect()
+    pub fn get_kickstarter_ids_ready_to_eval(&self, from_index: usize, limit: usize) -> Vec<KickstarterIdJSON> {
+        let kickstarters_len = self.kickstarters.len() as usize;
+        assert!(from_index <= kickstarters_len, "from_index is out of range!");
+        let mut results: Vec<KickstarterIdJSON> = Vec::new();
+        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
+            let kickstarter = self.kickstarters
+                .get(index as u64)
+                .expect("Kickstarter ID is out of range!");
+            if kickstarter.active && kickstarter.close_timestamp <= env::block_timestamp() {
+                results.push(KickstarterIdJSON::from(kickstarter.id))
+            }
+        }
+        results
     }
 
     pub fn get_successful_kickstarters_from(&self, kickstarter_ids: Vec<KickstarterIdJSON>) -> Vec<KickstarterJSON> {
         let ids: Vec<KickstarterId> = kickstarter_ids.iter().map(|id| KickstarterId::from(*id)).collect();
-        self.kickstarters
-            .iter()
-            .filter(|kickstarter| {
-                ids.contains(&kickstarter.id) && kickstarter.simple_evaluate_goals()
-            })
-            .map(|kickstarter| {
-                KickstarterJSON {
-                    id: kickstarter.id.into(),
-                    total_supporters: U64String::from(kickstarter.total_supporters)
-                }
-            })
-            .collect()
+        let mut results: Vec<KickstarterJSON> = Vec::new();
+        for id in ids.iter() {
+            let kickstarter = self.kickstarters.get(*id).expect("Kickstarter ID does not exists!");
+            if kickstarter.simple_evaluate_goals() {
+                results.push(
+                    KickstarterJSON {
+                        id: kickstarter.id.into(),
+                        total_supporters: U64String::from(kickstarter.total_supporters)
+                    }
+                );
+            }
+        }
+        results
     }
 
     pub fn get_kickstarter_supporters(
@@ -150,22 +159,24 @@ impl KatherineFundraising {
     ) -> Vec<KickstarterSupporterJSON> {
         let kickstarter = self.kickstarters
             .get(KickstarterId::from(kickstarter_id))
-            .expect("Kickstarter Id does not exits!");
+            .expect("Kickstarter ID does not exits!");
         let keys = kickstarter.deposits.keys_as_vector();
-        let range = from_index..std::cmp::min(from_index + limit, keys.len() as usize);
-        range.map(|index| {
-                let supporter_id: SupporterId = keys.get(index as u64).unwrap(); 
-                let total_deposited = kickstarter
-                    .deposits.get(&supporter_id)
-                    .expect("Supporter Id does not exist for Kickstarter!");
+        let mut results: Vec<KickstarterSupporterJSON> = Vec::new();
+        for index in from_index..std::cmp::min(from_index + limit, keys.len() as usize) {
+            let supporter_id: SupporterId = keys.get(index as u64).unwrap(); 
+            let total_deposited = kickstarter
+                .deposits.get(&supporter_id)
+                .expect("Supporter ID does not exist for Kickstarter!");
+            results.push(
                 KickstarterSupporterJSON {
                     // Converts from AccountId to ValidAccountId
                     supporter_id: near_sdk::serde_json::from_str(&supporter_id).unwrap(),
                     kickstarter_id,
                     total_deposited: BalanceJSON::from(total_deposited),
                 }
-            })
-            .collect()
+            );
+        }
+        results
     }
 
     /*****************************/
