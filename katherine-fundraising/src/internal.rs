@@ -108,44 +108,44 @@ impl KatherineFundraising {
             return Err("Kickstarter Tokens should be provided before the funding period starts.".into());
         }
 
-        kickstarter.available_tokens += amount;
+        kickstarter.available_reward_tokens += amount;
 
         // Return unused amount.
         Ok(0)
     }
 
-    pub(crate) fn internal_evaluate_at_due(&mut self) {
-        // TODO: While this function is running all deposits/withdraws must be frozen.
-        let active_projects: Vec<Kickstarter> = self.kickstarters
-            .to_vec()
-            .into_iter()
-            .filter(|kickstarter| kickstarter.active)
-            .collect();
-        for kickstarter in active_projects.iter() {
-            if kickstarter.close_timestamp <= env::block_timestamp() {
-                let kickstarter_id = kickstarter.id;
-                let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-                if kickstarter.evaluate_goals() {
-                    assert!(
-                        kickstarter.available_tokens > kickstarter.get_tokens_to_release(),
-                        "Not enough available tokens to back the supporters rewards"
-                    );
+    // pub(crate) fn internal_evaluate_at_due(&mut self) {
+    //     // TODO: While this function is running all deposits/withdraws must be frozen.
+    //     let active_projects: Vec<Kickstarter> = self.kickstarters
+    //         .to_vec()
+    //         .into_iter()
+    //         .filter(|kickstarter| kickstarter.active)
+    //         .collect();
+    //     for kickstarter in active_projects.iter() {
+    //         if kickstarter.close_timestamp <= env::block_timestamp() {
+    //             let kickstarter_id = kickstarter.id;
+    //             let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+    //             if kickstarter.evaluate_goals() {
+    //                 assert!(
+    //                     kickstarter.available_tokens > kickstarter.get_tokens_to_release(),
+    //                     "Not enough available tokens to back the supporters rewards"
+    //                 );
 
-                    log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
-                    kickstarter.set_katherine_fee();
-                    kickstarter.active = false;
-                    kickstarter.successful = true;
-                    self.internal_locking_supporters_funds(&kickstarter)
-                } else {
-                    log!("The project {} with id: {} was unsuccessful!", kickstarter.name, kickstarter_id);
-                    kickstarter.active = false;
-                    kickstarter.successful = false;
-                    // Instead of freeing funds, if successful is false, then deposits are available for users.
-                    // self.internal_freeing_supporters_funds(&kickstarter)
-                }
-            }
-        }
-    }
+    //                 log!("The project {} with id: {} was successful!", kickstarter.name, kickstarter_id);
+    //                 kickstarter.set_katherine_fee();
+    //                 kickstarter.active = false;
+    //                 kickstarter.successful = true;
+    //                 self.internal_locking_supporters_funds(&kickstarter)
+    //             } else {
+    //                 log!("The project {} with id: {} was unsuccessful!", kickstarter.name, kickstarter_id);
+    //                 kickstarter.active = false;
+    //                 kickstarter.successful = false;
+    //                 // Instead of freeing funds, if successful is false, then deposits are available for users.
+    //                 // self.internal_freeing_supporters_funds(&kickstarter)
+    //             }
+    //         }
+    //     }
+    // }
 
     pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
         let deposits = kickstarter.get_deposits();

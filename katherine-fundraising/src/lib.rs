@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
-use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
+use near_sdk::{env, near_bindgen, log, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
 
 pub mod supporter;
 pub use crate::supporter::*;
@@ -86,17 +86,17 @@ impl KatherineFundraising {
         self.internal_withdraw(supporter.available)
     }
 
-    pub fn heartbeat(&mut self) {
-        /*  
-            UPDATE what the heartbeat does!
-            Katherine's heartbeat 💓 must run every day:
-                - Update the $NEAR / $stNEAR ratio, getting the value from Meta Pool.
-                - Check if the funding period of a Kickstarter ends and evaluate the goals:
-                    - If goals are met, project is successful and the funds are locked.
-                    - If project is unsuccessful, funds are immediately freed to the supporters.
-        */
-        self.internal_evaluate_at_due();
-    }
+    // pub fn heartbeat(&mut self) {
+    //     /*  
+    //         UPDATE what the heartbeat does!
+    //         Katherine's heartbeat 💓 must run every day:
+    //             - Update the $NEAR / $stNEAR ratio, getting the value from Meta Pool.
+    //             - Check if the funding period of a Kickstarter ends and evaluate the goals:
+    //                 - If goals are met, project is successful and the funds are locked.
+    //                 - If project is unsuccessful, funds are immediately freed to the supporters.
+    //     */
+    //     self.internal_evaluate_at_due();
+    // }
 
     /*****************************/
     /* staking-pool View methods */
@@ -139,7 +139,7 @@ impl KatherineFundraising {
         let mut results: Vec<KickstarterJSON> = Vec::new();
         for id in ids.iter() {
             let kickstarter = self.kickstarters.get(*id).expect("Kickstarter ID does not exists!");
-            if kickstarter.simple_evaluate_goals() {
+            if kickstarter.any_achieved_goal() {
                 results.push(
                     KickstarterJSON {
                         id: kickstarter.id.into(),
@@ -149,6 +149,33 @@ impl KatherineFundraising {
             }
         }
         results
+    }
+
+    pub fn activate_successful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> bool {
+        let mut kickstarter = self.internal_get_kickstarter(KickstarterId::from(kickstarter_id));
+        let winning_goal = kickstarter.get_achieved_goal();
+        match winning_goal {
+            None => {
+                log!("Kickstarter did not achieved any goal!");
+                return false;
+            },
+            Some(goal) => {
+                if let Some(id) = kickstarter.winner_goal_id {
+                    panic!("Successful Kickstartes was already activated!")
+                } else {
+                    assert!(
+                        kickstarter.available_reward_tokens >= goal.tokens_to_release,
+                        "Not enough available reward tokens to back the supporters rewards!"
+                    );
+                    kickstarter.winner_goal_id = Some(goal.id);
+                    kickstarter.active = false;
+                    kickstarter.successful = true;
+                    kickstarter.set_katherine_fee();
+                    kickstarter.set_stnear_value_in_near();
+                    return true;
+                }
+            }
+        }
     }
 
     pub fn get_kickstarter_supporters(
@@ -217,8 +244,8 @@ impl KatherineFundraising {
             vesting_timestamp,
             cliff_timestamp,
             token_contract_address,
-            available_tokens: 0,
-            locked_tokens: 0,
+            available_reward_tokens: 0,
+            locked_reward_tokens: 0,
         };
 
         self.kickstarters.push(&kickstarter);
@@ -280,8 +307,8 @@ impl KatherineFundraising {
             vesting_timestamp,
             cliff_timestamp,
             token_contract_address,
-            available_tokens: 0,
-            locked_tokens: 0,
+            available_reward_tokens: 0,
+            locked_reward_tokens: 0,
         };
 
         self.kickstarters.replace(id, &kickstarter);

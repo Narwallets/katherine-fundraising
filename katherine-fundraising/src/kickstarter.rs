@@ -68,8 +68,8 @@ pub struct Kickstarter {
     pub token_contract_address: AccountId,
 
     /// Total available and locked deposited tokens by the Kickstarter.
-    pub available_tokens: Balance,
-    pub locked_tokens: Balance,
+    pub available_reward_tokens: Balance,
+    pub locked_reward_tokens: Balance,
 }
 
 
@@ -109,29 +109,22 @@ impl Kickstarter {
         //total_amount.into_iter().sum()
     }
 
-    pub fn evaluate_goals(&mut self) -> bool {
-        if let None = self.winner_goal_id {
-            let mut achieved_goals: Vec<Goal> = self.goals
-                .to_vec()
-                .into_iter()
-                .filter(|goal| goal.desired_amount <= self.total_deposited)
-                .collect();
-
-            if achieved_goals.len() > 0 {
-                achieved_goals.sort_by_key(|goal| goal.desired_amount);
-                let winner_goal = achieved_goals.last().unwrap();
-                self.winner_goal_id = Some(winner_goal.id as u8);
-                return true;
-            } else {
-                return false;
-            }
-
+    pub fn get_achieved_goal(&mut self) -> Option<Goal> {
+        let mut achieved_goals: Vec<Goal> = self.goals
+            .iter()
+            .filter(|goal| goal.desired_amount <= self.total_deposited)
+            .collect();
+        if achieved_goals.len() > 0 {
+            achieved_goals.sort_by_key(|goal| goal.desired_amount);
+            let winner_goal_id = achieved_goals.last().unwrap().id;
+            let winner_goal = self.goals.get(winner_goal_id as u64).unwrap();
+            return Some(winner_goal);
         } else {
-            panic!("Kickstarter already has a winning goal!");
+            return None;
         }
     }
 
-    pub fn simple_evaluate_goals(&self) -> bool {
+    pub fn any_achieved_goal(&self) -> bool {
         self.goals
             .iter()
             .any(|goal| goal.desired_amount >= self.total_deposited)
@@ -171,7 +164,11 @@ impl Kickstarter {
         self.get_tokens_to_release() - self.katherine_fee.expect("Katherine fee must be denominated at goal evaluation")
     }
 
-    pub fn set_katherine_fee(&self) -> Balance {
+    pub fn set_katherine_fee(&self) {
+        unimplemented!()
+    }
+
+    pub fn set_stnear_value_in_near(&mut self) {
         unimplemented!()
     }
 
