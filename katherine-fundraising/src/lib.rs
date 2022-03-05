@@ -138,7 +138,7 @@ impl KatherineFundraising {
         let ids: Vec<KickstarterId> = kickstarter_ids.iter().map(|id| KickstarterId::from(*id)).collect();
         let mut results: Vec<KickstarterJSON> = Vec::new();
         for id in ids.iter() {
-            let kickstarter = self.kickstarters.get(*id).expect("Kickstarter ID does not exists!");
+            let kickstarter = self.kickstarters.get(*id).expect("Kickstarter ID does not exist!");
             if kickstarter.any_achieved_goal() {
                 results.push(
                     KickstarterJSON {
@@ -160,20 +160,37 @@ impl KatherineFundraising {
                 return false;
             },
             Some(goal) => {
-                if let Some(id) = kickstarter.winner_goal_id {
-                    panic!("Successful Kickstartes was already activated!")
-                } else {
+                if let None = kickstarter.winner_goal_id {
                     assert!(
                         kickstarter.available_reward_tokens >= goal.tokens_to_release,
                         "Not enough available reward tokens to back the supporters rewards!"
                     );
                     kickstarter.winner_goal_id = Some(goal.id);
                     kickstarter.active = false;
-                    kickstarter.successful = true;
+                    kickstarter.successful = Some(true);
                     kickstarter.set_katherine_fee();
                     kickstarter.set_stnear_value_in_near();
+                    log!("Kickstarter was successfully activated!");
                     return true;
+                } else {
+                    panic!("Successful Kickstartes was already activated!");
                 }
+            }
+        }
+    }
+
+    pub fn deactivate_unsuccessful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> bool {
+        let mut kickstarter = self.internal_get_kickstarter(KickstarterId::from(kickstarter_id));
+        let winning_goal = kickstarter.get_achieved_goal();
+        match winning_goal {
+            None => {
+                kickstarter.active = false;
+                kickstarter.successful = Some(false);
+                log!("Kickstarter was deactivated!");
+                return true;
+            },
+            Some(_) => {
+                panic!("At least one goal was achieved!");
             }
         }
     }
@@ -235,7 +252,7 @@ impl KatherineFundraising {
             total_deposited: 0,
             owner_id,
             active: true,
-            successful: false,
+            successful: None,
             stnear_value_in_near: None,
             creation_timestamp: env::block_timestamp(),
             finish_timestamp,
@@ -298,7 +315,7 @@ impl KatherineFundraising {
             total_deposited: 0,
             owner_id,
             active: true,
-            successful: false,
+            successful: None,
             stnear_value_in_near: None,
             creation_timestamp: env::block_timestamp(),
             finish_timestamp,
