@@ -27,9 +27,11 @@ pub struct Kickstarter {
 
     /// TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
     pub supporters: Vec<Supporter>,
+    pub total_supporters: u64,
 
     /// Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
+    pub total_deposited: Balance,
 
     /// TODO: Owner
     pub owner_id: AccountId,
@@ -38,7 +40,7 @@ pub struct Kickstarter {
     pub active: bool,
 
     /// True if the kickstart project met the goals
-    pub successful: bool,
+    pub successful: Option<bool>,
 
     /// Spot near
     pub stnear_value_in_near: Option<Balance>,
@@ -66,8 +68,8 @@ pub struct Kickstarter {
     pub token_contract_address: AccountId,
 
     /// Total available and locked deposited tokens by the Kickstarter.
-    pub available_tokens: Balance,
-    pub locked_tokens: Balance,
+    pub available_reward_tokens: Balance,
+    pub locked_reward_tokens: Balance,
 }
 
 
@@ -78,6 +80,10 @@ impl Kickstarter {
         // supporter_ids.sort_unstable();
         // supporter_ids.dedup();
         supporter_ids.to_vec()
+    }
+
+    pub fn get_total_supporters(&self) -> u64 {
+        self.deposits.len()
     }
 
     pub fn get_deposits(&self) -> &UnorderedMap<AccountId, Balance> {
@@ -96,32 +102,32 @@ impl Kickstarter {
         // funding_map
     }
 
+    /// Deprecated!
     pub fn get_total_deposited_amount(&self) -> Balance {
-        let total_amount: Vec<Balance> = self.deposits.to_vec().into_iter().map(|p| p.1).collect();
-        total_amount.into_iter().sum()
+        self.total_deposited
+        //let total_amount: Vec<Balance> = self.deposits.to_vec().into_iter().map(|p| p.1).collect();
+        //total_amount.into_iter().sum()
     }
 
-    pub fn evaluate_goals(&mut self) -> bool {
-        if let None = self.winner_goal_id {
-            let total_deposits = self.get_total_deposited_amount();
-            let mut achieved_goals: Vec<Goal> = self.goals
-                .to_vec()
-                .into_iter()
-                .filter(|goal| goal.goal <= total_deposits)
-                .collect();
-
-            if achieved_goals.len() > 0 {
-                achieved_goals.sort_by_key(|goal| goal.goal);
-                let winner_goal = achieved_goals.last().unwrap();
-                self.winner_goal_id = Some(winner_goal.id as u8);
-                return true;
-            } else {
-                return false;
-            }
-
+    pub fn get_achieved_goal(&mut self) -> Option<Goal> {
+        let mut achieved_goals: Vec<Goal> = self.goals
+            .iter()
+            .filter(|goal| goal.desired_amount <= self.total_deposited)
+            .collect();
+        if achieved_goals.len() > 0 {
+            achieved_goals.sort_by_key(|goal| goal.desired_amount);
+            let winner_goal_id = achieved_goals.last().unwrap().id;
+            let winner_goal = self.goals.get(winner_goal_id as u64).unwrap();
+            return Some(winner_goal);
         } else {
-            panic!("Kickstarter already has a winning goal!");
+            return None;
         }
+    }
+
+    pub fn any_achieved_goal(&self) -> bool {
+        self.goals
+            .iter()
+            .any(|goal| goal.desired_amount >= self.total_deposited)
     }
 
     pub fn get_goal(&self) -> Goal {
@@ -134,7 +140,10 @@ impl Kickstarter {
     pub fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
         let current_supporter_deposit = match self.deposits.get(&supporter_id) {
             Some(total) => total,
-            None => 0,
+            None => {
+                self.total_supporters += 1;
+                0
+            },
         };
         let new_total: Balance = current_supporter_deposit + amount;
         self.deposits.insert(&supporter_id, &new_total);
@@ -151,20 +160,23 @@ impl Kickstarter {
         self.get_goal().tokens_to_release
     }
 
-    pub fn get_total_supporters_rewards(&self) -> Balance {
+    pub fn get_total_rewards_for_supporters(&self) -> Balance {
         self.get_tokens_to_release() - self.katherine_fee.expect("Katherine fee must be denominated at goal evaluation")
     }
 
-    pub fn set_katherine_fee(&self) -> Balance {
+    pub fn set_katherine_fee(&self) {
+        unimplemented!()
+    }
+
+    pub fn set_stnear_value_in_near(&mut self) {
         unimplemented!()
     }
 
     pub fn convert_stnear_to_token_shares(&self, amount_in_stnear: &Balance) -> Balance {
         // WARNING: This operation must be enhaced.
         // This is a Rule of Three calculation to get the shares.
-        let tokens_rewards = self.get_total_supporters_rewards();
-        let total_support = self.get_total_deposited_amount();
-        amount_in_stnear * tokens_rewards / total_support
+        let tokens_rewards = self.get_total_rewards_for_supporters();
+        amount_in_stnear * tokens_rewards / self.total_deposited
     }
 
     pub fn get_token_denomination(&self) -> IOUNoteDenomination {
