@@ -8,11 +8,11 @@ use crate::iou_note::IOUNoteDenomination;
 #[derive(Serialize, Deserialize, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Goal {
-    pub id: u64,
+    pub id: u8,
     /// Name of the kickstarter project
     pub name: String,
     /// How many stnear tokens are needed to get this Goal
-    pub goal: u128,
+    pub desired_amount: u128,
     /// End date of the goal
     pub goal_timestamp: Timestamp,
     /// How many tokens are for this 
@@ -36,7 +36,7 @@ impl KatherineFundraising {
     fn create_goal(&mut self,
         kickstarter_id: u64,
         name: String,
-        goal: u128,
+        desired_amount: u128,
         goal_timestamp: Timestamp,
         tokens_to_release: u128,
         tokens_denomination: String,
@@ -45,9 +45,9 @@ impl KatherineFundraising {
 
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         let g = Goal {
-            id: u64::try_from(kickstarter.goals.len()).unwrap_or_default(),
+            id: u8::try_from(kickstarter.goals.len()).unwrap_or_default(),
             name: name,
-            goal: goal,
+            desired_amount,
             //TODO: set this to an argument
             goal_timestamp: env::block_timestamp(),
             tokens_to_release: tokens_to_release,
