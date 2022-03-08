@@ -36,6 +36,7 @@ pub struct KatherineFundraising {
     pub supporters: UnorderedMap<AccountId, Supporter>,
 
     pub iou_notes: Vector<IOUNote>,
+    pub iou_notes_map: UnorderedMap<KickstarterSupporterDx, Vector<IOUNoteId>>,
 
     /// Kickstarter list
     pub kickstarters: Vector<Kickstarter>,
@@ -54,12 +55,13 @@ pub struct KatherineFundraising {
 #[near_bindgen]
 impl KatherineFundraising {
     #[init]
-    pub fn new(owner_id: AccountId, staking_goal: Balance) -> Self {
+    pub fn new(owner_id: AccountId) -> Self {
         // assert!(!env::state_exists(), "The contract is already initialized");
         Self {
             owner_id,
             supporters: UnorderedMap::new(b"A".to_vec()),
             iou_notes: Vector::new(b"Note".to_vec()),
+            iou_notes_map: UnorderedMap::new(b"Map".to_vec()),
             kickstarters: Vector::new(b"Kickstarters".to_vec()),
             total_available: 0,
             min_deposit_amount: 1 * NEAR,
@@ -221,6 +223,15 @@ impl KatherineFundraising {
             );
         }
         results
+    }
+
+    pub fn disperse_iou_notes_to_supporters(&mut self, kickstarter_supporters: Vec<KickstarterSupporterJSON>) {
+        for supporter in kickstarter_supporters.iter() {
+            let kickstarter_id = KickstarterId::from(supporter.kickstarter_id);
+            let supporter_id: SupporterId = supporter.supporter_id.to_string();
+            let total_deposited = Balance::from(supporter.total_deposited);
+            self.internal_disperse_to_supporter(kickstarter_id, supporter_id, total_deposited);
+        }
     }
 
     /*****************************/
