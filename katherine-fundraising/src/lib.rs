@@ -1,5 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::serde::private::de::IdentifierDeserializer;
 use near_sdk::{env, near_bindgen, log, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
 
 pub mod supporter;
@@ -130,7 +131,7 @@ impl KatherineFundraising {
                 .get(index as u64)
                 .expect("Kickstarter ID is out of range!");
             if kickstarter.active && kickstarter.close_timestamp <= env::block_timestamp() {
-                results.push(KickstarterIdJSON::from(kickstarter.id))
+                results.push(KickstarterIdJSON::from(kickstarter.id));
             }
         }
         results
@@ -237,6 +238,35 @@ impl KatherineFundraising {
     /*****************************/
     /*   Kickstarter functions   */
     /*****************************/
+
+    pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
+        let kickstarters_len = self.kickstarters.len() as usize;
+        assert!(from_index <= kickstarters_len, "from_index is out of range!");
+        let mut results: Vec<KickstarterJSON> = Vec::new();
+        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
+            let kickstarter = self.kickstarters
+                .get(index as u64)
+                .expect("Kickstarter ID is out of range!");
+                results.push(
+                    KickstarterJSON {
+                        id: kickstarter.id.into(),
+                        total_supporters: U64String::from(kickstarter.total_supporters)
+                    }
+                );
+        }
+        results
+    }
+
+    pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
+        let kickstarters_len = self.kickstarters.len();
+        let id = KickstarterId::from(kickstarter_id);
+        assert!(id <= kickstarters_len, "from_index is out of range!");
+        let kickstarter = self.kickstarters.get(id).expect("Kickstarter ID is out of range!");
+        KickstarterJSON {
+            id: kickstarter.id.into(),
+            total_supporters: U64String::from(kickstarter.total_supporters)
+        }
+    }
 
     /// Creates a new kickstarter entry in persistent storage
     pub fn create_kickstarter(&mut self, 
