@@ -50,7 +50,8 @@ pub struct KatherineFundraising {
     pub metapool_contract_address: AccountId,
 
     // Katherine fee is a % of the Kickstarter Token rewards.
-    pub katherine_fee_percent: f32, // TODO: How should we handle this?
+    // Percent is denominated in basis points 100% equals 10_000 basis points.
+    pub katherine_fee_percent: u128, // TODO: How should we handle this?
 }
 
 #[near_bindgen]
@@ -67,7 +68,7 @@ impl KatherineFundraising {
             total_available: 0,
             min_deposit_amount: 1 * NEAR,
             metapool_contract_address: String::from("meta-v2.pool.testnet"),
-            katherine_fee_percent: 0.1
+            katherine_fee_percent: 10 // 10 basis points equals 0.1%
         }
     }
 
@@ -155,7 +156,8 @@ impl KatherineFundraising {
     }
 
     pub fn activate_successful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> bool {
-        let mut kickstarter = self.internal_get_kickstarter(KickstarterId::from(kickstarter_id));
+        let id = KickstarterId::from(kickstarter_id);
+        let mut kickstarter = self.internal_get_kickstarter(id);
         let winning_goal = kickstarter.get_achieved_goal();
         match winning_goal {
             None => {
@@ -171,9 +173,10 @@ impl KatherineFundraising {
                     kickstarter.winner_goal_id = Some(goal.id);
                     kickstarter.active = false;
                     kickstarter.successful = Some(true);
-                    kickstarter.set_katherine_fee();
-                    kickstarter.set_stnear_value_in_near();
+                    kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
+                    // self.set_stnear_value_in_near(&mut kickstarter);
                     log!("Kickstarter was successfully activated!");
+                    self.kickstarters.replace(id, &kickstarter);
                     return true;
                 } else {
                     panic!("Successful Kickstartes was already activated!");
