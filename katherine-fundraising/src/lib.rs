@@ -156,12 +156,6 @@ impl KatherineFundraising {
         results
     }
 
-<<<<<<< HEAD
-    pub fn activate_successful_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) -> bool {
-        let id = KickstarterId::from(kickstarter_id);
-        let mut kickstarter = self.internal_get_kickstarter(id);
-=======
-
     pub fn get_evaluated_kickstarters_from(&self, kickstarter_ids: Vec<KickstarterIdJSON>) -> (Vec<KickstarterJSON>, Vec<KickstarterJSON>) {
         let ids: Vec<KickstarterId> = kickstarter_ids.iter().map(|id| KickstarterId::from(*id)).collect();
         let mut successful: Vec<KickstarterJSON> = Vec::new();
@@ -189,8 +183,8 @@ impl KatherineFundraising {
 
 
     pub fn activate_successful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> bool {
-        let mut kickstarter = self.internal_get_kickstarter(KickstarterId::from(kickstarter_id));
->>>>>>> 4dde9f4 (Iinital tests (#11))
+        let id = KickstarterId::from(kickstarter_id);
+        let mut kickstarter = self.internal_get_kickstarter(id);
         let winning_goal = kickstarter.get_achieved_goal();
         match winning_goal {
             None => {
