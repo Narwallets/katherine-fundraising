@@ -52,7 +52,7 @@ pub struct KatherineFundraising {
 
     // Katherine fee is a % of the Kickstarter Token rewards.
     // Percent is denominated in basis points 100% equals 10_000 basis points.
-    pub katherine_fee_percent: u128, // TODO: How should we handle this?
+    pub katherine_fee_percent: u32, // TODO: How should we handle this?
 }
 
 #[near_bindgen]
@@ -185,29 +185,27 @@ impl KatherineFundraising {
     pub fn activate_successful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> bool {
         let id = KickstarterId::from(kickstarter_id);
         let mut kickstarter = self.internal_get_kickstarter(id);
+        if kickstarter.winner_goal_id.is_some() {
+            panic!("Successful Kickstartes was already activated!");
+        }
         let winning_goal = kickstarter.get_achieved_goal();
         match winning_goal {
             None => {
-                log!("Kickstarter did not achieved any goal!");
-                return false;
+                panic!("No goal achieved!");
             },
             Some(goal) => {
-                if let None = kickstarter.winner_goal_id {
-                    assert!(
-                        kickstarter.available_reward_tokens >= goal.tokens_to_release,
-                        "Not enough available reward tokens to back the supporters rewards!"
-                    );
-                    kickstarter.winner_goal_id = Some(goal.id);
-                    kickstarter.active = false;
-                    kickstarter.successful = Some(true);
-                    kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
-                    kickstarter.stnear_value_in_near = self.get_stnear_value_in_near();
-                    log!("Kickstarter was successfully activated!");
-                    self.kickstarters.replace(id, &kickstarter);
-                    return true;
-                } else {
-                    panic!("Successful Kickstartes was already activated!");
-                }
+                assert!(
+                    kickstarter.available_reward_tokens >= goal.tokens_to_release,
+                    "Not enough available reward tokens to back the supporters rewards!"
+                );
+                kickstarter.winner_goal_id = Some(goal.id);
+                kickstarter.active = false;
+                kickstarter.successful = Some(true);
+                kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
+                kickstarter.stnear_value_in_near = self.get_stnear_value_in_near();
+                log!("Kickstarter was successfully activated!");
+                self.kickstarters.replace(id, &kickstarter);
+                return true;
             }
         }
     }
