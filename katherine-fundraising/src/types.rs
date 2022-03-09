@@ -9,14 +9,16 @@ pub const NEAR: u128 = 1_000_000_000_000_000_000_000_000;
 pub const ONE_MILLI_NEAR: u128 = NEAR / 1_000;
 pub const BASIS_POINTS: u128 = 10_000;
 
+pub const NO_DEPOSIT: u128 = 0;
+
 /// Balance wrapped into a struct for JSON serialization as a string.
 pub type U128String = U128;
 pub type U64String = U64;
 
 pub type BalanceJSON = U128;
 
-pub type KickstarterId = u64;
-pub type KickstarterIdJSON = U64;
+pub type KickstarterId = u32;
+pub type KickstarterIdJSON = u32;
 
 pub type IOUNoteId = u64;
 
