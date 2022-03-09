@@ -1,5 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::serde::private::de::IdentifierDeserializer;
 use near_sdk::{env, near_bindgen, log, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
 
 pub mod supporter;
@@ -36,6 +37,7 @@ pub struct KatherineFundraising {
     pub supporters: UnorderedMap<AccountId, Supporter>,
 
     pub iou_notes: Vector<IOUNote>,
+    pub iou_notes_map: UnorderedMap<KickstarterSupporterDx, Vector<IOUNoteId>>,
 
     /// Kickstarter list
     pub kickstarters: Vector<Kickstarter>,
@@ -54,12 +56,13 @@ pub struct KatherineFundraising {
 #[near_bindgen]
 impl KatherineFundraising {
     #[init]
-    pub fn new(owner_id: AccountId, staking_goal: Balance) -> Self {
+    pub fn new(owner_id: AccountId) -> Self {
         // assert!(!env::state_exists(), "The contract is already initialized");
         Self {
             owner_id,
             supporters: UnorderedMap::new(b"A".to_vec()),
             iou_notes: Vector::new(b"Note".to_vec()),
+            iou_notes_map: UnorderedMap::new(b"Map".to_vec()),
             kickstarters: Vector::new(b"Kickstarters".to_vec()),
             total_available: 0,
             min_deposit_amount: 1 * NEAR,
@@ -128,7 +131,7 @@ impl KatherineFundraising {
                 .get(index as u64)
                 .expect("Kickstarter ID is out of range!");
             if kickstarter.active && kickstarter.close_timestamp <= env::block_timestamp() {
-                results.push(KickstarterIdJSON::from(kickstarter.id))
+                results.push(KickstarterIdJSON::from(kickstarter.id));
             }
         }
         results
@@ -223,9 +226,47 @@ impl KatherineFundraising {
         results
     }
 
+    pub fn disperse_iou_notes_to_supporters(&mut self, kickstarter_supporters: Vec<KickstarterSupporterJSON>) {
+        for supporter in kickstarter_supporters.iter() {
+            let kickstarter_id = KickstarterId::from(supporter.kickstarter_id);
+            let supporter_id: SupporterId = supporter.supporter_id.to_string();
+            let total_deposited = Balance::from(supporter.total_deposited);
+            self.internal_disperse_to_supporter(kickstarter_id, supporter_id, total_deposited);
+        }
+    }
+
     /*****************************/
     /*   Kickstarter functions   */
     /*****************************/
+
+    pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
+        let kickstarters_len = self.kickstarters.len() as usize;
+        assert!(from_index <= kickstarters_len, "from_index is out of range!");
+        let mut results: Vec<KickstarterJSON> = Vec::new();
+        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
+            let kickstarter = self.kickstarters
+                .get(index as u64)
+                .expect("Kickstarter ID is out of range!");
+                results.push(
+                    KickstarterJSON {
+                        id: kickstarter.id.into(),
+                        total_supporters: U64String::from(kickstarter.total_supporters)
+                    }
+                );
+        }
+        results
+    }
+
+    pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
+        let kickstarters_len = self.kickstarters.len();
+        let id = KickstarterId::from(kickstarter_id);
+        assert!(id <= kickstarters_len, "from_index is out of range!");
+        let kickstarter = self.kickstarters.get(id).expect("Kickstarter ID is out of range!");
+        KickstarterJSON {
+            id: kickstarter.id.into(),
+            total_supporters: U64String::from(kickstarter.total_supporters)
+        }
+    }
 
     /// Creates a new kickstarter entry in persistent storage
     pub fn create_kickstarter(&mut self, 

@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::*;
 use near_sdk::{log, AccountId};
 use near_sdk::Promise;
@@ -147,33 +149,125 @@ impl KatherineFundraising {
     //     }
     // }
 
-    pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
-        let deposits = kickstarter.get_deposits();
-        for (supporter_id, total) in deposits.iter() {
+    // pub(crate) fn internal_locking_supporters_funds(&mut self, kickstarter: &Kickstarter) {
+    //     let deposits = kickstarter.get_deposits();
+    //     for (supporter_id, total) in deposits.iter() {
+    //         // Disperse NEAR denominated IOU Note.
+    //         let iou_note_id = self.internal_create_iou_note(
+    //             &supporter_id,
+    //             &kickstarter.id,
+    //             &kickstarter.convert_stnear_to_near(&total),
+    //             IOUNoteDenomination::NEAR,
+    //             kickstarter.cliff_timestamp,
+    //             kickstarter.vesting_timestamp,
+    //         );
+    //         let mut supporter = self.internal_get_supporter(&supporter_id);
+    //         supporter.total_in_deposits -= total;
+    //         supporter.locked += total; // <- Not sure if we should keep track of this value.
+    //         supporter.iou_note_ids.push(&iou_note_id);
+
+    //         // Disperse Kickstarter Token denominated IOU Note.
+    //         let iou_note_id = self.internal_create_iou_note(
+    //             &supporter_id,
+    //             &kickstarter.id,
+    //             &kickstarter.convert_stnear_to_token_shares(&total),
+    //             kickstarter.get_token_denomination().clone(),
+    //             kickstarter.get_reward_cliff_timestamp(),
+    //             kickstarter.get_reward_end_timestamp(),
+    //         );
+    //         supporter.iou_note_ids.push(&iou_note_id);
+    //     }
+    // }
+
+    pub(crate) fn internal_disperse_to_supporter(
+        &mut self,
+        kickstarter_id: KickstarterId,
+        supporter_id: SupporterId,
+        total_deposited: Balance
+    ) {
+        let kickstarter = self.kickstarters
+            .get(kickstarter_id)
+            .expect("Kickstarter ID does not exist!");
+        assert!(
+            self.internal_verify_total_deposited(&kickstarter, &supporter_id, total_deposited),
+            "Provided KickstarterSupporter has incorrect values!"
+        );
+        assert!(
+            self.internal_verify_unpaid_iou(&kickstarter, &supporter_id),
+            "IOU Notes already payed to Supporter!"
+        );
+        let mut supporter = self.internal_get_supporter(&supporter_id);
+        self.internal_transfer_near_iou_notes(&kickstarter, &mut supporter, &supporter_id, total_deposited);
+        self.internal_transfer_rewards_iou_notes(&kickstarter, &mut supporter, &supporter_id, total_deposited);
+    }
+
+    pub(crate) fn internal_transfer_near_iou_notes(
+        &mut self,
+        kickstarter: &Kickstarter,
+        supporter: &mut Supporter,
+        supporter_id: &SupporterId,
+        total_deposited: Balance
+    ) {
             // Disperse NEAR denominated IOU Note.
             let iou_note_id = self.internal_create_iou_note(
-                &supporter_id,
+                supporter_id,
                 &kickstarter.id,
-                &kickstarter.convert_stnear_to_near(&total),
+                &kickstarter.convert_stnear_to_near(&total_deposited),
                 IOUNoteDenomination::NEAR,
                 kickstarter.cliff_timestamp,
                 kickstarter.vesting_timestamp,
             );
-            let mut supporter = self.internal_get_supporter(&supporter_id);
-            supporter.total_in_deposits -= total;
-            supporter.locked += total; // <- Not sure if we should keep track of this value.
+            supporter.total_in_deposits -= total_deposited;
+            supporter.locked += total_deposited; // <- Not sure if we should keep track of this value.
             supporter.iou_note_ids.push(&iou_note_id);
+    }
 
-            // Disperse Kickstarter Token denominated IOU Note.
-            let iou_note_id = self.internal_create_iou_note(
-                &supporter_id,
-                &kickstarter.id,
-                &kickstarter.convert_stnear_to_token_shares(&total),
-                kickstarter.get_token_denomination().clone(),
-                kickstarter.get_reward_cliff_timestamp(),
-                kickstarter.get_reward_end_timestamp(),
-            );
-            supporter.iou_note_ids.push(&iou_note_id);
+    pub(crate) fn internal_transfer_rewards_iou_notes(
+        &mut self,
+        kickstarter: &Kickstarter,
+        supporter: &mut Supporter,
+        supporter_id: &SupporterId,
+        total_deposited: Balance
+    ) {
+        // Disperse Kickstarter Token denominated IOU Note.
+        let iou_note_id = self.internal_create_iou_note(
+            supporter_id,
+            &kickstarter.id,
+            &kickstarter.convert_stnear_to_token_shares(&total_deposited),
+            kickstarter.get_token_denomination().clone(),
+            kickstarter.get_reward_cliff_timestamp(),
+            kickstarter.get_reward_end_timestamp(),
+        );
+        supporter.iou_note_ids.push(&iou_note_id);
+    }
+
+    pub(crate) fn internal_verify_total_deposited(
+        &self,
+        kickstarter: &Kickstarter,
+        supporter_id: &SupporterId,
+        total_deposited: Balance
+    ) -> bool {
+        match kickstarter.deposits.get(&supporter_id) {
+            Some(amount) => return amount == total_deposited,
+            None => return false,
+        }
+    }
+
+    pub(crate) fn internal_verify_unpaid_iou(
+        &self,
+        kickstarter: &Kickstarter,
+        supporter_id: &SupporterId
+    ) -> bool {
+        let dx: KickstarterSupporterDx = format!("{}:{}", kickstarter.id.to_string(), supporter_id);
+        match self.iou_notes_map.get(&dx) {
+            Some(ious) => {
+                if ious.len() == 0 {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            None => return true,
         }
     }
 
@@ -206,7 +300,23 @@ impl KatherineFundraising {
             end_timestamp,
         };
         self.iou_notes.push(&iou_note);
+        self.internal_update_iou_note_map(supporter_id, kickstarter_id, &iou_note.id);
         iou_note.id
+    }
+
+    pub(crate) fn internal_update_iou_note_map(
+        &mut self,
+        supporter_id: &SupporterId,
+        kickstarter_id: &KickstarterId,        
+        iou_note_id: &IOUNoteId,
+    ) {
+        let dx: KickstarterSupporterDx = format!("{}:{}", kickstarter_id.to_string(), supporter_id);
+        let mut iou_note_map = match self.iou_notes_map.get(&dx) {
+            Some(map) => map,
+            None => Vector::new(b"dx".to_vec()),
+        };
+        iou_note_map.push(&iou_note_id);
+        self.iou_notes_map.insert(&dx, &iou_note_map);
     }
 
     // pub(crate) fn transfer_back_to_account(&mut self, account_id: &AccountId, account: &mut Account) {
