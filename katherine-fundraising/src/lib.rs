@@ -1,6 +1,7 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
 use near_sdk::{env, near_bindgen, log, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
+use near_sdk::json_types::U64;
 
 pub mod supporter;
 pub use crate::supporter::*;
@@ -151,6 +152,33 @@ impl KatherineFundraising {
         results
     }
 
+
+    pub fn get_evaluated_kickstarters_from(&self, kickstarter_ids: Vec<KickstarterIdJSON>) -> (Vec<KickstarterJSON>, Vec<KickstarterJSON>) {
+        let ids: Vec<KickstarterId> = kickstarter_ids.iter().map(|id| KickstarterId::from(*id)).collect();
+        let mut successful: Vec<KickstarterJSON> = Vec::new();
+        let mut unsuccessful: Vec<KickstarterJSON> = Vec::new();
+        for id in ids.iter() {
+            let kickstarter = self.kickstarters.get(*id).expect("Kickstarter ID does not exist!");
+            if kickstarter.any_achieved_goal() {
+                successful.push(
+                    KickstarterJSON {
+                        id: kickstarter.id.into(),
+                        total_supporters: U64String::from(kickstarter.total_supporters)
+                    }
+                );
+            } else {
+                unsuccessful.push(
+                    KickstarterJSON {
+                        id: kickstarter.id.into(),
+                        total_supporters: U64String::from(kickstarter.total_supporters)
+                    }
+                );
+            }
+        }
+        return(successful, unsuccessful);
+    }
+
+
     pub fn activate_successful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> bool {
         let mut kickstarter = self.internal_get_kickstarter(KickstarterId::from(kickstarter_id));
         let winning_goal = kickstarter.get_achieved_goal();
@@ -198,8 +226,8 @@ impl KatherineFundraising {
     pub fn get_kickstarter_supporters(
         &self,
         kickstarter_id: KickstarterIdJSON,
-        from_index: usize,
-        limit: usize
+        from_index: U64,
+        limit: U64
     ) -> Vec<KickstarterSupporterJSON> {
         let kickstarter = self.kickstarters
             .get(KickstarterId::from(kickstarter_id))
@@ -383,19 +411,79 @@ mod tests {
     #[test]
     fn test_create_supporter() {
         let (_context, mut contract) = contract_only_setup();
-        new_kickstarter(_context, contract);
+        _new_kickstarter(_context, contract);
         let kickstarter_id = contract.kickstarter.len() - 1;
-        s = contract.kickstarter(kickstarter_id)
+        let s = contract.kickstarter(kickstarter_id)
             .supporters
-            .get(SUPPORTER_ID)
+            .get(SUPPORTER_ACCOUNT)
             .unwrap_or_default();
         contract.kickstarter(kickstarter_id)
-            .internal_update_supporter(&supporter_id, supporter: &s)
+            .internal_update_supporter(&SUPPORTER_ACCOUNT, &s)
     }
+
 
     #[test]
     fn test_workflow() {
-        
+        let step = 50;
+        // TODO: create a function for this setup
+        let (_context, mut contract) = contract_only_setup();
+        _new_kickstarter(_context, contract);
+        let kickstarter_id = contract.kickstarter.len() - 1;
+
+        setup_succesful_kickstarter_configuration(&contract);
+
+        let total_ks = contract.get_total_kickstarters();
+        let mut start = 0;
+        let mut end = std::cmp::min(step, total_ks);
+        while end <= total_ks {
+            let ready_ks = contract.get_kickstarter_ids_ready_to_eval(start, end);
+            let (successful_ks, unsuccessful_ks) = contract.get_evaluated_kickstarters_from(ready_ks);
+            test_activate_kickstarters(successful_ks, contract);
+            test_deactivate_kickstarters(unsuccessful_ks, contract);
+            test_disperse_iou_notes(successful_ks, contract);
+            start = end;
+            end = std::cmp::min(start + step, u64::from(total_ks));
+        }
+    }
+
+
+    fn test_disperse_iou_notes(kickstarters: Vec<KickstarterJSON>, contract: KatherineFundraising) {
+        let step = 50;
+        use std::convert::TryFrom;
+        for k in kickstarters.iter() {
+            let mut start: U64 = U64::from(0);
+            let mut end: u64 = u64::min(u64::from(step), u64::from(k.total_supporters));
+            
+            while end <= u64::from(k.total_supporters) {
+                let supporters = contract.get_kickstarter_supporters(
+                    k.id,
+                    start,
+                    U64::from(end),
+                );
+                contract.disperse_iou_notes_to_supporters(supporters);
+                let mut start = end;
+                let mut end = std::cmp::min(start + step, k.total_supporters);
+            }
+        }    
+
+    }    
+
+    fn setup_succesful_kickstarter_configuration(&contract: KatherineFundraising) {
+        println!("TODO: implement successful kickstarter configuration");
+    }
+
+    fn test_activate_kickstarters(kickstarters: Vec<Kickstarter>, contract: KatherineFundraising) {
+        for k in kickstarters {
+            let active_ks = contract.activate_successful_kickstarter(k.id);
+            assert_eq!(true, active_ks);
+        }
+    }
+
+    fn test_deactivate_kickstarters(kickstarters: Vec<Kickstarter>, contract: KatherineFundraising) {
+        for k in kickstarters {
+            let unactive_ks = contract.deactivate_unsuccessful_kickstarter(k.id);
+            assert_eq!(true, unactive_ks);
+        }
     }
 
 }
