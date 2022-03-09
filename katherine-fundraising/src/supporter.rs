@@ -9,7 +9,7 @@ pub struct Supporter {
     pub total_in_deposits: Balance,
     pub locked: Balance,
     pub available: u128,
-    pub iou_note_ids: Vector<IOUNoteId>,
+    pub kickstarters: Option<Vector<KickstarterId>>
 }
 
 /// Supporter account on this contract
@@ -19,7 +19,7 @@ impl Default for Supporter {
             available: 0,
             total_in_deposits: 0,
             locked: 0,
-            iou_note_ids: Vector::new(b"IOU".to_vec()),
+            kickstarters: None
         }
     }
 }

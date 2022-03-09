@@ -1,7 +1,7 @@
 use core::panic;
 
 use crate::*;
-use near_sdk::{log, AccountId, Balance, PromiseOrValue};
+use near_sdk::{log, AccountId, Balance, PromiseOrValue, ext_contract};
 use near_sdk::Promise;
 use near_sdk::serde_json::{json};
 use near_sdk::json_types::{ValidAccountId, U128};
@@ -43,4 +43,15 @@ impl FungibleTokenReceiver for KatherineFundraising {
             Err(_) => PromiseOrValue::Value(U128::from(amount.0)) 
         }
     }
+}
+
+
+#[ext_contract(metapool_token)]
+pub trait MetapoolToken {
+    fn ft_transfer_call(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
+}
+
+#[ext_contract(ext_self_metapool)]
+pub trait ExtSelfMetapool {
+    fn return_tokens_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128);
 }

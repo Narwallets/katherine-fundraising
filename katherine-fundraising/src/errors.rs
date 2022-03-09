@@ -1,0 +1,1 @@
+pub const INTERNAL_ERROR: &str = "INTERNAL ERROR";
