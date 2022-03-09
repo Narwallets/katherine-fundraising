@@ -155,7 +155,7 @@ impl KatherineFundraising {
         results
     }
 
-    pub fn activate_successful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> bool {
+    pub fn activate_successful_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) -> bool {
         let id = KickstarterId::from(kickstarter_id);
         let mut kickstarter = self.internal_get_kickstarter(id);
         let winning_goal = kickstarter.get_achieved_goal();
@@ -174,7 +174,7 @@ impl KatherineFundraising {
                     kickstarter.active = false;
                     kickstarter.successful = Some(true);
                     kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
-                    // self.set_stnear_value_in_near(&mut kickstarter);
+                    kickstarter.stnear_value_in_near = self.get_stnear_value_in_near();
                     log!("Kickstarter was successfully activated!");
                     self.kickstarters.replace(id, &kickstarter);
                     return true;

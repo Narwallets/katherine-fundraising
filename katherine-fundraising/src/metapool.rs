@@ -19,7 +19,7 @@ pub trait MetaPool {
 // define methods we'll use as callbacks on our contract
 #[ext_contract(ext_self)]
 pub trait KatherineFundraising {
-    fn process_metapool_state_result(&self);
+    fn process_state_result_callback(&self);
 }
 
 #[near_bindgen]
@@ -59,42 +59,37 @@ impl FungibleTokenReceiver for KatherineFundraising {
 
 #[near_bindgen]
 impl KatherineFundraising {
-    pub fn set_stnear_value_in_near(&self, kickstarter: &mut Kickstarter) {
+    pub fn get_stnear_value_in_near(&self) -> Promise {
         // Invoke a method on another contract
         // This will send an ActionReceipt to the shard where the contract lives.
         ext_metapool::get_contract_state(
             &self.metapool_contract_address,
             0, // yocto NEAR to attach
-            5_000_000_000_000 // gas to attach
+            GAS // gas to attach
         )
         // After the smart contract method finishes a DataReceipt will be sent back
         // .then registers a method to handle that incoming DataReceipt
-        .then(ext_self::process_metapool_state_result(
+        .then(ext_self::process_state_result_callback(
             &env::current_account_id(), // this contract's account id
             0, // yocto NEAR to attach to the callback
-            5_000_000_000_000 // gas to attach to the callback
-        ));
+            GAS // gas to attach to the callback
+        ))
     }
 
-    pub fn process_metapool_state_result(&self, kickstarter: &mut Kickstarter) {
+    pub fn process_state_result_callback(&self) -> Option<Balance>{
         assert_eq!(
             env::promise_results_count(),
             1,
             "This is a callback method"
         );
 
-        // handle the result from the cross contract call this method is a callback for
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Failed => "oops!".to_string(),
+            PromiseResult::Failed => None,
             PromiseResult::Successful(result) => {
-                let balance = near_sdk::serde_json::from_slice::<U128>(&result).unwrap();
-                if balance.0 > 100000 {
-                    "Wow!".to_string()
-                } else {
-                    "Hmmmm".to_string()
-                }
+                let state = near_sdk::serde_json::from_slice::<GetContractStateResult>(&result).unwrap();
+                Some(Balance::from(state.st_near_price))
             },
-        };
+        }
     }
 }
