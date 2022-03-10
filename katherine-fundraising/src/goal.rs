@@ -34,7 +34,7 @@ impl Goal {
 #[near_bindgen]
 impl KatherineFundraising {
     fn create_goal(&mut self,
-        kickstarter_id: u64,
+        kickstarter_id: KickstarterId,
         name: String,
         desired_amount: u128,
         goal_timestamp: Timestamp,
@@ -56,6 +56,6 @@ impl KatherineFundraising {
             end_timestamp: env::block_timestamp(),
         };
         kickstarter.goals.push(&g);
-        self.kickstarters.replace(kickstarter_id, &kickstarter);
+        self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
     }
 }

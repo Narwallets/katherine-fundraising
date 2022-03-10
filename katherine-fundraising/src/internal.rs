@@ -61,7 +61,7 @@ impl KatherineFundraising {
 
     /// Inner method to get the given kickstarter.
     pub(crate) fn internal_get_kickstarter(&self, kickstarter_id: KickstarterId) -> Kickstarter {
-        self.kickstarters.get(kickstarter_id).expect("Unknown kickstarter id")
+        self.kickstarters.get(kickstarter_id as u64).expect("Unknown kickstarter id")
     }
 
     /// Inner method to save the given kickstarter for a given KickstarterID.
@@ -186,7 +186,7 @@ impl KatherineFundraising {
         total_deposited: Balance
     ) {
         let kickstarter = self.kickstarters
-            .get(kickstarter_id)
+            .get(kickstarter_id as u64)
             .expect("Kickstarter ID does not exist!");
         assert!(
             self.internal_verify_total_deposited(&kickstarter, &supporter_id, total_deposited),

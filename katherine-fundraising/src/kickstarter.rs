@@ -164,8 +164,13 @@ impl Kickstarter {
         self.get_tokens_to_release() - self.katherine_fee.expect("Katherine fee must be denominated at goal evaluation")
     }
 
-    pub fn set_katherine_fee(&self) {
-        unimplemented!()
+    pub fn set_katherine_fee(&mut self, katherine_fee_percent: u32, goal: &Goal) {
+        let katherine_fee: Balance = proportional(
+            katherine_fee_percent as u128,
+            goal.tokens_to_release,
+            BASIS_POINTS
+        );
+        self.katherine_fee = Some(katherine_fee);
     }
 
     pub fn set_stnear_value_in_near(&mut self) {
