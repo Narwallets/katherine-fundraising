@@ -2,12 +2,10 @@ use std::fmt::format;
 
 use crate::*;
 use near_sdk::{log, AccountId};
-use near_sdk::Promise;
 use near_sdk::serde_json::{json};
 
-use crate::iou_note::IOUNoteDenomination;
-
-pub use crate::types::*;
+use crate::*;
+use crate::types::*;
 
 impl KatherineFundraising {
     pub fn assert_min_deposit_amount(&self, amount: Balance) {
@@ -272,7 +270,7 @@ impl KatherineFundraising {
     }
 
     pub(crate) fn internal_freeing_supporters_funds(&mut self, kickstarter: &Kickstarter) {
-        /// These are too many operations just to free the funds!
+        // These are too many operations just to free the funds!
         let deposits = kickstarter.get_deposits();
         for (supporter_id, total) in deposits.to_vec().iter() {
             let mut supporter = self.internal_get_supporter(supporter_id);
@@ -336,12 +334,12 @@ impl KatherineFundraising {
     //     );
     // }
 
-    pub(crate) fn internal_withdraw(&mut self, requested_amount: Balance) -> Promise {
+    pub(crate) fn internal_withdraw(&mut self, requested_amount: Balance) -> AccountId {
         let supporter_id = env::predecessor_account_id();
         let mut supporter = self.internal_get_supporter(&supporter_id);
 
-        let amount = supporter.take_from_available(requested_amount, self);
+        supporter.take_from_available(requested_amount, self);
         self.internal_update_supporter(&supporter_id, &supporter);
-        Promise::new(supporter_id)
+        supporter_id
     }
 }

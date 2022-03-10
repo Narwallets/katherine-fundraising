@@ -33,12 +33,12 @@ impl FungibleTokenReceiver for KatherineFundraising {
     ) -> PromiseOrValue<U128> {
         let kickstarter_id = match msg.parse::<KickstarterId>() {
             Ok(_id) => _id,
-            Err(_) => panic!("Invalid Kickstarter id.".into()),
+            Err(_) => panic!("Invalid Kickstarter id."),
         };
 
         let mut kickstarter: Kickstarter = match self.kickstarters.get(kickstarter_id as u64) {
             Some(kickstarter) => kickstarter,
-            None => panic!("Kickstarter id not found.".into()),
+            None => panic!("Kickstarter id not found."),
         };
 
         let result = if env::predecessor_account_id() == self.metapool_contract_address {

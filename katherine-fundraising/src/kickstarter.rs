@@ -4,79 +4,59 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{near_bindgen, PanicOnDefault};
 use near_sdk::collections::{UnorderedMap, Vector};
 
-use crate::iou_note::IOUNoteDenomination;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Kickstarter {
-    /// Unique ID identifier
+    // Unique ID identifier
     pub id: KickstarterId,
-
-    /// Name of the kickstarter project
+    // Name of the kickstarter project
     pub name: String,
-
-    /// TODO: documentation for slug
+    // TODO: documentation for slug
     pub slug: String,
-
-    /// TODO: Goals
+    // TODO: Goals
     pub goals: Vector<Goal>,
-
     pub winner_goal_id: Option<u8>,
-
-    /// Katherine fee is denominated in Kickstarter Tokens.
+    // Katherine fee is denominated in Kickstarter Tokens.
     pub katherine_fee: Option<Balance>,
-
-    /// TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
+    // TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
     pub supporters: Vec<Supporter>,
     pub total_supporters: u64,
-
-    /// Deposits during the funding period.
+    // Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
     pub total_deposited: Balance,
-
-    /// TODO: Owner
+    // TODO: Owner
     pub owner_id: AccountId,
-
-    /// True if the kickstart project is active and waiting for funding.
+    // True if the kickstart project is active and waiting for funding.
     pub active: bool,
-
-    /// True if the kickstart project met the goals
+    // True if the kickstart project met the goals
     pub successful: Option<bool>,
-
-    /// Spot near
+    // Spot near
     pub stnear_value_in_near: Option<Balance>,
-
-    /// Creation date of the project
-    pub creation_timestamp: Timestamp,
-
-    /// Finish Timestamp of the project. This date is set if the project met its goals
-    pub finish_timestamp: Timestamp,
-
-    /// Opening date to recieve deposits from supporters. TODO: more detail here
-    pub open_timestamp: Timestamp,
-
-    /// Closing date for recieving deposits from supporters. TODO: more detail here
-    pub close_timestamp: Timestamp,
-
-    /// How much time the project will be active, this also means how much time the stnear tokens
-    /// will be locked
-    pub vesting_timestamp: Timestamp,
-
-    /// How much time should pass before releasing the project tokens
-    pub cliff_timestamp: Timestamp,
-
-    /// Kickstarter Token contract address.
+    // Creation date of the project
+    pub creation_timestamp: EpochMillis,
+    // Finish Timestamp of the project. This date is set if the project met its goals
+    pub finish_timestamp: EpochMillis,
+    // Opening date to recieve deposits from supporters. TODO: more detail here
+    pub open_timestamp: EpochMillis,
+    // Closing date for recieving deposits from supporters. TODO: more detail here
+    pub close_timestamp: EpochMillis,
+    // How much time the project will be active, this also means how much time the stnear tokens
+    // will be locked
+    pub vesting_timestamp: EpochMillis,
+    // How much time should pass before releasing the project tokens
+    pub cliff_timestamp: EpochMillis,
+    // Kickstarter Token contract address.
     pub token_contract_address: AccountId,
-
-    /// Total available and locked deposited tokens by the Kickstarter.
+    // Total available and locked deposited tokens by the Kickstarter.
     pub available_reward_tokens: Balance,
     pub locked_reward_tokens: Balance,
 }
 
 
-/// TODO:
+// TODO:
 impl Kickstarter {
     pub fn get_supporter_ids(&self) -> Vec<AccountId> {
-        let mut supporter_ids: Vec<AccountId> = self.deposits.to_vec().into_iter().map(|p| p.0).collect();
+        let supporter_ids: Vec<AccountId> = self.deposits.to_vec().into_iter().map(|p| p.0).collect();
         // supporter_ids.sort_unstable();
         // supporter_ids.dedup();
         supporter_ids.to_vec()
@@ -127,7 +107,7 @@ impl Kickstarter {
     pub fn any_achieved_goal(&self) -> bool {
         self.goals
             .iter()
-            .any(|goal| goal.desired_amount >= self.total_deposited)
+            .any(|goal| goal.desired_amount <= self.total_deposited)
     }
 
     pub fn get_goal(&self) -> Goal {
@@ -184,7 +164,7 @@ impl Kickstarter {
         amount_in_stnear * tokens_rewards / self.total_deposited
     }
 
-    pub fn get_token_denomination(&self) -> IOUNoteDenomination {
+    pub fn get_token_denomination(&self) -> String {
         self.get_goal().tokens_denomination 
     }
 
