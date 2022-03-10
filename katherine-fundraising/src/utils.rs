@@ -13,6 +13,11 @@ pub fn is_close(requested: Balance, total: Balance) -> bool {
     requested >= total.saturating_sub(ONE_MILLI_NEAR) && requested <= total + ONE_MILLI_NEAR
 }
 
+
 pub fn get_epoch_millis() -> EpochMillis {
     return env::block_timestamp() / SECOND;
+
+/// returns amount * numerator/denominator
+pub fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {
+    return (U256::from(amount) * U256::from(numerator) / U256::from(denominator)).as_u128();
 }
