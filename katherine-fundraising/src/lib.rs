@@ -7,57 +7,35 @@ use near_sdk::{
 
 mod constants;
 mod errors;
-pub mod goal;
-use near_sdk::serde::private::de::IdentifierDeserializer;
-use near_sdk::{env, near_bindgen, log, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
-use near_sdk::json_types::{U64, U128};
-
-
-mod constants;
 mod types;
 mod internal;
 mod metapool;
+
 pub mod supporter;
 pub mod kickstarter;
 pub mod goal;
 pub mod utils;
 pub use crate::utils::*;
 
-mod internal;
-pub mod kickstarter;
-mod metapool;
-pub mod supporter;
-mod types;
-pub mod utils;
-
 use crate::{constants::*, goal::*, kickstarter::*, metapool::*, supporter::*, types::*, utils::*};
-pub use metapool::{ext_self,ext_metapool};
+pub use metapool::{ext_self, ext_metapool};
 
-// gas general
-const GAS: Gas = 20_000_000_000_000;
-const GAS_FOR_GET_STNEAR : Gas = 10_000_000_000_000;
-
-// const METAPOOL_CONTRACT_ADDRESS: AccountId = String::from("meta-v2.pool.testnet");
-
-use crate::{kickstarter::*, goal::*, types::*, utils::*, supporter::*, constants::*};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct KatherineFundraising {
     pub owner_id: AccountId,
     pub supporters: UnorderedMap<AccountId, Supporter>,
-    //pub iou_notes: Vector<IOUNote>,
-    //pub iou_notes_map: UnorderedMap<KickstarterSupporterDx, Vector<IOUNoteId>>,
-
-    /// Kickstarter list
     pub kickstarters: Vector<Kickstarter>,
     pub total_available: Balance,
-    /// min amount accepted as deposit or stake
+
+    /// Min amount accepted for supporters
     pub min_deposit_amount: Balance,
     pub metapool_contract_address: AccountId,
+
     // Katherine fee is a % of the Kickstarter Token rewards.
     // Percent is denominated in basis points 100% equals 10_000 basis points.
-    pub katherine_fee_percent: u32, // TODO: How should we handle this?
+    pub katherine_fee_percent: u32,
 }
 
 #[near_bindgen]
@@ -68,31 +46,27 @@ impl KatherineFundraising {
         staking_goal: Balance,
         min_deposit_amount: Balance,
         metapool_contract_address: AccountId,
-        fee_percent: u32
+        katherine_fee_percent: u32
     ) -> Self {
         // assert!(!env::state_exists(), "The contract is already initialized");
         Self {
             owner_id,
-            supporters: UnorderedMap::new(b"A".to_vec()),
+            supporters: UnorderedMap::new(b"Supporters".to_vec()),
             kickstarters: Vector::new(b"Kickstarters".to_vec()),
             total_available: 0,
             min_deposit_amount,
             metapool_contract_address,
-            katherine_fee_percent: fee_percent,
+            katherine_fee_percent,
         }
     }
 
-    #[payable]
-    pub fn deposit_and_stake(&mut self, amount: Balance) {
+    pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
         unimplemented!();
-        let supporter = env::predecessor_account_id();
-        // let supporter_stnear: Promise = self.take_supporter_stnear(supporter, amount);
-        self.internal_deposit(amount);
     }
 
-    pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON){
-        //WIP
-    }
+    /***************************/
+    /*    Withdraw methods     */
+    /***************************/
 
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
@@ -134,25 +108,16 @@ impl KatherineFundraising {
         }
     }
 
-    /*****************************/
-    /* staking-pool View methods */
-    /*****************************/
-
-    pub fn get_supporter_available_balance(&self, supporter_id: AccountId) -> U128 {
-        let supporter = self.internal_get_supporter(&supporter_id);
-        supporter.available.into()
-    }
-
-    pub fn get_contract_total_available(&self) -> U128 {
-        self.total_available.into()
-    }
-
     /************************/
     /*    Robot methods     */
     /************************/
 
-    /// returns both successfull and unsuccessfull kickstarter ids from a closed subgroup
-    pub fn get_kickstarters_to_process(&self, from_index: U64, limit: U64) -> Option<(KickstarterStatusJSON, KickstarterStatusJSON)> {
+    /// Returns both successfull and unsuccessfull kickstarter ids in a single struc 
+    pub fn get_kickstarters_to_process(
+        &self,
+        from_index: u32,
+        limit: u32
+    ) -> Option<KickstarterStatusJSON> {
         let kickstarters_len = self.kickstarters.len();
         let start: u64 = from_index.into();
 

@@ -334,8 +334,15 @@ impl KatherineFundraising {
     //     );
     // }
 
-    pub(crate) fn internal_withdraw(&mut self, requested_amount: Balance, kickstarter_id: KickstarterId, supporter_id: &AccountId) {
-        let mut kickstarter = self.kickstarters.get(kickstarter_id).expect("kickstarted not found");
+    pub(crate) fn internal_withdraw(
+        &mut self,
+        requested_amount: Balance,
+        kickstarter_id: KickstarterId,
+        supporter_id: &AccountId
+    ) {
+        let mut kickstarter = self.kickstarters
+            .get(kickstarter_id as u64)
+            .expect("kickstarted not found");
         assert!(kickstarter.successful != Some(true)); //WIP if its successfull the logic is different
 
         let mut deposit = kickstarter.deposits.get(&supporter_id).expect("deposit not found");
@@ -350,8 +357,16 @@ impl KatherineFundraising {
         }
         //UPG check if it should refund freed storage
     }
-    pub(crate) fn restore_withdraw(&mut self, amount: Balance, kickstarter_id: KickstarterId, supporter_id: AccountId) {
-        let mut kickstarter = self.kickstarters.get(kickstarter_id).expect("kickstarted not found");
+
+    pub(crate) fn restore_withdraw(
+        &mut self,
+        amount: Balance,
+        kickstarter_id: KickstarterId,
+        supporter_id: AccountId
+    ) {
+        let mut kickstarter = self.kickstarters
+            .get(kickstarter_id as u64)
+            .expect("kickstarted not found");
         let mut deposit = kickstarter.deposits.get(&supporter_id).unwrap_or_default();
 
         deposit += amount;

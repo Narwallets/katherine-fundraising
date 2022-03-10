@@ -41,16 +41,12 @@ pub struct KickstarterJSON {
     pub total_supporters: U64,
 }
 
-pub struct KickstarterStatusJSON {
-    pub status: KickstarterResult,
-    pub ids: Vec<KickstarterIdJSON>
-}
-
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub enum KickstarterResult{
-    Successful,
-    Unsuccessfull
+pub struct KickstarterStatusJSON {
+    pub successful: Vec<KickstarterIdJSON>,
+    pub unsuccessful: Vec<KickstarterIdJSON>,
+}
 
 #[derive(Serialize)]
 #[serde(crate = "near_sdk::serde")]
