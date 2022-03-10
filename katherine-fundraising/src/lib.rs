@@ -1,5 +1,13 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::json_types::{U128, U64};
+use near_sdk::{
+    env, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, Promise, Timestamp, PromiseResult
+};
+
+mod constants;
+mod errors;
+pub mod goal;
 use near_sdk::serde::private::de::IdentifierDeserializer;
 use near_sdk::{env, near_bindgen, log, AccountId, PanicOnDefault, Balance, Gas, Timestamp, Promise};
 use near_sdk::json_types::{U64, U128};
@@ -16,8 +24,13 @@ pub mod utils;
 pub use crate::utils::*;
 
 mod internal;
+pub mod kickstarter;
 mod metapool;
+pub mod supporter;
+mod types;
+pub mod utils;
 
+use crate::{constants::*, goal::*, kickstarter::*, metapool::*, supporter::*, types::*, utils::*};
 pub use metapool::{ext_self,ext_metapool};
 
 // gas general
@@ -65,7 +78,7 @@ impl KatherineFundraising {
             total_available: 0,
             min_deposit_amount,
             metapool_contract_address,
-            katherine_fee_percent: fee_percent
+            katherine_fee_percent: fee_percent,
         }
     }
 
@@ -77,14 +90,48 @@ impl KatherineFundraising {
         self.internal_deposit(amount);
     }
 
-    /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
-    pub fn withdraw(&mut self, amount: Balance) -> AccountId {
-        self.internal_withdraw(amount)
+    pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON){
+        //WIP
     }
-    /// Withdraws ALL from from "UNSTAKED" balance *TO MIMIC core-contracts/staking-pool .- core-contracts/staking-pool only has "unstaked" to withdraw from
-    pub fn withdraw_all(&mut self) -> AccountId {
-        let supporter = self.internal_get_supporter(&env::predecessor_account_id());
-        self.internal_withdraw(supporter.available)
+
+    /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
+    pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
+        let account = env::predecessor_account_id();
+        self.internal_withdraw(amount.into(), kickstarter_id.into(), &account);
+        metapool_token::ft_transfer_call(
+            account.clone(),
+            amount,
+            Some("withdraw from kickstarter".to_string()),
+            &self.metapool_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER,
+        )
+        // restore user balance on error
+        .then(ext_self_metapool::return_tokens_callback(
+            account.clone(),
+            kickstarter_id,
+            amount,
+            &env::current_account_id(),
+            0,
+            GAS_FOR_FT_TRANSFER
+        ));
+    }
+
+    #[private]
+    pub fn return_tokens_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128) {
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!("token transfer {}", u128::from(amount));
+            },
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering account state",
+                    amount.0
+                );
+                self.restore_withdraw(amount.into(), kickstarter_id.into(), user)
+            }
+        }
     }
 
     /*****************************/
@@ -197,8 +244,7 @@ impl KatherineFundraising {
     pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
         let mut kickstarter = self.internal_get_kickstarter(KickstarterId::from(kickstarter_id));
         let winning_goal = kickstarter.get_achieved_goal();
-        
-        if kickstarter.successful != None{
+        if kickstarter.successful != None {
             if let Some(goal) = winning_goal {
                 assert!(
                     kickstarter.available_reward_tokens >= goal.tokens_to_release,
@@ -210,12 +256,13 @@ impl KatherineFundraising {
                 kickstarter.set_katherine_fee();
                 kickstarter.set_stnear_value_in_near();
                 log!("kickstarter successfully activated");
-            }
-            else{
+            } else {
                 kickstarter.active = false;
                 kickstarter.successful = Some(false);
                 log!("kickstarter successfully deactivated");
             }
+        } else {
+            panic!("kickstarter already activated");
         }
         else {
             panic!("kickstarter already activated");
@@ -291,7 +338,8 @@ impl KatherineFundraising {
     }
 
     /// Creates a new kickstarter entry in persistent storage
-    pub fn create_kickstarter(&mut self, 
+    pub fn create_kickstarter(
+        &mut self,
         name: String,
         slug: String,
         owner_id: AccountId,
@@ -338,7 +386,8 @@ impl KatherineFundraising {
     }
 
     /// Update a kickstarter
-    pub fn update_kickstarter(&mut self, 
+    pub fn update_kickstarter(
+        &mut self,
         id: KickstarterId,
         name: String,
         slug: String,
@@ -351,7 +400,6 @@ impl KatherineFundraising {
         token_contract_address: AccountId,
     ) {
         let old_kickstarter = self.kickstarters.get(id as u64).expect("Kickstarter Id not found!");
-        
         assert!(
             old_kickstarter.open_timestamp <= env::block_timestamp(),
             "Changes are not allow after the funding period started!"
@@ -516,5 +564,13 @@ mod tests {
             let unactive_ks = contract.deactivate_unsuccessful_kickstarter(k.id);
             assert_eq!(true, unactive_ks);
         }
+    }
+
+    /********************/
+    /*   View methods   */
+    /********************/
+
+    pub fn get_total_kickstarters(&self) -> U64 {
+        return self.kickstarters.len().into();
     }
 }

@@ -13,7 +13,6 @@ pub fn is_close(requested: Balance, total: Balance) -> bool {
     requested >= total.saturating_sub(ONE_MILLI_NEAR) && requested <= total + ONE_MILLI_NEAR
 }
 
-
 pub fn get_epoch_millis() -> EpochMillis {
     return env::block_timestamp() / SECOND;
 

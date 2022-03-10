@@ -4,7 +4,7 @@ use crate::*;
 use near_sdk::{log, AccountId};
 use near_sdk::serde_json::{json};
 
-use crate::*;
+use crate::{types::*, errors::*};
 use crate::types::*;
 
 impl KatherineFundraising {
@@ -334,12 +334,27 @@ impl KatherineFundraising {
     //     );
     // }
 
-    pub(crate) fn internal_withdraw(&mut self, requested_amount: Balance) -> AccountId {
-        let supporter_id = env::predecessor_account_id();
-        let mut supporter = self.internal_get_supporter(&supporter_id);
+    pub(crate) fn internal_withdraw(&mut self, requested_amount: Balance, kickstarter_id: KickstarterId, supporter_id: &AccountId) {
+        let mut kickstarter = self.kickstarters.get(kickstarter_id).expect("kickstarted not found");
+        assert!(kickstarter.successful != Some(true)); //WIP if its successfull the logic is different
 
-        supporter.take_from_available(requested_amount, self);
-        self.internal_update_supporter(&supporter_id, &supporter);
-        supporter_id
+        let mut deposit = kickstarter.deposits.get(&supporter_id).expect("deposit not found");
+
+        assert!(requested_amount <= deposit, "withdraw amount exceeds balance");
+        if deposit == requested_amount{
+            kickstarter.deposits.remove(&supporter_id);
+        }
+        else{
+            deposit -= requested_amount;
+            kickstarter.deposits.insert(&supporter_id, &deposit);
+        }
+        //UPG check if it should refund freed storage
+    }
+    pub(crate) fn restore_withdraw(&mut self, amount: Balance, kickstarter_id: KickstarterId, supporter_id: AccountId) {
+        let mut kickstarter = self.kickstarters.get(kickstarter_id).expect("kickstarted not found");
+        let mut deposit = kickstarter.deposits.get(&supporter_id).unwrap_or_default();
+
+        deposit += amount;
+        kickstarter.deposits.insert(&supporter_id, &deposit);
     }
 }
