@@ -1,6 +1,7 @@
 use near_sdk::{Balance, env};
 
-use crate::{constants::*, types::*};
+use crate::types::*;
+use crate::constants::*;
 
 /// is_close returns true if total-0.001N < requested < total+0.001N
 /// it is used to avoid leaving "dust" in the accounts and to manage rounding simplification for the users
@@ -15,6 +16,7 @@ pub fn is_close(requested: Balance, total: Balance) -> bool {
 
 pub fn get_epoch_millis() -> EpochMillis {
     return env::block_timestamp() / SECOND;
+}
 
 /// returns amount * numerator/denominator
 pub fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {

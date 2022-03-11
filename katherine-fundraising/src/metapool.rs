@@ -36,11 +36,7 @@ impl FungibleTokenReceiver for KatherineFundraising {
             Err(_) => panic!("Invalid Kickstarter id."),
         };
 
-        let mut kickstarter: Kickstarter = match self.kickstarters.get(kickstarter_id as u64) {
-            Some(kickstarter) => kickstarter,
-            None => panic!("Kickstarter id not found."),
-        };
-
+        let mut kickstarter: Kickstarter = self.internal_get_kickstarter(kickstarter_id);
         let result = if env::predecessor_account_id() == self.metapool_contract_address {
             // Deposit is in stNEAR.
             log!("DEPOSIT: {} stNEAR deposited from {} to Kickstarter id {}", amount.0, sender_id.as_ref(), msg);
