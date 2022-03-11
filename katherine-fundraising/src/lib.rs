@@ -8,7 +8,7 @@ use near_sdk::{
 mod constants;
 mod errors;
 mod types;
-mod internal;
+pub mod internal;
 mod metapool;
 
 pub mod supporter;
@@ -92,7 +92,7 @@ impl KatherineFundraising {
     }
 
     #[private]
-    pub fn return_tokens_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128) {
+    pub fn return_tokens_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: BalanceJSON) {
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
@@ -115,112 +115,38 @@ impl KatherineFundraising {
     /// Returns both successfull and unsuccessfull kickstarter ids in a single struc 
     pub fn get_kickstarters_to_process(
         &self,
-        from_index: u32,
-        limit: u32
+        from_index: KickstarterIdJSON,
+        limit: KickstarterIdJSON
     ) -> Option<KickstarterStatusJSON> {
         let kickstarters_len = self.kickstarters.len();
         let start: u64 = from_index.into();
-
         if start >= kickstarters_len {
             return None;
         }
-        let mut successfull: Vec<KickstarterIdJSON> = Vec::new();
-        let mut unsuccessfull: Vec<KickstarterIdJSON> = Vec::new();
-        for index in start..std::cmp::min(start + u64::from(limit), kickstarters_len) {
+        let mut successful: Vec<KickstarterIdJSON> = Vec::new();
+        let mut unsuccessful: Vec<KickstarterIdJSON> = Vec::new();
+        for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
             let kickstarter = self.kickstarters
                 .get(index)
                 .expect("internal error, kickstarter ID is out of range");
             if kickstarter.active && kickstarter.close_timestamp <= get_epoch_millis() {
-                let any_goal = kickstarter.any_achieved_goal();
-                if any_goal {
-                    successfull.push(KickstarterIdJSON::from(kickstarter.id))
+                if kickstarter.any_achieved_goal() {
+                    successful.push(KickstarterIdJSON::from(kickstarter.id))
                 }
                 else{
-                    unsuccessfull.push(KickstarterIdJSON::from(kickstarter.id))
+                    unsuccessful.push(KickstarterIdJSON::from(kickstarter.id))
                 }
-             }
-        }
-        return Some((
-            KickstarterStatusJSON{
-                status: KickstarterResult::Successful,
-                ids: successfull
-            },
-            KickstarterStatusJSON{
-                status: KickstarterResult::Unsuccessfull,
-                ids: unsuccessfull
-            }
-        ));
-    }
-
-    pub fn activate_successful_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> Promise {
-        // we start getting st_near_price in a cross-contract call
-        ext_metapool::get_st_near_price(
-            //promise params
-            &self.metapool_contract_address,
-            NO_DEPOSIT,
-            GAS_FOR_GET_STNEAR,
-        )
-        .then(ext_self::activate_successful_kickstarter_after(
-            kickstarter_id,
-            //promise params
-            &env::current_account_id(),
-            NO_DEPOSIT,
-            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
-        ))
-    }
-    // fn continues here after callback
-    #[private]
-    pub fn activate_successful_kickstarter_after(&mut self, kickstarter_id: KickstarterIdJSON, 
-        #[callback] st_near_price: U128String,
-    ) {
-        // NOTE: be careful on `#[callback]` here. If the get_stnear_price view call fails for some
-        //    reason this call will not be entered, because #[callback] fails for failed_promises
-        //    So *never* have something to rollback if the callback uses #[callback] params
-        //    because the .after() will not be execute on error 
-
-        //we enter here after asking the staking-pool how much do we have *unstaked*
-        //unstaked_balance: U128String contains the answer from the staking-pool
-
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        if kickstarter.winner_goal_id.is_some() {
-            panic!("Successful Kickstartes was already activated!");
-        }
-        let winning_goal = kickstarter.get_achieved_goal();
-        match winning_goal {
-            None => {
-                panic!("Kickstarter did not achieved any goal!");
-            },
-            Some(goal) => {
-                assert!(
-                    kickstarter.available_reward_tokens >= goal.tokens_to_release,
-                    "Not enough available reward tokens to back the supporters rewards!"
-                );
-                kickstarter.winner_goal_id = Some(goal.id);
-                kickstarter.active = false;
-                kickstarter.successful = Some(true);
-                kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
-                kickstarter.stnear_value_in_near = Some(st_near_price.into());
-                log!("Kickstarter was successfully activated!");
-                self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
             }
         }
+        Some(KickstarterStatusJSON{successful, unsuccessful})
     }
 
     pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let mut kickstarter = self.internal_get_kickstarter(KickstarterId::from(kickstarter_id));
-        let winning_goal = kickstarter.get_achieved_goal();
-        if kickstarter.successful != None {
-            if let Some(goal) = winning_goal {
-                assert!(
-                    kickstarter.available_reward_tokens >= goal.tokens_to_release,
-                    "not enough available reward tokens to back the supporters rewards"
-                );
-                kickstarter.winner_goal_id = Some(goal.id);
-                kickstarter.active = false;
-                kickstarter.successful = Some(true);
-                kickstarter.set_katherine_fee();
-                kickstarter.set_stnear_value_in_near();
-                log!("kickstarter successfully activated");
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        if kickstarter.successful.is_none() {
+            if kickstarter.any_achieved_goal() {
+                self.internal_activate_kickstarter(kickstarter_id.into());
+                log!("Kickstarter was successfully activated!");
             } else {
                 kickstarter.active = false;
                 kickstarter.successful = Some(false);
@@ -229,10 +155,6 @@ impl KatherineFundraising {
         } else {
             panic!("kickstarter already activated");
         }
-        else {
-            panic!("kickstarter already activated");
-        }
-        
     }
       
     pub fn get_kickstarter_supporters(
