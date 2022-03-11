@@ -182,7 +182,7 @@ impl KatherineFundraising {
     pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
         let kickstarters_len = self.kickstarters.len();
         assert!(kickstarter_id as u64 <= kickstarters_len, "from_index is out of range!");
-        let kickstarter = self.kickstarters.get(kickstarter_id as u64).expect("Kickstarter ID is out of range!");
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         KickstarterJSON {
             id: kickstarter.id.into(),
             total_supporters: U64String::from(kickstarter.total_supporters)
@@ -251,7 +251,7 @@ impl KatherineFundraising {
         cliff_timestamp: Timestamp,
         token_contract_address: AccountId,
     ) {
-        let old_kickstarter = self.kickstarters.get(id as u64).expect("Kickstarter Id not found!");
+        let old_kickstarter = self.internal_get_kickstarter(id);
         assert!(
             old_kickstarter.open_timestamp <= env::block_timestamp(),
             "Changes are not allow after the funding period started!"
@@ -289,140 +289,131 @@ impl KatherineFundraising {
 
         self.kickstarters.replace(id as u64, &kickstarter);
     }
-}
-
-
-#[cfg(not(target_arch = "wasm32"))]
-#[cfg(test)]
-mod tests {
-
-    use near_sdk::{testing_env, MockedBlockchain, VMContext};
-
-    mod unit_test_utils;
-    use unit_test_utils::*;
-
-    use super::*;
-
-
-    /// Get initial context for tests
-    fn basic_context() -> VMContext {
-        println!("SYSTEM ACCOUNT: {}", SYSTEM_ACCOUNT.to_string());
-        get_context(
-            SYSTEM_ACCOUNT.into(),
-            ntoy(TEST_INITIAL_BALANCE),
-            0,
-            to_ts(GENESIS_TIME_IN_DAYS),
-            false,
-        )
-    }
-
-    /// Creates a new contract
-    fn new_contract() -> KatherineFundraising {
-        KatherineFundraising::new(
-            OWNER_ACCOUNT.into(),
-        )
-    }
-
-    fn contract_only_setup() -> (VMContext, KatherineFundraising) {
-        let context = basic_context();
-        testing_env!(context.clone());
-        let contract = new_contract();
-        return (context, contract);
-    }
-
-
-    #[test]
-    fn test_create_kickstarter() {
-        let (_context, mut contract) = contract_only_setup();
-        _new_kickstarter(_context, &mut contract);
-        assert_eq!(1, contract.kickstarters.len());
-    }
-
-    #[test]
-    fn test_create_supporter() {
-        let (_context, mut contract) = contract_only_setup();
-        _new_kickstarter(_context, &mut contract);
-        let kickstarter_id = contract.kickstarters.len() - 1;
-        contract.kickstarters.get(kickstarter_id).unwrap()
-            .update_supporter_deposits(&String::from(SUPPORTER_ACCOUNT), &DEPOSIT_AMOUNT)
-    }
 
     /********************/
     /*   View methods   */
     /********************/
 
-    pub fn get_total_kickstarters(&self) -> U64 {
-        return self.kickstarters.len().into();
+    pub fn get_total_kickstarters(&self) -> u32 {
+        return self.kickstarters.len() as u32;
     }
-
-    #[test]
-    fn test_workflow() {
-        let step: u64 = 50;
-        // TODO: create a function for this setup
-        let (_context, mut contract) = contract_only_setup();
-        _new_kickstarter(_context, &mut contract);
-        let kickstarter_id = contract.kickstarters.len() - 1;
-        //TODO
-        setup_succesful_kickstarter_configuration(&mut contract);
-
-        let total_ks: u64 = u64::from(contract.get_total_kickstarters());
-        let mut start: u64 = 0;
-        let mut end: u64 = u64::min(step, total_ks);
-        while end <= total_ks {
-            let ready_ks = contract.get_kickstarter_ids_ready_to_eval(start, end);
-            let (successful_ks, unsuccessful_ks) = contract.get_evaluated_kickstarters_from(ready_ks);
-            test_activate_kickstarters(&successful_ks, &mut contract);
-            test_deactivate_kickstarters(&unsuccessful_ks, &mut contract);
-            test_disperse_iou_notes(&successful_ks, &mut contract);
-            start = end;
-            end = std::cmp::min(start + step, u64::from(total_ks));
-        }
-    }
+}
 
 
-    fn test_disperse_iou_notes(kickstarters: &Vec<KickstarterJSON>, contract: &mut KatherineFundraising) {
-        let step: u64 = 50;
-        use std::convert::TryFrom;
-        for k in kickstarters.iter() {
-            let mut start: u64 = 0;
-            let mut end: u64 = std::cmp::min(step, u64::from(k.total_supporters));
+// #[cfg(not(target_arch = "wasm32"))]
+// #[cfg(test)]
+// mod tests {
+
+//     use near_sdk::{testing_env, MockedBlockchain, VMContext};
+
+//     mod unit_test_utils;
+//     use unit_test_utils::*;
+
+//     use super::*;
+
+
+//     /// Get initial context for tests
+//     fn basic_context() -> VMContext {
+//         println!("SYSTEM ACCOUNT: {}", SYSTEM_ACCOUNT.to_string());
+//         get_context(
+//             SYSTEM_ACCOUNT.into(),
+//             ntoy(TEST_INITIAL_BALANCE),
+//             0,
+//             to_ts(GENESIS_TIME_IN_DAYS),
+//             false,
+//         )
+//     }
+
+//     /// Creates a new contract
+//     fn new_contract() -> KatherineFundraising {
+//         KatherineFundraising::new(
+//             OWNER_ACCOUNT.into(),
+//         )
+//     }
+
+//     fn contract_only_setup() -> (VMContext, KatherineFundraising) {
+//         let context = basic_context();
+//         testing_env!(context.clone());
+//         let contract = new_contract();
+//         return (context, contract);
+//     }
+
+
+//     #[test]
+//     fn test_create_kickstarter() {
+//         let (_context, mut contract) = contract_only_setup();
+//         _new_kickstarter(_context, &mut contract);
+//         assert_eq!(1, contract.kickstarters.len());
+//     }
+
+//     #[test]
+//     fn test_create_supporter() {
+//         let (_context, mut contract) = contract_only_setup();
+//         _new_kickstarter(_context, &mut contract);
+//         let kickstarter_id = contract.kickstarters.len() - 1;
+//         contract.kickstarters.get(kickstarter_id).unwrap()
+//             .update_supporter_deposits(&String::from(SUPPORTER_ACCOUNT), &DEPOSIT_AMOUNT)
+//     }
+
+//     #[test]
+//     fn test_workflow() {
+//         let step: u64 = 50;
+//         // TODO: create a function for this setup
+//         let (_context, mut contract) = contract_only_setup();
+//         _new_kickstarter(_context, &mut contract);
+//         let kickstarter_id = contract.kickstarters.len() - 1;
+//         //TODO
+//         setup_succesful_kickstarter_configuration(&mut contract);
+
+//         let total_ks: u64 = u64::from(contract.get_total_kickstarters());
+//         let mut start: u64 = 0;
+//         let mut end: u64 = u64::min(step, total_ks);
+//         while end <= total_ks {
+//             let ready_ks = contract.get_kickstarter_ids_ready_to_eval(start, end);
+//             let (successful_ks, unsuccessful_ks) = contract.get_evaluated_kickstarters_from(ready_ks);
+//             test_activate_kickstarters(&successful_ks, &mut contract);
+//             test_deactivate_kickstarters(&unsuccessful_ks, &mut contract);
+//             test_disperse_iou_notes(&successful_ks, &mut contract);
+//             start = end;
+//             end = std::cmp::min(start + step, u64::from(total_ks));
+//         }
+//     }
+
+//     fn test_disperse_iou_notes(kickstarters: &Vec<KickstarterJSON>, contract: &mut KatherineFundraising) {
+//         let step: u64 = 50;
+//         use std::convert::TryFrom;
+//         for k in kickstarters.iter() {
+//             let mut start: u64 = 0;
+//             let mut end: u64 = std::cmp::min(step, u64::from(k.total_supporters));
             
-            while end <= u64::from(k.total_supporters) {
-                let supporters = contract.get_kickstarter_supporters(
-                    k.id,
-                    start,
-                    end,
-                );
-                contract.disperse_iou_notes_to_supporters(supporters);
-                let mut start = end;
-                end = std::cmp::min(start + step, u64::from(k.total_supporters));
-            }
-        }    
-    }    
+//             while end <= u64::from(k.total_supporters) {
+//                 let supporters = contract.get_kickstarter_supporters(
+//                     k.id,
+//                     start,
+//                     end,
+//                 );
+//                 contract.disperse_iou_notes_to_supporters(supporters);
+//                 let mut start = end;
+//                 end = std::cmp::min(start + step, u64::from(k.total_supporters));
+//             }
+//         }    
+//     }    
 
-    fn setup_succesful_kickstarter_configuration(contract: &mut KatherineFundraising) {
-        println!("TODO: implement successful kickstarter configuration");
-    }
+//     fn setup_succesful_kickstarter_configuration(contract: &mut KatherineFundraising) {
+//         println!("TODO: implement successful kickstarter configuration");
+//     }
 
-    fn test_activate_kickstarters(kickstarters: &Vec<KickstarterJSON>, contract: &mut KatherineFundraising) {
-        for k in kickstarters {
-            let active_ks = contract.activate_successful_kickstarter(k.id);
-            assert_eq!(true, active_ks);
-        }
-    }
+//     fn test_activate_kickstarters(kickstarters: &Vec<KickstarterJSON>, contract: &mut KatherineFundraising) {
+//         for k in kickstarters {
+//             let active_ks = contract.activate_successful_kickstarter(k.id);
+//             assert_eq!(true, active_ks);
+//         }
+//     }
 
-    fn test_deactivate_kickstarters(kickstarters: &Vec<KickstarterJSON>, contract: &mut KatherineFundraising) {
-        for k in kickstarters {
-            let unactive_ks = contract.deactivate_unsuccessful_kickstarter(k.id);
-            assert_eq!(true, unactive_ks);
-        }
-    }
-
-    /********************/
-    /*   View methods   */
-    /********************/
-
-    pub fn get_total_kickstarters(&self) -> U64 {
-        return self.kickstarters.len().into();
-    }
-}
+//     fn test_deactivate_kickstarters(kickstarters: &Vec<KickstarterJSON>, contract: &mut KatherineFundraising) {
+//         for k in kickstarters {
+//             let unactive_ks = contract.deactivate_unsuccessful_kickstarter(k.id);
+//             assert_eq!(true, unactive_ks);
+//         }
+//     }
+// }
