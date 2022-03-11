@@ -20,6 +20,7 @@ impl KatherineFundraising {
 /***************************************/
 /* Internal methods staking-pool trait */
 /***************************************/
+#[near_bindgen]
 impl KatherineFundraising {
     pub(crate) fn internal_deposit(&mut self, amount: Balance) {
         self.assert_min_deposit_amount(amount);
@@ -176,6 +177,54 @@ impl KatherineFundraising {
     //         supporter.iou_note_ids.push(&iou_note_id);
     //     }
     // }
+
+    pub(crate) fn internal_activate_kickstarter(&mut self, kickstarter_id: KickstarterId) {
+        // we start getting st_near_price in a cross-contract call
+        ext_metapool::get_st_near_price(
+            //promise params
+            &self.metapool_contract_address,
+            NO_DEPOSIT,
+            GAS_FOR_GET_STNEAR,
+        )
+        .then(ext_self::activate_successful_kickstarter_after(
+            kickstarter_id,
+            //promise params
+            &env::current_account_id(),
+            NO_DEPOSIT,
+            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
+        ));
+    }
+
+    // fn continues here after callback
+    #[private]
+    pub(crate) fn activate_successful_kickstarter_after(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON, 
+        #[callback] st_near_price: U128String,
+    ) {
+        // NOTE: be careful on `#[callback]` here. If the get_stnear_price view call fails for some
+        //    reason this call will not be entered, because #[callback] fails for failed_promises
+        //    So *never* have something to rollback if the callback uses #[callback] params
+        //    because the .after() will not be execute on error 
+
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let winning_goal = kickstarter.get_achieved_goal();
+        match winning_goal {
+            None => panic!("Kickstarter did not achieved any goal!"),
+            Some(goal) => {
+                assert!(
+                    kickstarter.available_reward_tokens >= goal.tokens_to_release,
+                    "Not enough available reward tokens to back the supporters rewards!"
+                );
+                kickstarter.winner_goal_id = Some(goal.id);
+                kickstarter.active = false;
+                kickstarter.successful = Some(true);
+                kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
+                kickstarter.stnear_value_in_near = Some(st_near_price.into());
+                self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
+            }
+        }
+    }
 
     pub(crate) fn internal_disperse_to_supporter(
         &mut self,
