@@ -53,6 +53,7 @@ impl KatherineFundraising {
 
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.total_in_deposits += amount;
+        self.supporters.insert(&supporter_id, &supporter);
         kickstarter.total_deposited += amount;
         kickstarter.update_supporter_deposits(&supporter_id, amount);
 
@@ -142,6 +143,51 @@ impl KatherineFundraising {
         }
     }
 
+    pub(crate) fn internal_withdraw_kickstarter_tokens(
+        &mut self,
+        requested_amount: Balance,
+        kickstarter_id: &Kickstarter,
+        supporter_id: &AccountId
+    ){
+        assert!(kickstarter.successful == Some(true), "kickstarter has not reached any goal");
+        let goal = kickstarter.get_goal();
+        assert!(goal.cliff_timestamp < self.get_epoch_millis(), "tokens have not been released yet");
+        let mut available_balance = (((self.get_epoch_millis() - goal.cliff_timestamp) * kickstarter.get_total_rewards_for_supporters()) / (goal.end_timestamp - goal.cliff_timestamp)).floor();
+        assert!(available_balance >= 1, "less than one token to withdraw");
+
+        if available_balance > kickstarter.get_total_rewards_for_supporters() {
+            available_balance = kickstarter.get_total_rewards_for_supporters();
+        }
+        assert!(requested_amount <= available_balance, "not enough tokens, available balance is {}", available_balance);
+        let mut deposit = kickstarter.deposits.get(&supporter_id).expect("deposit not found");
+        let supporter_available = deposit * available_balance / kickstarter.total_deposited
+        let mut suporter_withdraw = self.withdraw.get(&supporter_id).unwrap_or_default();
+        suporter_withdraw += requested_amount;
+        self.withdraws.insert(&supporter_id, &suporter_withdraw);
+    }
+
+    pub(crate) fn internal_restore_kickstarter_withdraw(
+        &mut self,
+        amount: Balance,
+        kickstarter_id: KickstarterId,
+        supporter_id: AccountId
+    ){
+        let mut kickstarter = self.kickstarters
+        .get(kickstarter_id as u64)
+        .expect("kickstarted not found");
+        let mut withdraw = kickstarter.withdraw.get(&supporter_id).unwrap_or_default();
+
+        withdraw -= amount;
+        assert!(withdraw >= 0, "withdrawn amount too high");
+
+        if withdraw == 0 {
+            kickstarter.withdraw.remove(&supporter_id);
+        }
+        else{
+            kickstarter.withdraw.insert(&supporter_id, &withdraw);
+        }
+    }
+
     pub(crate) fn internal_withdraw(
         &mut self,
         requested_amount: Balance,
@@ -151,7 +197,11 @@ impl KatherineFundraising {
         let mut kickstarter = self.kickstarters
             .get(kickstarter_id as u64)
             .expect("kickstarted not found");
-        assert!(kickstarter.successful != Some(true)); //WIP if its successfull the logic is different
+        assert!(
+            kickstarter.successful != Some(true) &&
+            kickstarter.vesting_timestamp >= self.get_epoch_millis()
+            , "can not withdraw from successfull kickstarter before vesting period ends"
+        );
 
         let mut deposit = kickstarter.deposits.get(&supporter_id).expect("deposit not found");
 
@@ -166,7 +216,7 @@ impl KatherineFundraising {
         //UPG check if it should refund freed storage
     }
 
-    pub(crate) fn restore_withdraw(
+    pub(crate) fn internal_restore_withdraw(
         &mut self,
         amount: Balance,
         kickstarter_id: KickstarterId,

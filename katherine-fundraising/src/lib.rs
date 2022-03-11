@@ -61,7 +61,46 @@ impl KatherineFundraising {
     }
 
     pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        unimplemented!();
+        let account = env::predecessor_account_id();
+        let mut kickstarter = self.kickstarters
+        .get(kickstarter_id as u64)
+        .expect("kickstarted not found");
+        self.internal_withdraw_kickstarter_tokens(amount.into(), &kickstarter, &account);
+
+        nep141_token::ft_transfer_call(
+            account.clone(),
+            amount,
+            Some("withdraw from kickstarter".to_string()),
+            kickstarter.token_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER,
+        )
+        // restore user balance on error
+        .then(ext_self_kikstarter::return_tokens_from_kickstarter_callback(
+            account.clone(),
+            kickstarter_id,
+            amount,
+            &env::current_account_id(),
+            0,
+            GAS_FOR_FT_TRANSFER
+        ));
+    }
+
+    #[private]
+    pub fn return_tokens_from_kickstarter_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128){
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!("token transfer {}", u128::from(amount));
+            },
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering account state",
+                    amount.0
+                );
+                self.internal_restore_kickstarter_withdraw(amount.into(), kickstarter_id.into(), user)
+            }
+        }
     }
 
     /***************************/
@@ -72,7 +111,7 @@ impl KatherineFundraising {
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
         let account = env::predecessor_account_id();
         self.internal_withdraw(amount.into(), kickstarter_id.into(), &account);
-        metapool_token::ft_transfer_call(
+        nep141_token::ft_transfer_call(
             account.clone(),
             amount,
             Some("withdraw from kickstarter".to_string()),
@@ -103,7 +142,7 @@ impl KatherineFundraising {
                     "token transfer failed {}. recovering account state",
                     amount.0
                 );
-                self.restore_withdraw(amount.into(), kickstarter_id.into(), user)
+                self.internal_restore_withdraw(amount.into(), kickstarter_id.into(), user)
             }
         }
     }
@@ -160,6 +199,10 @@ impl KatherineFundraising {
     /*****************************/
     /*   Kickstarter functions   */
     /*****************************/
+
+    pub fn kickstarter_withdraw_excedent(){
+        unimplemented!;
+    }
 
     pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
         let kickstarters_len = self.kickstarters.len() as usize;

@@ -23,6 +23,7 @@ pub struct Kickstarter {
     pub total_supporters: u64,
     // Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
+    pub withdraw: UnorderedMap<SupporterId, Balance>,
     pub total_deposited: Balance,
     // TODO: Owner
     pub owner_id: AccountId,

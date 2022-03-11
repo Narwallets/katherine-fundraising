@@ -53,13 +53,3 @@ impl FungibleTokenReceiver for KatherineFundraising {
         }
     }
 }
-
-#[ext_contract(metapool_token)]
-pub trait MetapoolToken {
-    fn ft_transfer_call(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
-}
-
-#[ext_contract(ext_self_metapool)]
-pub trait ExtSelfMetapool {
-    fn return_tokens_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128);
-}
