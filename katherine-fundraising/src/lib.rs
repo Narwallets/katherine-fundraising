@@ -156,41 +156,6 @@ impl KatherineFundraising {
             panic!("kickstarter already activated");
         }
     }
-      
-    pub fn get_kickstarter_supporters(
-        &self,
-        kickstarter_id: KickstarterIdJSON,
-        from_index: u64,
-        limit: u64
-    ) -> Vec<KickstarterSupporterJSON> {
-        let kickstarter = self.kickstarters
-            .get(kickstarter_id as u64)
-            .expect("Kickstarter ID does not exits!");
-        let keys = kickstarter.deposits.keys_as_vector();
-        let mut results: Vec<KickstarterSupporterJSON> = Vec::new();
-        for index in from_index..std::cmp::min(from_index + limit, keys.len()) {
-            let supporter_id: SupporterId = keys.get(index as u64).unwrap(); 
-            let total_deposited = kickstarter
-                .deposits.get(&supporter_id)
-                .expect("Supporter ID does not exist for Kickstarter!");
-            results.push(
-                KickstarterSupporterJSON {
-                    // Converts from AccountId to ValidAccountId
-                    supporter_id: near_sdk::serde_json::from_str(&supporter_id).unwrap(),
-                    kickstarter_id,
-                    total_deposited: BalanceJSON::from(total_deposited),
-                }
-            );
-        }
-    }
-
-    pub fn disperse_iou_notes_to_supporters(&mut self, kickstarter_supporters: Vec<KickstarterSupporterJSON>) {
-        for supporter in &kickstarter_supporters {
-            let supporter_id: SupporterId = supporter.supporter_id.to_string();
-            let total_deposited = Balance::from(supporter.total_deposited);
-            self.internal_disperse_to_supporter(supporter.kickstarter_id, supporter_id, total_deposited);
-        }
-    }
 
     /*****************************/
     /*   Kickstarter functions   */
