@@ -147,7 +147,7 @@ impl KatherineFundraising {
     pub(crate) fn internal_withdraw_kickstarter_tokens(
         &mut self,
         requested_amount: Balance,
-        kickstarter: &Kickstarter,
+        kickstarter: &mut Kickstarter,
         supporter_id: &AccountId
     ){
         assert!(kickstarter.successful == Some(true), "kickstarter has not reached any goal");
@@ -191,7 +191,7 @@ impl KatherineFundraising {
     }
 
     #[inline]
-    pub(crate) fn only_admin(&self, account: AccountId){
+    pub(crate) fn only_admin(&self){
         assert!(env::predecessor_account_id() == self.owner_id, "only allowed for admin");
     }
 
@@ -225,7 +225,7 @@ impl KatherineFundraising {
         //UPG check if it should refund freed storage
     }
 
-    pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &Kickstarter){
+    pub(crate) fn internal_kickstarter_withdraw(&self, kickstarter: &mut Kickstarter){
         unimplemented!();
     }
 

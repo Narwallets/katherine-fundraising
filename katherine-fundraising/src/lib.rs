@@ -66,7 +66,7 @@ impl KatherineFundraising {
         let mut kickstarter = self.kickstarters
         .get(kickstarter_id as u64)
         .expect("kickstarted not found");
-        self.internal_withdraw_kickstarter_tokens(amount.into(), &kickstarter, &account);
+        self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
 
         nep141_token::ft_transfer_call(
             account.clone(),
@@ -202,9 +202,9 @@ impl KatherineFundraising {
     /*****************************/
 
     pub fn kickstarter_withdraw_excedent(&self, kickstarter_id: KickstarterIdJSON){
-        let kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
+        let mut kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
         only_kickstarter_admin(&kickstarter);
-        self.internal_kickstarter_withdraw()
+        self.internal_kickstarter_withdraw(&mut kickstarter);
     }
 
     pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
@@ -259,6 +259,7 @@ impl KatherineFundraising {
             supporters: Vec::new(),
             total_supporters: 0,
             deposits: UnorderedMap::new(b"A".to_vec()),
+            withdraw: UnorderedMap::new(b"W".to_vec()),
             total_deposited: 0,
             owner_id,
             active: true,
@@ -318,6 +319,7 @@ impl KatherineFundraising {
             supporters: Vec::new(),
             total_supporters: 0,
             deposits: UnorderedMap::new(b"A".to_vec()),
+            withdraw: UnorderedMap::new(b"W".to_vec()),
             total_deposited: 0,
             owner_id,
             active: true,
