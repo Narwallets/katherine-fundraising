@@ -11,13 +11,14 @@ mod types;
 pub mod internal;
 mod metapool;
 
+pub mod interface;
 pub mod supporter;
 pub mod kickstarter;
 pub mod goal;
 pub mod utils;
 pub use crate::utils::*;
 
-use crate::{constants::*, goal::*, kickstarter::*, metapool::*, supporter::*, types::*, utils::*};
+use crate::{constants::*, goal::*, kickstarter::*, metapool::*, supporter::*, types::*, utils::*, interface::*};
 pub use metapool::{ext_self, ext_metapool};
 
 
@@ -185,7 +186,7 @@ impl KatherineFundraising {
         if kickstarter.successful.is_none() {
             if kickstarter.any_achieved_goal() {
                 self.internal_activate_kickstarter(kickstarter_id.into());
-                log!("Kickstarter was successfully activated!");
+                log!("kickstarter was successfully activated");
             } else {
                 kickstarter.active = false;
                 kickstarter.successful = Some(false);
@@ -200,8 +201,10 @@ impl KatherineFundraising {
     /*   Kickstarter functions   */
     /*****************************/
 
-    pub fn kickstarter_withdraw_excedent(){
-        unimplemented!;
+    pub fn kickstarter_withdraw_excedent(kickstarter_id: KickstarterIdJSON){
+        let kickstarter = self.kickstarters.get(kickstarter_id.into()).unwrap("kickstarter not found");
+        self.only_kickstarter_admin(&kickstarter);
+        self.internal_kickstarter_withdraw()
     }
 
     pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
@@ -245,7 +248,7 @@ impl KatherineFundraising {
         cliff_timestamp: Timestamp,
         token_contract_address: AccountId,
     ) {
-        //TODO only allow admin access
+        self.only_admin();
         let kickstarter = Kickstarter {
             id: self.kickstarters.len() as u32,
             name,
@@ -294,6 +297,7 @@ impl KatherineFundraising {
         cliff_timestamp: Timestamp,
         token_contract_address: AccountId,
     ) {
+        self.only_admin();
         let old_kickstarter = self.internal_get_kickstarter(id);
         assert!(
             old_kickstarter.open_timestamp <= env::block_timestamp(),
