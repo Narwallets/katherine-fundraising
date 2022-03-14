@@ -19,6 +19,7 @@ impl KatherineFundraising {
 /**********************/
 #[near_bindgen]
 impl KatherineFundraising {
+
     /// Inner method to get the given supporter or a new default value supporter.
     pub(crate) fn internal_get_supporter(&self, supporter_id: &SupporterId) -> Supporter {
         self.supporters.get(supporter_id).unwrap_or_default()
@@ -214,6 +215,10 @@ impl KatherineFundraising {
             kickstarter.deposits.insert(&supporter_id, &deposit);
         }
         //UPG check if it should refund freed storage
+    }
+
+    pub(crate) fn internal_kickstarter_withdraw(kickstarter: &Kickstarter){
+
     }
 
     pub(crate) fn internal_restore_withdraw(

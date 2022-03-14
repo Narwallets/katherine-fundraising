@@ -25,12 +25,6 @@ pub struct Goal {
     pub end_timestamp: Timestamp,
 }
 
-
-/// TODO:
-impl Goal {
-}
-
-
 #[near_bindgen]
 impl KatherineFundraising {
     fn create_goal(&mut self,
@@ -42,8 +36,9 @@ impl KatherineFundraising {
         tokens_denomination: String,
         start_delivery_timestamp: Timestamp,
         finish_delivery_timestamp: Timestamp) {
-
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        self.only_kickstarter_admin(&kickstarter);
+        assert!(kickstarter.successful.is_none(), "cannot create goal after one is reached");
         let g = Goal {
             id: u8::try_from(kickstarter.goals.len()).unwrap_or_default(),
             name: name,
