@@ -191,8 +191,8 @@ impl KatherineFundraising {
         .expect("kickstarted not found");
         let mut withdraw = kickstarter.withdraw.get(&supporter_id).unwrap_or_default();
 
+        assert!(withdraw >= amount, "withdrawn amount too high");
         withdraw -= amount;
-        assert!(withdraw >= 0, "withdrawn amount too high");
 
         if withdraw == 0 {
             kickstarter.withdraw.remove(&supporter_id);
