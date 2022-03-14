@@ -72,7 +72,7 @@ impl KatherineFundraising {
             account.clone(),
             amount,
             Some("withdraw from kickstarter".to_string()),
-            kickstarter.token_contract_address,
+            &kickstarter.token_contract_address,
             1,
             GAS_FOR_FT_TRANSFER,
         )
@@ -201,9 +201,9 @@ impl KatherineFundraising {
     /*   Kickstarter functions   */
     /*****************************/
 
-    pub fn kickstarter_withdraw_excedent(kickstarter_id: KickstarterIdJSON){
-        let kickstarter = self.kickstarters.get(kickstarter_id.into()).unwrap("kickstarter not found");
-        self.only_kickstarter_admin(&kickstarter);
+    pub fn kickstarter_withdraw_excedent(&self, kickstarter_id: KickstarterIdJSON){
+        let kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
+        only_kickstarter_admin(&kickstarter);
         self.internal_kickstarter_withdraw()
     }
 

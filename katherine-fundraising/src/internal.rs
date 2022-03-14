@@ -1,8 +1,8 @@
 use crate::*;
-use near_sdk::{log, AccountId};
+use near_sdk::{near_bindgen, log, AccountId};
 use near_sdk::serde_json::{json};
 
-use crate::{types::*, errors::*};
+use crate::{types::*, errors::*, utils::*};
 
 impl KatherineFundraising {
     pub fn assert_min_deposit_amount(&self, amount: Balance) {
@@ -147,13 +147,14 @@ impl KatherineFundraising {
     pub(crate) fn internal_withdraw_kickstarter_tokens(
         &mut self,
         requested_amount: Balance,
-        kickstarter_id: &Kickstarter,
+        kickstarter: &Kickstarter,
         supporter_id: &AccountId
     ){
         assert!(kickstarter.successful == Some(true), "kickstarter has not reached any goal");
         let goal = kickstarter.get_goal();
-        assert!(goal.cliff_timestamp < self.get_epoch_millis(), "tokens have not been released yet");
-        let mut available_balance = (((self.get_epoch_millis() - goal.cliff_timestamp) * kickstarter.get_total_rewards_for_supporters()) / (goal.end_timestamp - goal.cliff_timestamp)).floor();
+        let cliff_timestamp = u128::from(goal.cliff_timestamp);
+        assert!(goal.cliff_timestamp < get_epoch_millis(), "tokens have not been released yet");
+        let mut available_balance = (((u128::from(get_epoch_millis()) - cliff_timestamp) * kickstarter.get_total_rewards_for_supporters()) / (u128::from(goal.end_timestamp) - cliff_timestamp));
         assert!(available_balance >= 1, "less than one token to withdraw");
 
         if available_balance > kickstarter.get_total_rewards_for_supporters() {
@@ -161,10 +162,10 @@ impl KatherineFundraising {
         }
         assert!(requested_amount <= available_balance, "not enough tokens, available balance is {}", available_balance);
         let mut deposit = kickstarter.deposits.get(&supporter_id).expect("deposit not found");
-        let supporter_available = deposit * available_balance / kickstarter.total_deposited
-        let mut suporter_withdraw = self.withdraw.get(&supporter_id).unwrap_or_default();
+        let supporter_available = deposit * available_balance / kickstarter.total_deposited;
+        let mut suporter_withdraw = kickstarter.withdraw.get(&supporter_id).unwrap_or_default();
         suporter_withdraw += requested_amount;
-        self.withdraws.insert(&supporter_id, &suporter_withdraw);
+        kickstarter.withdraw.insert(&supporter_id, &suporter_withdraw);
     }
 
     pub(crate) fn internal_restore_kickstarter_withdraw(
@@ -189,6 +190,13 @@ impl KatherineFundraising {
         }
     }
 
+    #[inline]
+    pub(crate) fn only_admin(&self, account: AccountId){
+        assert!(env::predecessor_account_id() == self.owner_id, "only allowed for admin");
+    }
+
+
+
     pub(crate) fn internal_withdraw(
         &mut self,
         requested_amount: Balance,
@@ -200,7 +208,7 @@ impl KatherineFundraising {
             .expect("kickstarted not found");
         assert!(
             kickstarter.successful != Some(true) &&
-            kickstarter.vesting_timestamp >= self.get_epoch_millis()
+            kickstarter.vesting_timestamp >= get_epoch_millis()
             , "can not withdraw from successfull kickstarter before vesting period ends"
         );
 
@@ -217,8 +225,8 @@ impl KatherineFundraising {
         //UPG check if it should refund freed storage
     }
 
-    pub(crate) fn internal_kickstarter_withdraw(kickstarter: &Kickstarter){
-
+    pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &Kickstarter){
+        unimplemented!();
     }
 
     pub(crate) fn internal_restore_withdraw(

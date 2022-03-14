@@ -1,3 +1,7 @@
+use near_sdk::{AccountId, ext_contract};
+use near_sdk::json_types::{U128};
+use crate::types::*;
+
 #[ext_contract(nep141_token)]
 pub trait NEP141Token {
     fn ft_transfer_call(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
