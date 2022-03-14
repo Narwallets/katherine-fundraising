@@ -15,4 +15,5 @@ pub trait ExtSelfMetapool {
 #[ext_contract(ext_self_kikstarter)]
 pub trait ExtSelfKickstarter {
     fn return_tokens_from_kickstarter_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128);
+    fn kickstarter_withdraw_excedent_callback(&mut self, kickstarter_id: KickstarterIdJSON, amount: U128);
 }

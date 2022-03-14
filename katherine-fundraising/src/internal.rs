@@ -167,6 +167,18 @@ impl KatherineFundraising {
         suporter_withdraw += requested_amount;
         kickstarter.withdraw.insert(&supporter_id, &suporter_withdraw);
     }
+    
+    pub(crate) fn internal_restore_kickstarter_excedent_withdraw(
+        &mut self,
+        amount: Balance,
+        kickstarter_id: KickstarterId,
+    ){
+        let mut kickstarter = self.kickstarters
+        .get(kickstarter_id as u64)
+        .expect("kickstarted not found");
+
+        kickstarter.available_reward_tokens += amount;
+    }
 
     pub(crate) fn internal_restore_kickstarter_withdraw(
         &mut self,
@@ -223,10 +235,6 @@ impl KatherineFundraising {
             kickstarter.deposits.insert(&supporter_id, &deposit);
         }
         //UPG check if it should refund freed storage
-    }
-
-    pub(crate) fn internal_kickstarter_withdraw(&self, kickstarter: &mut Kickstarter){
-        unimplemented!();
     }
 
     pub(crate) fn internal_restore_withdraw(

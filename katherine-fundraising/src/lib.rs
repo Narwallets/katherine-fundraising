@@ -202,9 +202,48 @@ impl KatherineFundraising {
     /*****************************/
 
     pub fn kickstarter_withdraw_excedent(&self, kickstarter_id: KickstarterIdJSON){
-        let mut kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
+        let kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
         only_kickstarter_admin(&kickstarter);
-        self.internal_kickstarter_withdraw(&mut kickstarter);
+
+        
+        let excedent = kickstarter.available_reward_tokens - kickstarter.get_goal().tokens_to_release;
+
+        if excedent > 0 {
+            nep141_token::ft_transfer_call(
+                env::predecessor_account_id().clone(),
+                excedent.into(),
+                Some("withdraw excedent from kickstarter".to_string()),
+                &kickstarter.token_contract_address,
+                1,
+                GAS_FOR_FT_TRANSFER,
+            )
+            // restore user balance on error
+            .then(ext_self_kikstarter::kickstarter_withdraw_excedent_callback(
+                kickstarter_id,
+                excedent.into(),
+                &env::current_account_id(),
+                0,
+                GAS_FOR_FT_TRANSFER
+            ));
+        }
+
+        
+    }
+
+    pub fn kickstarter_withdraw_excedent_callback(&mut self, kickstarter_id: KickstarterIdJSON, amount: U128){
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!("token transfer {}", u128::from(amount));
+            },
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering kickstarter state",
+                    amount.0
+                );
+                self.internal_restore_kickstarter_excedent_withdraw(amount.into(), kickstarter_id.into())
+            }
+        }
     }
 
     pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
