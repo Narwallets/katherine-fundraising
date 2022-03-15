@@ -26,7 +26,7 @@ pub use metapool::{ext_self, ext_metapool};
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct KatherineFundraising {
     pub owner_id: AccountId,
-    pub supporters: UnorderedMap<AccountId, Supporter>,
+    pub supporters: UnorderedMap<SupporterId, Supporter>,
     pub kickstarters: Vector<Kickstarter>,
     pub total_available: Balance,
 
@@ -63,9 +63,7 @@ impl KatherineFundraising {
 
     pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
         let account = env::predecessor_account_id();
-        let mut kickstarter = self.kickstarters
-        .get(kickstarter_id as u64)
-        .expect("kickstarted not found");
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
 
         nep141_token::ft_transfer_call(
@@ -194,6 +192,63 @@ impl KatherineFundraising {
             }
         } else {
             panic!("kickstarter already activated");
+        }
+    }
+
+    /*****************************/
+    /*   Supporters functions   */
+    /*****************************/
+
+    pub fn get_supporter_total_rewards(
+        &self,
+        supporter_id: SupporterIdJSON,
+        kickstarter_id: KickstarterIdJSON
+    ) -> Balance {
+        let supporter_id = SupporterId::from(supporter_id);
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        match self.supporters.get(&supporter_id) {
+            Some(supporter) => {
+                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
+                    let goal = kickstarter.get_goal();
+                    return self.internal_get_supporter_total_rewards(
+                        &supporter_id,
+                        &kickstarter,
+                        goal,
+                    );
+                } else {
+                    panic!("Supporter is not part of Kickstarter!");
+                }
+            },
+            None => panic!("Supporter does not have any reward!"),
+        }
+    }
+
+    pub fn get_supporter_available_rewards(
+        &self,
+        supporter_id: SupporterIdJSON,
+        kickstarter_id: KickstarterIdJSON
+    ) -> Balance {
+        let supporter_id = SupporterId::from(supporter_id);
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        match self.supporters.get(&supporter_id) {
+            Some(supporter) => {
+                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
+                    let goal = kickstarter.get_goal();
+                    let total_rewards = self.internal_get_supporter_total_rewards(
+                        &supporter_id,
+                        &kickstarter,
+                        goal,
+                    );
+                    let supporter_withdraw: Balance = match kickstarter.withdraw.get(&supporter_id) {
+                        Some(value) => value,
+                        None => 0,
+                    };
+                    return total_rewards - supporter_withdraw;
+                } else {
+                    panic!("Supporter is not part of Kickstarter!");
+                }
+            },
+            None => panic!("Supporter does not have any reward!"),
         }
     }
 

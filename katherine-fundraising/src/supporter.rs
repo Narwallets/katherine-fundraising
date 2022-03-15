@@ -9,7 +9,7 @@ pub struct Supporter {
     pub total_in_deposits: Balance,
     pub locked: Balance,
     pub available: u128,
-    pub kickstarters: Option<Vector<KickstarterId>>
+    pub kickstarters: Vector<KickstarterId>
 }
 
 /// Supporter account on this contract
@@ -19,7 +19,7 @@ impl Default for Supporter {
             available: 0,
             total_in_deposits: 0,
             locked: 0,
-            kickstarters: None
+            kickstarters: Vector::new(b"Kickstarter".to_vec()),
         }
     }
 }
@@ -28,7 +28,8 @@ impl Supporter {
     pub fn is_empty(&self) -> bool {
         return self.available == 0
                && self.total_in_deposits == 0
-               && self.locked == 0;
+               && self.locked == 0
+               && self.kickstarters.is_empty();
     }
 
     pub(crate) fn take_from_available(
