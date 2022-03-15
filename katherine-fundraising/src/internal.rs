@@ -136,7 +136,7 @@ impl KatherineFundraising {
         &self,
         kickstarter: &Kickstarter,
         supporter_id: &SupporterId,
-        total_deposited: Balance
+        total_deposited: Balance,
     ) -> bool {
         match kickstarter.deposits.get(&supporter_id) {
             Some(amount) => return amount == total_deposited,
@@ -144,28 +144,45 @@ impl KatherineFundraising {
         }
     }
 
+    pub(crate) fn internal_get_supporter_total_rewards(
+        &self,
+        supporter_id: &SupporterId,
+        kickstarter: &Kickstarter,
+        goal: Goal,
+    ) -> Balance {
+        let cliff_timestamp = goal.cliff_timestamp;
+        let end_timestamp = goal.end_timestamp;
+        let total_rewards = kickstarter.get_total_rewards_for_supporters();
+        let available_rewards = get_linear_release_proportion(total_rewards, cliff_timestamp, end_timestamp);
+        if available_rewards == 0 {return 0};
+        let deposit = kickstarter.deposits.get(&supporter_id).expect("deposit not found");
+        proportional(
+            deposit,
+            available_rewards,
+            kickstarter.total_deposited
+        )
+    }
+
     pub(crate) fn internal_withdraw_kickstarter_tokens(
         &mut self,
         requested_amount: Balance,
         kickstarter: &mut Kickstarter,
-        supporter_id: &AccountId
+        supporter_id: &SupporterId,
     ){
-        assert!(kickstarter.successful == Some(true), "kickstarter has not reached any goal");
         let goal = kickstarter.get_goal();
-        let cliff_timestamp = u128::from(goal.cliff_timestamp);
+        assert_eq!(kickstarter.successful, Some(true), "kickstarter has not reached any goal");
         assert!(goal.cliff_timestamp < get_epoch_millis(), "tokens have not been released yet");
-        let mut available_balance = (((u128::from(get_epoch_millis()) - cliff_timestamp) * kickstarter.get_total_rewards_for_supporters()) / (u128::from(goal.end_timestamp) - cliff_timestamp));
-        assert!(available_balance >= 1, "less than one token to withdraw");
 
-        if available_balance > kickstarter.get_total_rewards_for_supporters() {
-            available_balance = kickstarter.get_total_rewards_for_supporters();
-        }
-        assert!(requested_amount <= available_balance, "not enough tokens, available balance is {}", available_balance);
-        let mut deposit = kickstarter.deposits.get(&supporter_id).expect("deposit not found");
-        let supporter_available = deposit * available_balance / kickstarter.total_deposited;
-        let mut suporter_withdraw = kickstarter.withdraw.get(&supporter_id).unwrap_or_default();
-        suporter_withdraw += requested_amount;
-        kickstarter.withdraw.insert(&supporter_id, &suporter_withdraw);
+        let total_supporter_rewards = self.internal_get_supporter_total_rewards(&supporter_id, &kickstarter, goal);
+        assert!(total_supporter_rewards >= 1, "less than one token to withdraw");
+        assert!(requested_amount <= total_supporter_rewards, "not enough tokens, available balance is {}", total_supporter_rewards);
+
+        let mut supporter_withdraw: Balance = match kickstarter.withdraw.get(&supporter_id) {
+            Some(value) => value,
+            None => 0,
+        };
+        supporter_withdraw += requested_amount;
+        kickstarter.withdraw.insert(&supporter_id, &supporter_withdraw);
     }
     
     pub(crate) fn internal_restore_kickstarter_excedent_withdraw(
@@ -175,7 +192,7 @@ impl KatherineFundraising {
     ){
         let mut kickstarter = self.kickstarters
         .get(kickstarter_id as u64)
-        .expect("kickstarted not found");
+        .expect("kickstarter not found");
 
         kickstarter.available_reward_tokens += amount;
     }
@@ -188,7 +205,7 @@ impl KatherineFundraising {
     ){
         let mut kickstarter = self.kickstarters
         .get(kickstarter_id as u64)
-        .expect("kickstarted not found");
+        .expect("kickstarter not found");
         let mut withdraw = kickstarter.withdraw.get(&supporter_id).unwrap_or_default();
 
         assert!(withdraw >= amount, "withdrawn amount too high");
@@ -217,7 +234,7 @@ impl KatherineFundraising {
     ) {
         let mut kickstarter = self.kickstarters
             .get(kickstarter_id as u64)
-            .expect("kickstarted not found");
+            .expect("kickstarter not found");
         assert!(
             kickstarter.successful != Some(true) &&
             kickstarter.vesting_timestamp >= get_epoch_millis()
@@ -245,7 +262,7 @@ impl KatherineFundraising {
     ) {
         let mut kickstarter = self.kickstarters
             .get(kickstarter_id as u64)
-            .expect("kickstarted not found");
+            .expect("kickstarter not found");
         let mut deposit = kickstarter.deposits.get(&supporter_id).unwrap_or_default();
 
         deposit += amount;
