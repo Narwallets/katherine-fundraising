@@ -12,9 +12,10 @@ pub type BalanceJSON = U128;
 
 pub type KickstarterId = u32;
 pub type KickstarterIdJSON = u32;
+pub type GoalId = u8;
 
-pub type EpochMillis = u64;
-pub type BasisPoints = u16;
+pub type Milliseconds = u64;
+pub type BasisPoints = u32;
 pub type SupporterId = AccountId;
 pub type SupporterIdJSON = ValidAccountId;
 
@@ -32,7 +33,7 @@ construct_uint! {
 #[serde(crate = "near_sdk::serde")]
 pub struct KickstarterJSON {
     pub id: KickstarterIdJSON,
-    pub total_supporters: U64,
+    pub total_supporters: u32,
 }
 
 #[derive(Serialize, Deserialize)]

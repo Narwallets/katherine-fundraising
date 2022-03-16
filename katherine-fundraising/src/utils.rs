@@ -15,8 +15,8 @@ pub fn is_close(requested: Balance, total: Balance) -> bool {
 }
 
 #[inline]
-pub fn get_epoch_millis() -> EpochMillis {
-    return env::block_timestamp() / SECOND;
+pub fn get_current_epoch_millis() -> Milliseconds {
+    return env::block_timestamp() / 1_000_000;
 }
 
 #[inline]
@@ -39,8 +39,8 @@ pub fn proportional_with_steps(amount: Balance, numerator: u128, denominator: u1
     amount_to_release
 }
 
-pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: Timestamp, end_timestamp: Timestamp) -> u128 {
-    let now = get_epoch_millis();
+pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: Milliseconds, end_timestamp: Milliseconds) -> u128 {
+    let now = get_current_epoch_millis();
     if now < cliff_timestamp {
         0
     } else if now >= end_timestamp {

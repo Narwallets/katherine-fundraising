@@ -4,6 +4,10 @@ use near_sdk::serde_json::{json};
 
 use crate::{types::*, errors::*, utils::*};
 
+/********************/
+/*  Assert methods  */
+/********************/
+
 impl KatherineFundraising {
     pub fn assert_min_deposit_amount(&self, amount: Balance) {
         assert!(
@@ -11,6 +15,18 @@ impl KatherineFundraising {
             "minimum deposit amount is {}",
             self.min_deposit_amount
         );
+    }
+
+    pub fn assert_unique_slug(&self, slug: &String) {
+        assert!(
+            self.kickstarter_id_by_slug.get(slug).is_none(),
+            "Slug already exists. Choose a different one!"
+        );
+    }
+
+    #[inline]
+    pub(crate) fn assert_only_admin(&self){
+        assert!(env::predecessor_account_id() == self.owner_id, "only allowed for admin");
     }
 }
 
@@ -171,7 +187,7 @@ impl KatherineFundraising {
     ){
         let goal = kickstarter.get_goal();
         assert_eq!(kickstarter.successful, Some(true), "kickstarter has not reached any goal");
-        assert!(goal.cliff_timestamp < get_epoch_millis(), "tokens have not been released yet");
+        assert!(goal.cliff_timestamp < get_current_epoch_millis(), "tokens have not been released yet");
 
         let total_supporter_rewards = self.internal_get_supporter_total_rewards(&supporter_id, &kickstarter, goal);
         assert!(total_supporter_rewards >= 1, "less than one token to withdraw");
@@ -219,13 +235,6 @@ impl KatherineFundraising {
         }
     }
 
-    #[inline]
-    pub(crate) fn only_admin(&self){
-        assert!(env::predecessor_account_id() == self.owner_id, "only allowed for admin");
-    }
-
-
-
     pub(crate) fn internal_withdraw(
         &mut self,
         requested_amount: Balance,
@@ -237,7 +246,7 @@ impl KatherineFundraising {
             .expect("kickstarter not found");
         assert!(
             kickstarter.successful != Some(true) &&
-            kickstarter.vesting_timestamp >= get_epoch_millis()
+            kickstarter.get_goal().end_timestamp >= get_current_epoch_millis()
             , "can not withdraw from successfull kickstarter before vesting period ends"
         );
 

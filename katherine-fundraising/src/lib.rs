@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
 use near_sdk::json_types::{U128, U64};
 use near_sdk::{
-    env, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, Promise, Timestamp, PromiseResult
+    env, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, Promise, PromiseResult
 };
 
 mod constants;
@@ -28,6 +28,7 @@ pub struct KatherineFundraising {
     pub owner_id: AccountId,
     pub supporters: UnorderedMap<SupporterId, Supporter>,
     pub kickstarters: Vector<Kickstarter>,
+    pub kickstarter_id_by_slug: UnorderedMap<String, KickstarterId>,
     pub total_available: Balance,
 
     /// Min amount accepted for supporters
@@ -53,6 +54,7 @@ impl KatherineFundraising {
             owner_id,
             supporters: UnorderedMap::new(b"Supporters".to_vec()),
             kickstarters: Vector::new(b"Kickstarters".to_vec()),
+            kickstarter_id_by_slug: UnorderedMap::new(b"KickstarterId".to_vec()),
             total_available: 0,
             min_deposit_amount,
             metapool_contract_address,
@@ -166,7 +168,7 @@ impl KatherineFundraising {
             let kickstarter = self.kickstarters
                 .get(index)
                 .expect("internal error, kickstarter ID is out of range");
-            if kickstarter.active && kickstarter.close_timestamp <= get_epoch_millis() {
+            if kickstarter.active && kickstarter.close_timestamp <= get_current_epoch_millis() {
                 if kickstarter.any_achieved_goal() {
                     successful.push(KickstarterIdJSON::from(kickstarter.id))
                 }
@@ -257,7 +259,7 @@ impl KatherineFundraising {
 
     pub fn kickstarter_withdraw_excedent(&self, kickstarter_id: KickstarterIdJSON){
         let kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
-        only_kickstarter_admin(&kickstarter);
+        kickstarter.assert_only_owner();
 
         
         let excedent = kickstarter.available_reward_tokens - kickstarter.get_goal().tokens_to_release;
@@ -311,7 +313,7 @@ impl KatherineFundraising {
                 results.push(
                     KickstarterJSON {
                         id: kickstarter.id.into(),
-                        total_supporters: U64String::from(kickstarter.total_supporters)
+                        total_supporters: kickstarter.total_supporters
                     }
                 );
         }
@@ -319,31 +321,29 @@ impl KatherineFundraising {
     }
 
     pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
-        let kickstarters_len = self.kickstarters.len();
-        assert!(kickstarter_id as u64 <= kickstarters_len, "from_index is out of range!");
+        let kickstarters_len = self.get_total_kickstarters();
+        assert!(kickstarter_id <= kickstarters_len, "Index is out of range!");
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         KickstarterJSON {
             id: kickstarter.id.into(),
-            total_supporters: U64String::from(kickstarter.total_supporters)
+            total_supporters: kickstarter.total_supporters
         }
     }
 
-    /// Creates a new kickstarter entry in persistent storage
+    /// Creates a new kickstarter entry in persistent storage.
     pub fn create_kickstarter(
         &mut self,
         name: String,
         slug: String,
         owner_id: AccountId,
-        finish_timestamp: Timestamp,
-        open_timestamp: Timestamp,
-        close_timestamp: Timestamp,
-        vesting_timestamp: Timestamp,
-        cliff_timestamp: Timestamp,
+        open_timestamp: Milliseconds,
+        close_timestamp: Milliseconds,
         token_contract_address: AccountId,
-    ) {
-        self.only_admin();
+    ) -> KickstarterIdJSON {
+        self.assert_only_admin();
+        self.assert_unique_slug(&slug);
         let kickstarter = Kickstarter {
-            id: self.kickstarters.len() as u32,
+            id: self.kickstarters.len() as KickstarterId,
             name,
             slug,
             goals: Vector::new(b"Goal".to_vec()),
@@ -358,18 +358,16 @@ impl KatherineFundraising {
             active: true,
             successful: None,
             stnear_value_in_near: None,
-            creation_timestamp: env::block_timestamp(),
-            finish_timestamp,
+            creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,
-            vesting_timestamp,
-            cliff_timestamp,
             token_contract_address,
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
         };
-
         self.kickstarters.push(&kickstarter);
+        self.kickstarter_id_by_slug.insert(&kickstarter.slug, &kickstarter.id);
+        kickstarter.id.into()
     }
 
     #[allow(unused)]
@@ -384,24 +382,17 @@ impl KatherineFundraising {
         name: String,
         slug: String,
         owner_id: AccountId,
-        finish_timestamp: Timestamp,
-        open_timestamp: Timestamp,
-        close_timestamp: Timestamp,
-        vesting_timestamp: Timestamp,
-        cliff_timestamp: Timestamp,
+        open_timestamp: Milliseconds,
+        close_timestamp: Milliseconds,
         token_contract_address: AccountId,
     ) {
-        self.only_admin();
+        self.assert_only_admin();
+        self.assert_unique_slug(&slug);
         let old_kickstarter = self.internal_get_kickstarter(id);
         assert!(
-            old_kickstarter.open_timestamp <= env::block_timestamp(),
+            old_kickstarter.open_timestamp <= get_current_epoch_millis(),
             "Changes are not allow after the funding period started!"
         );
-        assert!(
-            self.owner_id != env::predecessor_account_id(),
-            "Only Katherine owner is allowed to modify the project!"
-        );
-
         let kickstarter = Kickstarter {
             id,
             name,
@@ -418,18 +409,16 @@ impl KatherineFundraising {
             active: true,
             successful: None,
             stnear_value_in_near: None,
-            creation_timestamp: env::block_timestamp(),
-            finish_timestamp,
+            creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,
-            vesting_timestamp,
-            cliff_timestamp,
             token_contract_address,
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
         };
-
         self.kickstarters.replace(id as u64, &kickstarter);
+        self.kickstarter_id_by_slug.remove(&old_kickstarter.slug);
+        self.kickstarter_id_by_slug.insert(&kickstarter.slug, &kickstarter.id);
     }
 
     /********************/
@@ -438,6 +427,13 @@ impl KatherineFundraising {
 
     pub fn get_total_kickstarters(&self) -> u32 {
         return self.kickstarters.len() as u32;
+    }
+
+    pub fn get_kickstarter_id_from_slug(&self, slug: String) -> KickstarterId {
+        match self.kickstarter_id_by_slug.get(&slug) {
+            Some(id) => id,
+            None => panic!("Nonexistent slug!"),
+        }
     }
 }
 
