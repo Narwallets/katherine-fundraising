@@ -13,8 +13,8 @@ pub type BalanceJSON = U128;
 pub type KickstarterId = u32;
 pub type KickstarterIdJSON = u32;
 
-pub type IOUNoteId = u64;
 pub type EpochMillis = u64;
+pub type BasisPoints = u16;
 pub type SupporterId = AccountId;
 pub type SupporterIdJSON = ValidAccountId;
 

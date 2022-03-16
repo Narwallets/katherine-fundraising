@@ -145,7 +145,7 @@ impl Kickstarter {
         self.get_tokens_to_release() - self.katherine_fee.expect("Katherine fee must be denominated at goal evaluation")
     }
 
-    pub fn set_katherine_fee(&mut self, katherine_fee_percent: u32, goal: &Goal) {
+    pub fn set_katherine_fee(&mut self, katherine_fee_percent: BasisPoints, goal: &Goal) {
         let katherine_fee: Balance = proportional(
             katherine_fee_percent as u128,
             goal.tokens_to_release,

@@ -36,7 +36,7 @@ pub struct KatherineFundraising {
 
     // Katherine fee is a % of the Kickstarter Token rewards.
     // Percent is denominated in basis points 100% equals 10_000 basis points.
-    pub katherine_fee_percent: u32,
+    pub katherine_fee_percent: BasisPoints,
 }
 
 #[near_bindgen]
@@ -44,10 +44,9 @@ impl KatherineFundraising {
     #[init]
     pub fn new(
         owner_id: AccountId,
-        staking_goal: Balance,
         min_deposit_amount: Balance,
         metapool_contract_address: AccountId,
-        katherine_fee_percent: u32
+        katherine_fee_percent: BasisPoints
     ) -> Self {
         // assert!(!env::state_exists(), "The contract is already initialized");
         Self {
