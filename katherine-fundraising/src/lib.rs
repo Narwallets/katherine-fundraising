@@ -443,51 +443,59 @@ impl KatherineFundraising {
 }
 
 
-// #[cfg(not(target_arch = "wasm32"))]
-// #[cfg(test)]
-// mod tests {
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg(test)]
+mod tests {
 
-//     use near_sdk::{testing_env, MockedBlockchain, VMContext};
+    use near_sdk::{testing_env, MockedBlockchain, VMContext};
 
-//     mod unit_test_utils;
-//     use unit_test_utils::*;
+    mod unit_test_utils;
+    use unit_test_utils::*;
 
-//     use super::*;
-
-
-//     /// Get initial context for tests
-//     fn basic_context() -> VMContext {
-//         println!("SYSTEM ACCOUNT: {}", SYSTEM_ACCOUNT.to_string());
-//         get_context(
-//             SYSTEM_ACCOUNT.into(),
-//             ntoy(TEST_INITIAL_BALANCE),
-//             0,
-//             to_ts(GENESIS_TIME_IN_DAYS),
-//             false,
-//         )
-//     }
-
-//     /// Creates a new contract
-//     fn new_contract() -> KatherineFundraising {
-//         KatherineFundraising::new(
-//             OWNER_ACCOUNT.into(),
-//         )
-//     }
-
-//     fn contract_only_setup() -> (VMContext, KatherineFundraising) {
-//         let context = basic_context();
-//         testing_env!(context.clone());
-//         let contract = new_contract();
-//         return (context, contract);
-//     }
+    use super::*;
 
 
-//     #[test]
-//     fn test_create_kickstarter() {
-//         let (_context, mut contract) = contract_only_setup();
-//         _new_kickstarter(_context, &mut contract);
-//         assert_eq!(1, contract.kickstarters.len());
-//     }
+    /// Get initial context for tests
+    fn basic_context() -> VMContext {
+        println!("SYSTEM ACCOUNT: {}", SYSTEM_ACCOUNT.to_string());
+        get_context(
+            SYSTEM_ACCOUNT.into(),
+            ntoy(TEST_INITIAL_BALANCE),
+            0,
+            to_ts(GENESIS_TIME_IN_DAYS),
+            false,
+        )
+    }
+
+    /// Creates a new contract
+    fn new_contract() -> KatherineFundraising {
+       KatherineFundraising::new(
+            OWNER_ACCOUNT.into(),
+        )
+    }
+
+    fn contract_only_setup() -> (VMContext, KatherineFundraising) {
+        let context = basic_context();
+        testing_env!(context.clone());
+        let contract = new_contract();
+        return (context, contract);
+    }
+
+
+    #[test]
+    fn test_create_kickstarter() {
+        let (_context, mut contract) = contract_only_setup();
+        _new_kickstarter(_context, &mut contract);
+        assert_eq!(1, contract.kickstarters.len());
+    }
+
+
+    #[test]
+    fn test_get_kickstarters() {
+        let (_context, mut contract) = contract_only_setup();
+        contract.get_kickstarters(0, 49);
+        
+    }
 
 //     #[test]
 //     fn test_create_supporter() {
@@ -559,4 +567,4 @@ impl KatherineFundraising {
 //             assert_eq!(true, unactive_ks);
 //         }
 //     }
-// }
+}
