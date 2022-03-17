@@ -42,3 +42,21 @@ GOAL_1_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
 GOAL_1_TOKENS_TO_RELEASE="100000000"$YOCTO_UNITS
 echo "------------------ Creating Goal #1"
 NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "tokens_to_release": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+echo "TOTAL GOALS:"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_total_goals '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+
+GOAL_2_NAME="Goal_Number_2"
+GOAL_2_DESIRED_AMOUNT="2000000"$YOCTO_UNITS
+GOAL_2_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))
+GOAL_2_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
+GOAL_2_TOKENS_TO_RELEASE="200000000"$YOCTO_UNITS
+echo "------------------ Creating Goal #2"
+NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_2_NAME'", "desired_amount": "'$GOAL_2_DESIRED_AMOUNT'", "tokens_to_release": "'$GOAL_2_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_2_CLIFF_DATE', "end_timestamp": '$GOAL_2_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+echo "TOTAL GOALS:"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_total_goals '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+
+# Deleting last goal
+echo "------------------ Deleting Goal #2"
+NEAR_ENV=testnet near call $CONTRACT_NAME delete_last_goal '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KICKSTARTER_OWNER_ID
+echo "TOTAL GOALS:"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_total_goals '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID

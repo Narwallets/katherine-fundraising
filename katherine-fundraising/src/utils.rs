@@ -15,7 +15,7 @@ pub fn is_close(requested: Balance, total: Balance) -> bool {
 }
 
 #[inline]
-pub fn get_current_epoch_millis() -> Milliseconds {
+pub fn get_current_epoch_millis() -> EpochMillis {
     return env::block_timestamp() / 1_000_000;
 }
 
@@ -39,7 +39,7 @@ pub fn proportional_with_steps(amount: Balance, numerator: u128, denominator: u1
     amount_to_release
 }
 
-pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: Milliseconds, end_timestamp: Milliseconds) -> u128 {
+pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: EpochMillis, end_timestamp: EpochMillis) -> u128 {
     let now = get_current_epoch_millis();
     if now < cliff_timestamp {
         0
@@ -52,7 +52,4 @@ pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: Milliseco
     }
 }
 
-#[inline]
-pub fn only_kickstarter_admin(kickstarter: &Kickstarter){
-    assert!(env::predecessor_account_id() == kickstarter.owner_id, "only allowed for kickstarter owner");
-}
+

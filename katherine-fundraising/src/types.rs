@@ -14,7 +14,7 @@ pub type KickstarterId = u32;
 pub type KickstarterIdJSON = u32;
 pub type GoalId = u8;
 
-pub type Milliseconds = u64;
+pub type EpochMillis = u64;
 pub type BasisPoints = u32;
 pub type SupporterId = AccountId;
 pub type SupporterIdJSON = ValidAccountId;
@@ -34,6 +34,8 @@ construct_uint! {
 pub struct KickstarterJSON {
     pub id: KickstarterIdJSON,
     pub total_supporters: u32,
+    pub open_timestamp: EpochMillis,
+    pub close_timestamp: EpochMillis,
 }
 
 #[derive(Serialize, Deserialize)]

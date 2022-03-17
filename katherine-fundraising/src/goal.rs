@@ -15,9 +15,9 @@ pub struct Goal {
     /// How many tokens are for this 
     pub tokens_to_release: Balance,
     /// Date for starting the delivery of the Kickstarter Tokens if the goal was matched
-    pub cliff_timestamp: Milliseconds,
+    pub cliff_timestamp: EpochMillis,
     /// Date for finish the delivery of the Kickstarter Tokens
-    pub end_timestamp: Milliseconds,
+    pub end_timestamp: EpochMillis,
 }
 
 #[near_bindgen]
@@ -28,14 +28,16 @@ impl KatherineFundraising {
         name: String,
         desired_amount: BalanceJSON,
         tokens_to_release: BalanceJSON,
-        cliff_timestamp: Milliseconds,
-        end_timestamp: Milliseconds,
+        cliff_timestamp: EpochMillis,
+        end_timestamp: EpochMillis,
     ) -> GoalId {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.assert_only_owner();
         kickstarter.assert_goal_status();
+        kickstarter.assert_before_funding_period();
+        kickstarter.assert_number_of_goals(self.max_goals_per_kickstarter);
         let goal = Goal {
-            id: kickstarter.goals.len() as u8,
+            id: kickstarter.get_number_of_goals(),
             name,
             desired_amount: Balance::from(desired_amount),
             tokens_to_release: Balance::from(tokens_to_release),
@@ -45,5 +47,17 @@ impl KatherineFundraising {
         kickstarter.goals.push(&goal);
         self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
         goal.id
+    }
+
+    pub fn delete_last_goal(
+        &mut self,
+        kickstarter_id: KickstarterId,
+    ) {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.assert_only_owner();
+        kickstarter.assert_goal_status();
+        kickstarter.assert_before_funding_period();
+        kickstarter.goals.pop();
+        self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
     }
 }

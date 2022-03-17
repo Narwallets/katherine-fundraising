@@ -33,11 +33,11 @@ pub struct Kickstarter {
     // Spot near
     pub stnear_value_in_near: Option<Balance>,
     // Creation date of the project
-    pub creation_timestamp: Milliseconds,
+    pub creation_timestamp: EpochMillis,
     // Opening date to recieve deposits from supporters. TODO: more detail here
-    pub open_timestamp: Milliseconds,
+    pub open_timestamp: EpochMillis,
     // Closing date for recieving deposits from supporters. TODO: more detail here
-    pub close_timestamp: Milliseconds,
+    pub close_timestamp: EpochMillis,
     // Kickstarter Token contract address.
     pub token_contract_address: AccountId,
     // Total available and locked deposited tokens by the Kickstarter.
@@ -52,8 +52,18 @@ impl Kickstarter {
     }
 
     #[inline]
-    pub(crate) fn assert_only_owner(&self){
-        assert!(env::predecessor_account_id() == self.owner_id, "only allowed for admin");
+    pub(crate) fn assert_only_owner(&self) {
+        assert_eq!(env::predecessor_account_id(), self.owner_id, "only allowed for admin");
+    }
+
+    #[inline]
+    pub(crate) fn assert_before_funding_period(&self) {
+        assert!(get_current_epoch_millis() < self.open_timestamp, "Action not allow after funding period is open!");
+    }
+
+    #[inline]
+    pub(crate) fn assert_number_of_goals(&self, max_number: u8) {
+        assert!(max_number >= self.get_number_of_goals(), "Too many goals!");
     }
 }
 
@@ -167,11 +177,15 @@ impl Kickstarter {
         amount_in_stnear * tokens_rewards / self.total_deposited
     }
 
-    pub fn get_reward_cliff_timestamp(&self) -> Milliseconds {
+    pub fn get_reward_cliff_timestamp(&self) -> EpochMillis {
         self.get_goal().cliff_timestamp
     }
 
-    pub fn get_reward_end_timestamp(&self) -> Milliseconds {
+    pub fn get_reward_end_timestamp(&self) -> EpochMillis {
         self.get_goal().end_timestamp 
+    }
+
+    pub fn get_number_of_goals(&self) -> u8 {
+        self.goals.len() as u8
     }
 }

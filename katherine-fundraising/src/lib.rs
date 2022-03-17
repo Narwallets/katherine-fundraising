@@ -38,6 +38,7 @@ pub struct KatherineFundraising {
     // Katherine fee is a % of the Kickstarter Token rewards.
     // Percent is denominated in basis points 100% equals 10_000 basis points.
     pub katherine_fee_percent: BasisPoints,
+    pub max_goals_per_kickstarter: u8,
 }
 
 #[near_bindgen]
@@ -59,6 +60,7 @@ impl KatherineFundraising {
             min_deposit_amount,
             metapool_contract_address,
             katherine_fee_percent,
+            max_goals_per_kickstarter: 5,
         }
     }
 
@@ -313,7 +315,9 @@ impl KatherineFundraising {
                 results.push(
                     KickstarterJSON {
                         id: kickstarter.id.into(),
-                        total_supporters: kickstarter.total_supporters
+                        total_supporters: kickstarter.total_supporters,
+                        open_timestamp: kickstarter.open_timestamp,
+                        close_timestamp: kickstarter.close_timestamp,
                     }
                 );
         }
@@ -326,7 +330,9 @@ impl KatherineFundraising {
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         KickstarterJSON {
             id: kickstarter.id.into(),
-            total_supporters: kickstarter.total_supporters
+            total_supporters: kickstarter.total_supporters,
+            open_timestamp: kickstarter.open_timestamp,
+            close_timestamp: kickstarter.close_timestamp,
         }
     }
 
@@ -336,8 +342,8 @@ impl KatherineFundraising {
         name: String,
         slug: String,
         owner_id: AccountId,
-        open_timestamp: Milliseconds,
-        close_timestamp: Milliseconds,
+        open_timestamp: EpochMillis,
+        close_timestamp: EpochMillis,
         token_contract_address: AccountId,
     ) -> KickstarterIdJSON {
         self.assert_only_admin();
@@ -351,8 +357,8 @@ impl KatherineFundraising {
             katherine_fee: None,
             supporters: Vec::new(),
             total_supporters: 0,
-            deposits: UnorderedMap::new(b"A".to_vec()),
-            withdraw: UnorderedMap::new(b"W".to_vec()),
+            deposits: UnorderedMap::new(b"Deposit".to_vec()),
+            withdraw: UnorderedMap::new(b"Withdraw".to_vec()),
             total_deposited: 0,
             owner_id,
             active: true,
@@ -382,8 +388,8 @@ impl KatherineFundraising {
         name: String,
         slug: String,
         owner_id: AccountId,
-        open_timestamp: Milliseconds,
-        close_timestamp: Milliseconds,
+        open_timestamp: EpochMillis,
+        close_timestamp: EpochMillis,
         token_contract_address: AccountId,
     ) {
         self.assert_only_admin();
@@ -434,6 +440,11 @@ impl KatherineFundraising {
             Some(id) => id,
             None => panic!("Nonexistent slug!"),
         }
+    }
+
+    pub fn get_kickstarter_total_goals(&self, kickstarter_id: KickstarterIdJSON) -> u8 {
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.get_number_of_goals()
     }
 }
 
