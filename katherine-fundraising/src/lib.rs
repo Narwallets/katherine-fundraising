@@ -111,10 +111,22 @@ impl KatherineFundraising {
 
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        let account = env::predecessor_account_id();
-        self.internal_withdraw(amount.into(), kickstarter_id.into(), &account);
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let mut amount = Balance::from(amount);
+        match kickstarter.successful {
+            Some(true) => {
+                assert!(
+                    kickstarter.get_goal().unfreeze_timestamp < get_current_epoch_millis(),
+                    "Assets are still freezed."
+                );
+                unimplemented!()
+            },
+            _ => BalanceJSON::from(deposit),
+        }
+        let supporter_id = env::predecessor_account_id();
+        self.internal_withdraw(Balance::from(amount), kickstarter_id.into(), &supporter_id);
         nep141_token::ft_transfer_call(
-            account.clone(),
+            supporter_id.clone(),
             amount,
             Some("withdraw from kickstarter".to_string()),
             &self.metapool_contract_address,
@@ -123,7 +135,7 @@ impl KatherineFundraising {
         )
         // restore user balance on error
         .then(ext_self_metapool::return_tokens_callback(
-            account.clone(),
+            supporter_id.clone(),
             kickstarter_id,
             amount,
             &env::current_account_id(),
@@ -312,14 +324,7 @@ impl KatherineFundraising {
             let kickstarter = self.kickstarters
                 .get(index as u64)
                 .expect("Kickstarter ID is out of range!");
-                results.push(
-                    KickstarterJSON {
-                        id: kickstarter.id.into(),
-                        total_supporters: kickstarter.total_supporters,
-                        open_timestamp: kickstarter.open_timestamp,
-                        close_timestamp: kickstarter.close_timestamp,
-                    }
-                );
+                results.push(kickstarter.to_json());
         }
         results
     }
@@ -328,12 +333,7 @@ impl KatherineFundraising {
         let kickstarters_len = self.get_total_kickstarters();
         assert!(kickstarter_id <= kickstarters_len, "Index is out of range!");
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        KickstarterJSON {
-            id: kickstarter.id.into(),
-            total_supporters: kickstarter.total_supporters,
-            open_timestamp: kickstarter.open_timestamp,
-            close_timestamp: kickstarter.close_timestamp,
-        }
+        kickstarter.to_json()
     }
 
     /// Creates a new kickstarter entry in persistent storage.
@@ -355,9 +355,9 @@ impl KatherineFundraising {
             goals: Vector::new(b"Goal".to_vec()),
             winner_goal_id: None,
             katherine_fee: None,
-            supporters: Vec::new(),
+            // supporters: Vec::new(),
             total_supporters: 0,
-            deposits: UnorderedMap::new(b"Deposit".to_vec()),
+            deposits: UnorderedMap::new(b"Deposits".to_vec()),
             withdraw: UnorderedMap::new(b"Withdraw".to_vec()),
             total_deposited: 0,
             owner_id,
@@ -406,7 +406,7 @@ impl KatherineFundraising {
             goals: Vector::new(b"Goal".to_vec()),
             winner_goal_id: None,
             katherine_fee: None,
-            supporters: Vec::new(),
+            // supporters: Vec::new(),
             total_supporters: 0,
             deposits: UnorderedMap::new(b"A".to_vec()),
             withdraw: UnorderedMap::new(b"W".to_vec()),
@@ -445,6 +445,26 @@ impl KatherineFundraising {
     pub fn get_kickstarter_total_goals(&self, kickstarter_id: KickstarterIdJSON) -> u8 {
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.get_number_of_goals()
+    }
+
+    pub fn get_kickstarter_goal(&self, kickstarter_id: KickstarterIdJSON, goal_id: GoalIdJSON) -> GoalJSON {
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let goal = kickstarter.get_goal_by_id(goal_id.into());
+        goal.to_json()
+    }
+
+    pub fn get_supporter_total_deposit_in_kickstarter(
+        &self,
+        supporter_id: SupporterIdJSON,
+        kickstarter_id: KickstarterIdJSON,
+    ) -> BalanceJSON {
+        let supporter_id = SupporterId::from(supporter_id);
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let deposit = kickstarter.get_deposit(&supporter_id);
+        match kickstarter.successful {
+            Some(true) => unimplemented!(),
+            _ => BalanceJSON::from(deposit),
+        }
     }
 }
 
