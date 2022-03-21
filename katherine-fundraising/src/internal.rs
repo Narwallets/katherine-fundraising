@@ -138,10 +138,38 @@ impl KatherineFundraising {
                 kickstarter.active = false;
                 kickstarter.successful = Some(true);
                 kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
-                kickstarter.stnear_value_in_near = Some(st_near_price.into());
+                kickstarter.stnear_price_at_freeze = Some(st_near_price.into());
                 self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
             }
         }
+    }
+
+    pub(crate) fn internal_unfreeze_kickstarter_funds(&mut self, kickstarter_id: KickstarterId) {
+        ext_metapool::get_st_near_price(
+            //promise params
+            &self.metapool_contract_address,
+            NO_DEPOSIT,
+            GAS_FOR_GET_STNEAR,
+        )
+        .then(ext_self::set_stnear_price_at_unfreeze(
+            kickstarter_id,
+            //promise params
+            &env::current_account_id(),
+            NO_DEPOSIT,
+            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
+        ));
+    }
+
+    // fn continues here after callback
+    #[private]
+    pub(crate) fn set_stnear_price_at_unfreeze(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON, 
+        #[callback] st_near_price: U128String,
+    ) {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.stnear_price_at_unfreeze = Some(st_near_price.into());
+        self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
     }
 
     pub(crate) fn internal_verify_total_deposited(
@@ -234,17 +262,10 @@ impl KatherineFundraising {
     pub(crate) fn internal_withdraw(
         &mut self,
         requested_amount: Balance,
-        kickstarter_id: KickstarterId,
+        kickstarter: &Kickstarter,
         supporter_id: &SupporterId
     ) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        assert!(
-            kickstarter.successful != Some(true) &&
-            kickstarter.get_goal().end_timestamp >= get_current_epoch_millis()
-            , "can not withdraw from successfull kickstarter before vesting period ends"
-        );
         let mut deposit = kickstarter.get_deposit(&supporter_id);
-
         assert!(requested_amount <= deposit, "withdraw amount exceeds balance");
         if deposit == requested_amount{
             kickstarter.deposits.remove(&supporter_id);
@@ -253,7 +274,7 @@ impl KatherineFundraising {
             deposit -= requested_amount;
             kickstarter.deposits.insert(&supporter_id, &deposit);
         }
-        //UPG check if it should refund freed storage
+        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     }
 
     pub(crate) fn internal_restore_withdraw(
@@ -269,5 +290,6 @@ impl KatherineFundraising {
 
         deposit += amount;
         kickstarter.deposits.insert(&supporter_id, &deposit);
+        self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
     }
 }

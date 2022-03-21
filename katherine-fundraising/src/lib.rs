@@ -112,22 +112,36 @@ impl KatherineFundraising {
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
         let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        let mut amount = Balance::from(amount);
-        match kickstarter.successful {
-            Some(true) => {
-                assert!(
-                    kickstarter.get_goal().unfreeze_timestamp < get_current_epoch_millis(),
-                    "Assets are still freezed."
-                );
-                unimplemented!()
-            },
-            _ => BalanceJSON::from(deposit),
-        }
+        let amount = Balance::from(amount);
         let supporter_id = env::predecessor_account_id();
-        self.internal_withdraw(Balance::from(amount), kickstarter_id.into(), &supporter_id);
+        let deposit = kickstarter.get_deposit(&supporter_id);
+        let (amount_to_remove, amount_to_send) = if kickstarter.successful == Some(true) {
+            kickstarter.assert_unfreezed_funds();
+            let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("Price at freeze is not defined!");
+            let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!");
+            let max_amount_to_withdraw = proportional(deposit, price_at_freeze, price_at_unfreeze);
+            assert!(amount <= max_amount_to_withdraw, "Not available amount!");
+            if is_close(amount, max_amount_to_withdraw) {
+                (deposit, max_amount_to_withdraw)
+            } else {
+                (
+                    proportional(amount, price_at_unfreeze, price_at_freeze),
+                    amount
+                )
+            }
+        } else {
+            assert!(amount <= deposit, "Not available amount!");
+            if is_close(amount, deposit) {
+                (deposit, deposit)
+            } else {
+                (amount, amount)
+            }
+        };
+
+        self.internal_withdraw(amount_to_remove, &kickstarter, &supporter_id);
         nep141_token::ft_transfer_call(
             supporter_id.clone(),
-            amount,
+            BalanceJSON::from(amount_to_send),
             Some("withdraw from kickstarter".to_string()),
             &self.metapool_contract_address,
             1,
@@ -137,7 +151,7 @@ impl KatherineFundraising {
         .then(ext_self_metapool::return_tokens_callback(
             supporter_id.clone(),
             kickstarter_id,
-            amount,
+            BalanceJSON::from(amount_to_remove),
             &env::current_account_id(),
             0,
             GAS_FOR_FT_TRANSFER
@@ -186,7 +200,7 @@ impl KatherineFundraising {
                 if kickstarter.any_achieved_goal() {
                     successful.push(KickstarterIdJSON::from(kickstarter.id))
                 }
-                else{
+                else {
                     unsuccessful.push(KickstarterIdJSON::from(kickstarter.id))
                 }
             }
@@ -207,6 +221,15 @@ impl KatherineFundraising {
             }
         } else {
             panic!("kickstarter already activated");
+        }
+    }
+
+    /// Start the cross-contract call to unfreeze the kickstarter funds.
+    pub fn unfreeze_kickstarter_funds(&mut self, kickstarter_id: KickstarterIdJSON) {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        if kickstarter.successful == Some(true) && kickstarter.stnear_price_at_unfreeze == None {
+            kickstarter.assert_unfreezed_funds();
+            self.internal_unfreeze_kickstarter_funds(kickstarter_id);
         }
     }
 

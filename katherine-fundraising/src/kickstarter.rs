@@ -30,8 +30,9 @@ pub struct Kickstarter {
     pub active: bool,
     // True if the kickstart project met the goals
     pub successful: Option<bool>,
-    // Spot near
-    pub stnear_value_in_near: Option<Balance>,
+    // Spot stnear price at freeze and unfreeze.
+    pub stnear_price_at_freeze: Option<Balance>,
+    pub stnear_price_at_unfreeze: Option<Balance>,
     // Creation date of the project
     pub creation_timestamp: EpochMillis,
     // Opening date to recieve deposits from supporters. TODO: more detail here
@@ -64,6 +65,11 @@ impl Kickstarter {
     #[inline]
     pub(crate) fn assert_number_of_goals(&self, max_number: u8) {
         assert!(max_number >= self.get_number_of_goals(), "Too many goals!");
+    }
+
+    #[inline]
+    pub(crate) fn assert_unfreezed_funds(&self) {
+        assert!(self.get_goal().unfreeze_timestamp < get_current_epoch_millis(), "Assets are still freezed.");
     }
 }
 
@@ -143,7 +149,7 @@ impl Kickstarter {
 
     pub fn convert_stnear_to_near(&self, amount_in_stnear: &Balance) -> Balance {
         // WARNING: This operation must be enhaced.
-        let rate = self.stnear_value_in_near.expect("Conversion rate has not been stablished!");
+        let rate = self.stnear_price_at_freeze.expect("Conversion rate has not been stablished!");
         let amount_in_near = amount_in_stnear / rate;
         amount_in_near
     }

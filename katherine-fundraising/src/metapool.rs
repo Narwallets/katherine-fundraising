@@ -21,6 +21,7 @@ pub trait MetaPool {
 #[ext_contract(ext_self)]
 pub trait KatherineFundraising {
     fn activate_successful_kickstarter_after(&mut self, kickstarter_id: KickstarterIdJSON);
+    fn set_stnear_price_at_unfreeze(&mut self, kickstarter_id: KickstarterIdJSON);
 }
 
 #[near_bindgen]
