@@ -17,6 +17,7 @@ pub trait MetaPool {
 #[ext_contract(ext_self)]
 pub trait KatherineFundraising {
     fn activate_successful_kickstarter_after(&mut self, kickstarter_id: KickstarterIdJSON);
+    fn set_stnear_price_at_unfreeze(&mut self, kickstarter_id: KickstarterIdJSON);
 }
 
 #[near_bindgen]
@@ -29,7 +30,7 @@ impl FungibleTokenReceiver for KatherineFundraising {
     ) -> PromiseOrValue<U128> {
         let kickstarter_id = match msg.parse::<KickstarterId>() {
             Ok(_id) => _id,
-            Err(_) => panic!("Invalid Kickstarter id."),
+            Err(_) => panic!("Invalid KickstarterId."),
         };
 
         let result = if env::predecessor_account_id() == self.metapool_contract_address {
@@ -42,10 +43,12 @@ impl FungibleTokenReceiver for KatherineFundraising {
             self.internal_kickstarter_deposit(&amount.0, &kickstarter_id)
         };
 
+        // Return unused amount
         match result {
             Ok(unused_amount) => PromiseOrValue::Value(U128::from(unused_amount)),
             Err(_) => PromiseOrValue::Value(U128::from(amount.0)) 
         }
+        
     }
 }
 
