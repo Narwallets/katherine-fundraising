@@ -19,15 +19,6 @@ pub type BasisPoints = u32;
 pub type SupporterId = AccountId;
 pub type SupporterIdJSON = ValidAccountId;
 
-// Double Index used for the IOU Notes
-// Concatenate KickstarterId + SupporterId as String.
-pub type KickstarterSupporterDx = String;
-
-construct_uint! {
-    /// 256-bit unsigned integer.
-    pub struct U256(4);
-}
-
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]

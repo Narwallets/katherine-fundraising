@@ -1,6 +1,5 @@
 use near_sdk::{Balance, env};
-use crate::types::*;
-use crate::constants::*;
+
 use crate::*;
 
 /// is_close returns true if total-0.001N < requested < total+0.001N
@@ -22,14 +21,14 @@ pub fn get_current_epoch_millis() -> EpochMillis {
 #[inline]
 /// returns amount * numerator/denominator
 pub fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {
-    return (U256::from(amount) * U256::from(numerator) / U256::from(denominator)).as_u128();
+    return amount * numerator / denominator;
 }
 
 pub fn proportional_with_steps(amount: Balance, numerator: u128, denominator: u128, steps: u128) -> u128 {
     let mut amount_to_release: u128 = 0;
     let result = proportional(amount, numerator, denominator);
     for index in 1..steps {
-        let mut proportion = proportional(amount, index, steps);
+        let proportion = proportional(amount, index, steps);
         if  proportion <= result {
             amount_to_release = proportion;
         } else {
@@ -48,7 +47,7 @@ pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: EpochMill
     } else {
         let numerator = now as u128 - cliff_timestamp as u128;
         let denominator = end_timestamp as u128 - cliff_timestamp as u128;
-        proportional_with_steps(amount, numerator, denominator, 10) // TODO: constants steps
+        proportional_with_steps(amount, numerator, denominator, 10)
     }
 }
 

@@ -1,7 +1,6 @@
-use crate::*;
 use near_sdk::serde::{Serialize, Deserialize};
-use near_sdk::json_types::{U128};
 
+use crate::*;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 #[serde(crate = "near_sdk::serde")]

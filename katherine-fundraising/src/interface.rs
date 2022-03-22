@@ -1,6 +1,8 @@
-use near_sdk::{AccountId, ext_contract};
+use near_sdk::{ext_contract};
 use near_sdk::json_types::{U128};
-use crate::types::*;
+
+
+use crate::*;
 
 #[ext_contract(nep141_token)]
 pub trait NEP141Token {

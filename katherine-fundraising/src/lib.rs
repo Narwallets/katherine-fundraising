@@ -1,14 +1,14 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
-use near_sdk::json_types::{U128, U64};
+use near_sdk::json_types::{U128};
 use near_sdk::{
-    env, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, Promise, PromiseResult
+    env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult
 };
 
 mod constants;
 mod errors;
 mod types;
-pub mod internal;
+mod internal;
 mod metapool;
 
 pub mod interface;
@@ -16,10 +16,8 @@ pub mod supporter;
 pub mod kickstarter;
 pub mod goal;
 pub mod utils;
-pub use crate::utils::*;
 
 use crate::{constants::*, goal::*, kickstarter::*, metapool::*, supporter::*, types::*, utils::*, interface::*};
-pub use metapool::{ext_self, ext_metapool};
 
 
 #[near_bindgen]
@@ -64,94 +62,9 @@ impl KatherineFundraising {
         }
     }
 
-    pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        let account = env::predecessor_account_id();
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
-
-        nep141_token::ft_transfer_call(
-            account.clone(),
-            amount,
-            Some("withdraw from kickstarter".to_string()),
-            &kickstarter.token_contract_address,
-            1,
-            GAS_FOR_FT_TRANSFER,
-        )
-        // restore user balance on error
-        .then(ext_self_kikstarter::return_tokens_from_kickstarter_callback(
-            account.clone(),
-            kickstarter_id,
-            amount,
-            &env::current_account_id(),
-            0,
-            GAS_FOR_FT_TRANSFER
-        ));
-    }
-
-    #[private]
-    pub fn return_tokens_from_kickstarter_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128){
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!("token transfer {}", u128::from(amount));
-            },
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering account state",
-                    amount.0
-                );
-                self.internal_restore_kickstarter_withdraw(amount.into(), kickstarter_id.into(), user)
-            }
-        }
-    }
-
-    /***************************/
-    /*    Withdraw methods     */
-    /***************************/
-
-    /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
-    pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        let account = env::predecessor_account_id();
-        self.internal_withdraw(amount.into(), kickstarter_id.into(), &account);
-        nep141_token::ft_transfer_call(
-            account.clone(),
-            amount,
-            Some("withdraw from kickstarter".to_string()),
-            &self.metapool_contract_address,
-            1,
-            GAS_FOR_FT_TRANSFER,
-        )
-        // restore user balance on error
-        .then(ext_self_metapool::return_tokens_callback(
-            account.clone(),
-            kickstarter_id,
-            amount,
-            &env::current_account_id(),
-            0,
-            GAS_FOR_FT_TRANSFER
-        ));
-    }
-
-    #[private]
-    pub fn return_tokens_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: BalanceJSON) {
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!("token transfer {}", u128::from(amount));
-            },
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering account state",
-                    amount.0
-                );
-                self.internal_restore_withdraw(amount.into(), kickstarter_id.into(), user)
-            }
-        }
-    }
-
-    /************************/
-    /*    Robot methods     */
-    /************************/
+    /**************************/
+    /*    Robot functions     */
+    /**************************/
 
     /// Returns both successfull and unsuccessfull kickstarter ids in a single struc 
     pub fn get_kickstarters_to_process(
@@ -199,8 +112,89 @@ impl KatherineFundraising {
     }
 
     /*****************************/
-    /*   Supporters functions   */
+    /*   Supporters functions    */
     /*****************************/
+
+    pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
+        let account = env::predecessor_account_id();
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
+
+        nep141_token::ft_transfer_call(
+            account.clone(),
+            amount,
+            Some("withdraw from kickstarter".to_string()),
+            &kickstarter.token_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER,
+        )
+        // restore user balance on error
+        .then(ext_self_kikstarter::return_tokens_from_kickstarter_callback(
+            account.clone(),
+            kickstarter_id,
+            amount,
+            &env::current_account_id(),
+            0,
+            GAS_FOR_FT_TRANSFER
+        ));
+    }
+
+    #[private]
+    pub fn return_tokens_from_kickstarter_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: U128){
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!("token transfer {}", u128::from(amount));
+            },
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering account state",
+                    amount.0
+                );
+                self.internal_restore_kickstarter_withdraw(amount.into(), kickstarter_id.into(), user)
+            }
+        }
+    }
+
+    /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
+    pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
+        let account = env::predecessor_account_id();
+        self.internal_withdraw(amount.into(), kickstarter_id.into(), &account);
+        nep141_token::ft_transfer_call(
+            account.clone(),
+            amount,
+            Some("withdraw from kickstarter".to_string()),
+            &self.metapool_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER,
+        )
+        // restore user balance on error
+        .then(ext_self_metapool::return_tokens_callback(
+            account.clone(),
+            kickstarter_id,
+            amount,
+            &env::current_account_id(),
+            0,
+            GAS_FOR_FT_TRANSFER
+        ));
+    }
+
+    #[private]
+    pub fn return_tokens_callback(&mut self, user: AccountId, kickstarter_id: KickstarterIdJSON, amount: BalanceJSON) {
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!("token transfer {}", u128::from(amount));
+            },
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering account state",
+                    amount.0
+                );
+                self.internal_restore_withdraw(amount.into(), kickstarter_id.into(), user)
+            }
+        }
+    }
 
     pub fn get_supporter_total_rewards(
         &self,
@@ -255,10 +249,11 @@ impl KatherineFundraising {
         }
     }
 
-    /*****************************/
-    /*   Kickstarter functions   */
-    /*****************************/
+    /***********************************/
+    /*   Kickstarter owner functions   */
+    /***********************************/
 
+    /// withdraws unused tokens of winning goal
     pub fn kickstarter_withdraw_excedent(&self, kickstarter_id: KickstarterIdJSON){
         let kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
         kickstarter.assert_only_owner();
@@ -288,6 +283,7 @@ impl KatherineFundraising {
         
     }
 
+    #[private]
     pub fn kickstarter_withdraw_excedent_callback(&mut self, kickstarter_id: KickstarterIdJSON, amount: U128){
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
@@ -304,37 +300,11 @@ impl KatherineFundraising {
         }
     }
 
-    pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
-        let kickstarters_len = self.kickstarters.len() as usize;
-        assert!(from_index <= kickstarters_len, "from_index is out of range!");
-        let mut results: Vec<KickstarterJSON> = Vec::new();
-        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
-            let kickstarter = self.kickstarters
-                .get(index as u64)
-                .expect("Kickstarter ID is out of range!");
-                results.push(
-                    KickstarterJSON {
-                        id: kickstarter.id.into(),
-                        total_supporters: kickstarter.deposits.len(),
-                        open_timestamp: kickstarter.open_timestamp,
-                        close_timestamp: kickstarter.close_timestamp,
-                    }
-                );
-        }
-        results
-    }
 
-    pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
-        let kickstarters_len = self.get_total_kickstarters();
-        assert!(kickstarter_id <= kickstarters_len, "Index is out of range!");
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        KickstarterJSON {
-            id: kickstarter.id.into(),
-            total_supporters: kickstarter.get_total_supporters(),
-            open_timestamp: kickstarter.open_timestamp,
-            close_timestamp: kickstarter.close_timestamp,
-        }
-    }
+    /***********************/
+    /*   Admin functions   */
+    /***********************/
+
 
     /// Creates a new kickstarter entry in persistent storage.
     pub fn create_kickstarter(
@@ -425,9 +395,41 @@ impl KatherineFundraising {
         self.kickstarter_id_by_slug.insert(&kickstarter.slug, &kickstarter.id);
     }
 
-    /********************/
-    /*   View methods   */
-    /********************/
+    /**********************/
+    /*   View functions   */
+    /**********************/
+
+    pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
+        let kickstarters_len = self.kickstarters.len() as usize;
+        assert!(from_index <= kickstarters_len, "from_index is out of range!");
+        let mut results: Vec<KickstarterJSON> = Vec::new();
+        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
+            let kickstarter = self.kickstarters
+                .get(index as u64)
+                .expect("Kickstarter ID is out of range!");
+                results.push(
+                    KickstarterJSON {
+                        id: kickstarter.id.into(),
+                        total_supporters: kickstarter.deposits.len(),
+                        open_timestamp: kickstarter.open_timestamp,
+                        close_timestamp: kickstarter.close_timestamp,
+                    }
+                );
+        }
+        results
+    }
+
+    pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
+        let kickstarters_len = self.get_total_kickstarters();
+        assert!(kickstarter_id <= kickstarters_len, "Index is out of range!");
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        KickstarterJSON {
+            id: kickstarter.id.into(),
+            total_supporters: kickstarter.get_total_supporters(),
+            open_timestamp: kickstarter.open_timestamp,
+            close_timestamp: kickstarter.close_timestamp,
+        }
+    }
 
     pub fn get_total_kickstarters(&self) -> u32 {
         return self.kickstarters.len() as u32;

@@ -1,8 +1,6 @@
-use crate::*;
-use near_sdk::{near_bindgen, log, AccountId};
-use near_sdk::serde_json::{json};
+use near_sdk::{near_bindgen, AccountId};
 
-use crate::{types::*, errors::*, utils::*};
+use crate::*;
 
 /********************/
 /*  Assert methods  */
@@ -39,16 +37,6 @@ impl KatherineFundraising {
     /// Inner method to get the given supporter or a new default value supporter.
     pub(crate) fn internal_get_supporter(&self, supporter_id: &SupporterId) -> Supporter {
         self.supporters.get(supporter_id).unwrap_or_default()
-    }
-
-    /// Inner method to save the given supporter for a given supporter ID.
-    /// If the supporter balances are 0, the supporter is deleted instead to release storage.
-    pub(crate) fn internal_update_supporter(&mut self, supporter_id: &SupporterId, supporter: &Supporter) {
-        if supporter.is_empty() {
-            self.supporters.remove(supporter_id);
-        } else {
-            self.supporters.insert(supporter_id, &supporter); //insert_or_update
-        }
     }
 
     /// Inner method to get the given kickstarter.
@@ -119,49 +107,6 @@ impl KatherineFundraising {
             NO_DEPOSIT,
             env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
         ));
-    }
-
-    // fn continues here after callback
-    #[private]
-    pub(crate) fn activate_successful_kickstarter_after(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON, 
-        #[callback] st_near_price: U128String,
-    ) {
-        // NOTE: be careful on `#[callback]` here. If the get_stnear_price view call fails for some
-        //    reason this call will not be entered, because #[callback] fails for failed_promises
-        //    So *never* have something to rollback if the callback uses #[callback] params
-        //    because the .after() will not be execute on error 
-
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        let winning_goal = kickstarter.get_achieved_goal();
-        match winning_goal {
-            None => panic!("Kickstarter did not achieved any goal!"),
-            Some(goal) => {
-                assert!(
-                    kickstarter.available_reward_tokens >= goal.tokens_to_release,
-                    "Not enough available reward tokens to back the supporters rewards!"
-                );
-                kickstarter.winner_goal_id = Some(goal.id);
-                kickstarter.active = false;
-                kickstarter.successful = Some(true);
-                kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
-                kickstarter.stnear_value_in_near = Some(st_near_price.into());
-                self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
-            }
-        }
-    }
-
-    pub(crate) fn internal_verify_total_deposited(
-        &self,
-        kickstarter: &Kickstarter,
-        supporter_id: &SupporterId,
-        total_deposited: Balance,
-    ) -> bool {
-        match kickstarter.deposits.get(&supporter_id) {
-            Some(amount) => return amount == total_deposited,
-            None => return false,
-        }
     }
 
     pub(crate) fn internal_get_supporter_total_rewards(

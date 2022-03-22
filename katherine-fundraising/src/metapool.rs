@@ -1,14 +1,10 @@
 use core::panic;
-
-use crate::*;
-use near_sdk::{log, AccountId, Balance, PromiseOrValue, env, ext_contract, near_bindgen, PromiseResult};
-use near_sdk::Promise;
-use near_sdk::serde_json::{json};
+use near_sdk::{log, PromiseOrValue, env, ext_contract, near_bindgen};
 use near_sdk::json_types::{ValidAccountId, U128};
-
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 
-pub use crate::types::*;
+use crate::*;
+
 
 // define the methods we'll use on the other contract
 #[ext_contract(ext_metapool)]
