@@ -19,7 +19,6 @@ pub struct Kickstarter {
     pub katherine_fee: Option<Balance>,
     // TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
     pub supporters: Vec<Supporter>,
-    pub total_supporters: u32,
     // Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
     pub withdraw: UnorderedMap<SupporterId, Balance>,
@@ -75,8 +74,9 @@ impl Kickstarter {
         supporter_ids.to_vec()
     }
 
-    pub fn get_total_supporters(&self) -> u32 {
-        self.deposits.len() as u32
+    #[inline]
+    pub fn get_total_supporters(&self) -> u64 {
+        self.deposits.len()
     }
 
     pub fn get_deposits(&self) -> &UnorderedMap<AccountId, Balance> {
@@ -127,19 +127,6 @@ impl Kickstarter {
         self.goals
             .get(self.winner_goal_id.expect("No goal defined") as u64)
             .expect("Incorrect goal index") 
-    }
-
-    // WARNING: This is only callable by Katherine.
-    pub fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
-        let current_supporter_deposit = match self.deposits.get(&supporter_id) {
-            Some(total) => total,
-            None => {
-                self.total_supporters += 1;
-                0
-            },
-        };
-        let new_total: Balance = current_supporter_deposit + amount;
-        self.deposits.insert(&supporter_id, &new_total);
     }
 
     pub fn convert_stnear_to_near(&self, amount_in_stnear: &Balance) -> Balance {

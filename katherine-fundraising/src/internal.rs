@@ -61,19 +61,22 @@ impl KatherineFundraising {
         &mut self,
         supporter_id: &AccountId,
         amount: &Balance,
-        kickstarter: &mut Kickstarter
+        kickstarter_id: &KickstarterId
     ) -> Result<Balance, String> {
-        let current_timestamp = env::block_timestamp();
+        let mut kickstarter: Kickstarter = self.internal_get_kickstarter(*kickstarter_id);
+        let current_timestamp = get_current_epoch_millis();
         if current_timestamp >= kickstarter.close_timestamp || current_timestamp < kickstarter.open_timestamp {
             return Err("Not within the funding period.".into());
         }
 
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.total_in_deposits += amount;
-        self.supporters.insert(&supporter_id, &supporter);
+        self.supporters.insert(supporter_id, &supporter);
         kickstarter.total_deposited += amount;
-        kickstarter.update_supporter_deposits(&supporter_id, amount);
-
+        let mut deposit = kickstarter.deposits.get(supporter_id).unwrap_or_default();
+        deposit += amount;
+        kickstarter.deposits.insert(supporter_id, &deposit);
+        self.kickstarters.replace(*kickstarter_id as u64, &kickstarter);
         // Return unused amount.
         Ok(0)
     }
@@ -82,20 +85,21 @@ impl KatherineFundraising {
     pub(crate) fn internal_kickstarter_deposit(
         &mut self,
         amount: &Balance,
-        kickstarter: &mut Kickstarter    
+        kickstarter_id: &KickstarterId    
     ) -> Result<Balance, String> {
+        let mut kickstarter: Kickstarter = self.internal_get_kickstarter(*kickstarter_id);
         assert_eq!(
             &env::predecessor_account_id(),
             &kickstarter.token_contract_address,
             "Deposited tokens do not correspond to the Kickstarter contract."
         );
 
-        let current_timestamp = env::block_timestamp();
+        let current_timestamp = get_current_epoch_millis();
         if current_timestamp > kickstarter.open_timestamp {
             return Err("Kickstarter Tokens should be provided before the funding period starts.".into());
         }
         kickstarter.available_reward_tokens += amount;
-
+        self.kickstarters.replace(*kickstarter_id as u64, &kickstarter);
         // Return unused amount.
         Ok(0)
     }

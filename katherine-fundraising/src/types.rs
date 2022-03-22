@@ -33,7 +33,7 @@ construct_uint! {
 #[serde(crate = "near_sdk::serde")]
 pub struct KickstarterJSON {
     pub id: KickstarterIdJSON,
-    pub total_supporters: u32,
+    pub total_supporters: u64,
     pub open_timestamp: EpochMillis,
     pub close_timestamp: EpochMillis,
 }
