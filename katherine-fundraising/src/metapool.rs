@@ -21,6 +21,7 @@ pub trait MetaPool {
 #[ext_contract(ext_self)]
 pub trait KatherineFundraising {
     fn activate_successful_kickstarter_after(&mut self, kickstarter_id: KickstarterIdJSON);
+    fn set_stnear_price_at_unfreeze(&mut self, kickstarter_id: KickstarterIdJSON);
 }
 
 #[near_bindgen]
@@ -33,23 +34,19 @@ impl FungibleTokenReceiver for KatherineFundraising {
     ) -> PromiseOrValue<U128> {
         let kickstarter_id = match msg.parse::<KickstarterId>() {
             Ok(_id) => _id,
-            Err(_) => panic!("Invalid Kickstarter id."),
+            Err(_) => panic!("Invalid KickstarterId."),
         };
-
         let mut kickstarter: Kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        let result = if env::predecessor_account_id() == self.metapool_contract_address {
+        if env::predecessor_account_id() == self.metapool_contract_address {
             // Deposit is in stNEAR.
-            log!("DEPOSIT: {} stNEAR deposited from {} to Kickstarter id {}", amount.0, sender_id.as_ref(), msg);
-            self.internal_supporter_deposit(sender_id.as_ref(), &amount.0, &mut kickstarter) 
+            log!("DEPOSIT: {} stNEAR deposited from {} to KickstarterId {}", amount.0, sender_id.as_ref(), msg);
+            self.internal_supporter_deposit(sender_id.as_ref(), &amount.0, &mut kickstarter);
         } else {
             // Deposit is in a Kickstarter Token.
-            log!("DEPOSIT: {} tokens deposited from {} to Kickstarter id {}", amount.0, sender_id.as_ref(), msg);
-            self.internal_kickstarter_deposit(&amount.0, &mut kickstarter)
-        };
-
-        match result {
-            Ok(unused_amount) => PromiseOrValue::Value(U128::from(unused_amount)),
-            Err(_) => PromiseOrValue::Value(U128::from(amount.0)) 
+            log!("DEPOSIT: {} tokens deposited from {} to KickstarterId {}", amount.0, sender_id.as_ref(), msg);
+            self.internal_kickstarter_deposit(&amount.0, &mut kickstarter);
         }
+        // Return unused amount
+        PromiseOrValue::Value(U128::from(0))
     }
 }

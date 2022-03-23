@@ -36,22 +36,24 @@ NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter '{"kickstarter_id": '$
 
 # Create 2 goals
 GOAL_1_NAME="Goal_Number_1"
-GOAL_1_DESIRED_AMOUNT="1000000"$YOCTO_UNITS
+GOAL_1_DESIRED_AMOUNT="10"$YOCTO_UNITS
 GOAL_1_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))
 GOAL_1_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
-GOAL_1_TOKENS_TO_RELEASE="100000000"$YOCTO_UNITS
+GOAL_1_UNFREEZE_DATE=$GOAL_1_END_DATE
+GOAL_1_TOKENS_TO_RELEASE="0"$YOCTO_UNITS
 echo "------------------ Creating Goal #1"
-NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "tokens_to_release": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 echo "TOTAL GOALS:"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_total_goals '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
 
 GOAL_2_NAME="Goal_Number_2"
 GOAL_2_DESIRED_AMOUNT="2000000"$YOCTO_UNITS
 GOAL_2_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))
-GOAL_2_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
+GOAL_2_END_DATE=$(($GOAL_2_CLIFF_DATE + 60000))
+GOAL_2_UNFREEZE_DATE=$GOAL_2_END_DATE
 GOAL_2_TOKENS_TO_RELEASE="200000000"$YOCTO_UNITS
 echo "------------------ Creating Goal #2"
-NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_2_NAME'", "desired_amount": "'$GOAL_2_DESIRED_AMOUNT'", "tokens_to_release": "'$GOAL_2_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_2_CLIFF_DATE', "end_timestamp": '$GOAL_2_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_2_NAME'", "desired_amount": "'$GOAL_2_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_2_UNFREEZE_DATE', "tokens_to_release": "'$GOAL_2_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_2_CLIFF_DATE', "end_timestamp": '$GOAL_2_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 echo "TOTAL GOALS:"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_total_goals '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
 
@@ -60,3 +62,26 @@ echo "------------------ Deleting Goal #2"
 NEAR_ENV=testnet near call $CONTRACT_NAME delete_last_goal '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KICKSTARTER_OWNER_ID
 echo "TOTAL GOALS:"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_total_goals '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+
+# Get/view the Kickstarter goal
+echo "------------------ Get Goal by Id"
+GOAL_1_ID=0
+NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_goal '{"kickstarter_id": '$KICKSTARTER_ID', "goal_id": '$GOAL_1_ID'}' --accountId $KATHERINE_OWNER_ID
+
+# Sending stnear tokens to Kickstarter
+NOW_IN_SECS=$(date +%s)
+OPEN_DATE_IN_SECS=$(($KICKSTARTER_OPEN_DATE / 1000))
+WAITING_SECONDS=$(($OPEN_DATE_IN_SECS - $NOW_IN_SECS))
+echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
+sleep $WAITING_SECONDS
+SUPPORTER_ID="aldous.testnet"
+SUPPORTER_AMOUNT="1"$YOCTO_UNITS
+SUPPORTER_MSG="0"
+TOTAL_PREPAID_GAS=300000000000000
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$CONTRACT_NAME'", "amount": "'$SUPPORTER_AMOUNT'", "msg": "'$SUPPORTER_MSG'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+
+# Get/view the supporter deposit
+echo "------------------ Supporter deposit!"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_supporter_total_deposit_in_kickstarter '{"supporter_id": "'$SUPPORTER_ID'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+
+# Withdraw stnear tokens from Kickstarter

@@ -18,7 +18,7 @@ pub struct Kickstarter {
     // Katherine fee is denominated in Kickstarter Tokens.
     pub katherine_fee: Option<Balance>,
     // TODO: Supporters, IS THIS NECESARY IF SUPPORTERS ARE ALREADY IN DEPOSITS?
-    pub supporters: Vec<Supporter>,
+    // pub supporters: Vec<Supporter>,
     pub total_supporters: u32,
     // Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
@@ -30,8 +30,9 @@ pub struct Kickstarter {
     pub active: bool,
     // True if the kickstart project met the goals
     pub successful: Option<bool>,
-    // Spot near
-    pub stnear_value_in_near: Option<Balance>,
+    // Spot stnear price at freeze and unfreeze.
+    pub stnear_price_at_freeze: Option<Balance>,
+    pub stnear_price_at_unfreeze: Option<Balance>,
     // Creation date of the project
     pub creation_timestamp: EpochMillis,
     // Opening date to recieve deposits from supporters. TODO: more detail here
@@ -65,6 +66,11 @@ impl Kickstarter {
     pub(crate) fn assert_number_of_goals(&self, max_number: u8) {
         assert!(max_number >= self.get_number_of_goals(), "Too many goals!");
     }
+
+    #[inline]
+    pub(crate) fn assert_unfreezed_funds(&self) {
+        assert!(self.get_goal().unfreeze_timestamp < get_current_epoch_millis(), "Assets are still freezed.");
+    }
 }
 
 impl Kickstarter {
@@ -79,20 +85,15 @@ impl Kickstarter {
         self.deposits.len() as u32
     }
 
-    pub fn get_deposits(&self) -> &UnorderedMap<AccountId, Balance> {
-        &self.deposits
-        // let mut funding_map: UnorderedMap<AccountId, Balance> = UnorderedMap::new(b"A".to_vec());
-        // for tx in self.supporter_tickets.clone().into_iter() {
-        //     let supporter_id: AccountId = tx.supporter_id;
-        //     let ticket_blance: Balance = tx.stnear_amount;
-        //     let current_total: Balance = match funding_map.get(&supporter_id) {
-        //         Some(total) => total,
-        //         None => 0,
-        //     };
-        //     let new_total: Balance = current_total + ticket_blance;
-        //     funding_map.insert(&supporter_id, &new_total);
-        // }
-        // funding_map
+    pub fn get_deposit(&self, supporter_id: &SupporterId) -> Balance {
+        self.deposits.get(&supporter_id).expect("Supporter is not part of Kickstarter!")
+    }
+
+    pub fn get_withdraw(&self, supporter_id: &SupporterId) -> Balance {
+        match self.withdraw.get(&supporter_id) {
+            Some(amount) => amount,
+            None => 0,
+        }
     }
 
     /// Deprecated!
@@ -129,8 +130,12 @@ impl Kickstarter {
             .expect("Incorrect goal index") 
     }
 
+    pub fn get_goal_by_id(&self, goal_id: GoalId) -> Goal {
+        self.goals.get(goal_id as u64).expect("Goal not found!")
+    }
+
     // WARNING: This is only callable by Katherine.
-    pub fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
+    pub(crate) fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
         let current_supporter_deposit = match self.deposits.get(&supporter_id) {
             Some(total) => total,
             None => {
@@ -144,7 +149,7 @@ impl Kickstarter {
 
     pub fn convert_stnear_to_near(&self, amount_in_stnear: &Balance) -> Balance {
         // WARNING: This operation must be enhaced.
-        let rate = self.stnear_value_in_near.expect("Conversion rate has not been stablished!");
+        let rate = self.stnear_price_at_freeze.expect("Conversion rate has not been stablished!");
         let amount_in_near = amount_in_stnear / rate;
         amount_in_near
     }
@@ -187,5 +192,14 @@ impl Kickstarter {
 
     pub fn get_number_of_goals(&self) -> u8 {
         self.goals.len() as u8
+    }
+
+    pub fn to_json(&self) -> KickstarterJSON {
+        KickstarterJSON {
+            id: self.id.into(),
+            total_supporters: self.total_supporters,
+            open_timestamp: self.open_timestamp,
+            close_timestamp: self.close_timestamp,
+        }
     }
 }
