@@ -111,7 +111,7 @@ impl KatherineFundraising {
 
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         let amount = Balance::from(amount);
         let supporter_id = env::predecessor_account_id();
         let deposit = kickstarter.get_deposit(&supporter_id);
@@ -138,7 +138,7 @@ impl KatherineFundraising {
             }
         };
 
-        self.internal_withdraw(amount_to_remove, &kickstarter, &supporter_id);
+        self.internal_withdraw(amount_to_remove, &mut kickstarter, &supporter_id);
         nep141_token::ft_transfer_call(
             supporter_id.clone(),
             BalanceJSON::from(amount_to_send),
@@ -386,7 +386,8 @@ impl KatherineFundraising {
             owner_id,
             active: true,
             successful: None,
-            stnear_value_in_near: None,
+            stnear_price_at_freeze: None,
+            stnear_price_at_unfreeze: None,
             creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,
@@ -437,7 +438,8 @@ impl KatherineFundraising {
             owner_id,
             active: true,
             successful: None,
-            stnear_value_in_near: None,
+            stnear_price_at_freeze: None,
+            stnear_price_at_unfreeze: None,
             creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,

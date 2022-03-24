@@ -262,7 +262,7 @@ impl KatherineFundraising {
     pub(crate) fn internal_withdraw(
         &mut self,
         requested_amount: Balance,
-        kickstarter: &Kickstarter,
+        kickstarter: &mut Kickstarter,
         supporter_id: &SupporterId
     ) {
         let mut deposit = kickstarter.get_deposit(&supporter_id);
