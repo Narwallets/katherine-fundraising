@@ -111,7 +111,7 @@ mod tests {
         let promise = ctr.ft_on_transfer(supporter.clone(), 1.into(), kickstarter_id.to_string());
 
         match promise {
-            PromiseOrValue::Promise(p)=>{
+            PromiseOrValue::Promise(_)=>{
                 println!("error, method returned a promise");
                 std::panic!();
             },

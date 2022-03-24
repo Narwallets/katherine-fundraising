@@ -43,7 +43,7 @@ pub struct Kickstarter {
     pub token_contract_address: AccountId,
     // Total available and locked deposited tokens by the Kickstarter.
     pub available_reward_tokens: Balance,
-    pub locked_reward_tokens: Balance,
+    pub locked_reward_tokens: Balance
 }
 
 impl Kickstarter {

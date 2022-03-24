@@ -158,37 +158,11 @@ impl KatherineFundraising {
 
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        let amount = Balance::from(amount);
         let supporter_id = env::predecessor_account_id();
-        let deposit = kickstarter.get_deposit(&supporter_id);
-        let (amount_to_remove, amount_to_send) = if kickstarter.successful == Some(true) {
-            kickstarter.assert_unfreezed_funds();
-            let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("Price at freeze is not defined!");
-            let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!");
-            let max_amount_to_withdraw = proportional(deposit, price_at_freeze, price_at_unfreeze);
-            assert!(amount <= max_amount_to_withdraw, "Not available amount!");
-            if is_close(amount, max_amount_to_withdraw) {
-                (deposit, max_amount_to_withdraw)
-            } else {
-                (
-                    proportional(amount, price_at_unfreeze, price_at_freeze),
-                    amount
-                )
-            }
-        } else {
-            assert!(amount <= deposit, "Not available amount!");
-            if is_close(amount, deposit) {
-                (deposit, deposit)
-            } else {
-                (amount, amount)
-            }
-        };
-
-        self.internal_withdraw(amount_to_remove, &kickstarter, &supporter_id);
+        let amount_to_withdraw = self.internal_withdraw(amount.into(), kickstarter_id, &supporter_id);
         nep141_token::ft_transfer_call(
             supporter_id.clone(),
-            BalanceJSON::from(amount_to_send),
+            amount_to_withdraw.into(),
             Some("withdraw from kickstarter".to_string()),
             &self.metapool_contract_address,
             1,
@@ -198,7 +172,7 @@ impl KatherineFundraising {
         .then(ext_self_metapool::return_tokens_callback(
             supporter_id.clone(),
             kickstarter_id,
-            BalanceJSON::from(amount_to_remove),
+            amount_to_withdraw.into(),
             &env::current_account_id(),
             0,
             GAS_FOR_FT_TRANSFER
@@ -329,6 +303,42 @@ impl KatherineFundraising {
             }
         }
     }
+
+    /// withdraws kickstarter rewards
+    pub fn kickstarter_withdraw(&self, kickstarter_id: KickstarterIdJSON, amount: U128){
+        let mut kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
+        kickstarter.assert_only_owner();
+        assert!(kickstarter.successful == Some(true), "Kickstarter is not successful");
+
+        let stnear_freezed_price = if kickstarter.get_goal().end_timestamp > get_current_epoch_millis() {
+
+            kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!")
+        }
+        else{
+            kickstarter.stnear_price_at_freeze.expect("Price at freeze is not defined!")
+        };
+
+        // let stnearPrice = ext_metapool::get_st_near_price(
+        //     &self.metapool_contract_address,
+        //     NO_DEPOSIT,
+        //     GAS_FOR_GET_STNEAR,
+        // );
+        // stnearPrice.then(
+        //     ext_self_kikstarter::kickstarter_withdraw_callback_1(
+        //         stnearPrice.re,
+        //         &env:current_account_id(),
+        //         NO_DEPOSIT,
+        //         GAS_FOR_GET_STNEAR,
+        //     )
+        // );
+        
+    }
+
+
+
+    /**************************/
+    /*    Admin functions     */
+    /**************************/
 
     /// Creates a new kickstarter entry in persistent storage.
     pub fn create_kickstarter(
