@@ -1,5 +1,5 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::collections::{UnorderedMap, Vector, UnorderedSet, LookupMap};
 use near_sdk::json_types::{U128, U64};
 use near_sdk::{
     env, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, Promise, PromiseResult
@@ -39,6 +39,9 @@ pub struct KatherineFundraising {
     // Percent is denominated in basis points 100% equals 10_000 basis points.
     pub katherine_fee_percent: BasisPoints,
     pub max_goals_per_kickstarter: u8,
+
+    // Active kickstarter projects.
+    pub active_projects: UnorderedSet<KickstarterId>,
 }
 
 #[near_bindgen]
@@ -61,6 +64,7 @@ impl KatherineFundraising {
             metapool_contract_address,
             katherine_fee_percent,
             max_goals_per_kickstarter: 5,
+            active_projects: UnorderedSet::new(b"Active".to_vec()),
         }
     }
 
@@ -105,6 +109,40 @@ impl KatherineFundraising {
         }
     }
 
+    /*********************************/
+    /*    Frontend View Methods     */
+    /********************************/
+
+    pub fn get_active_projects(
+        &self,
+        from_index: u32,
+        limit: u32,
+    ) -> Option<ActiveKickstarterJSON> {
+        let projects = self.active_projects.to_vec();
+        let projects_len = projects.len() as u64;
+        let start: u64 = from_index.into();
+        if start >= projects_len {
+            return None;
+        }        
+        let mut active: Vec<KickstarterJSON> = Vec::new();
+        let mut open: Vec<KickstarterJSON> = Vec::new();
+        for index in start..std::cmp::min(start + limit as u64, projects_len) {
+            let kickstarter_id = projects.get(index as usize).expect("Out of index!");
+            let kickstarter = self.internal_get_kickstarter(*kickstarter_id);
+            if kickstarter.is_within_funding_period() {
+                open.push(kickstarter.to_json());
+            } else {
+                active.push(kickstarter.to_json());
+            }
+        }
+        Some(ActiveKickstarterJSON{active, open})
+    }
+
+    pub fn get_project_details(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterDetailsJSON {
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.to_details_json()
+    }
+    
     /***************************/
     /*    Withdraw methods     */
     /***************************/
@@ -193,15 +231,13 @@ impl KatherineFundraising {
         let mut successful: Vec<KickstarterIdJSON> = Vec::new();
         let mut unsuccessful: Vec<KickstarterIdJSON> = Vec::new();
         for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
-            let kickstarter = self.kickstarters
-                .get(index)
-                .expect("internal error, kickstarter ID is out of range");
+            let kickstarter = self.internal_get_kickstarter(index as u32);
             if kickstarter.active && kickstarter.close_timestamp <= get_current_epoch_millis() {
                 if kickstarter.any_achieved_goal() {
-                    successful.push(KickstarterIdJSON::from(kickstarter.id))
+                    successful.push(KickstarterIdJSON::from(kickstarter.id));
                 }
                 else {
-                    unsuccessful.push(KickstarterIdJSON::from(kickstarter.id))
+                    unsuccessful.push(KickstarterIdJSON::from(kickstarter.id));
                 }
             }
         }
@@ -216,6 +252,7 @@ impl KatherineFundraising {
                 log!("kickstarter was successfully activated");
             } else {
                 kickstarter.active = false;
+                self.active_projects.remove(&kickstarter.id);
                 kickstarter.successful = Some(false);
                 log!("kickstarter successfully deactivated");
             }
@@ -344,10 +381,8 @@ impl KatherineFundraising {
         assert!(from_index <= kickstarters_len, "from_index is out of range!");
         let mut results: Vec<KickstarterJSON> = Vec::new();
         for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
-            let kickstarter = self.kickstarters
-                .get(index as u64)
-                .expect("Kickstarter ID is out of range!");
-                results.push(kickstarter.to_json());
+            let kickstarter = self.internal_get_kickstarter(index as u32);
+            results.push(kickstarter.to_json());
         }
         results
     }
@@ -372,6 +407,7 @@ impl KatherineFundraising {
         //ONLY ADMINS CAN CREATE KICKSTARTERS?
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
+
         let kickstarter = Kickstarter {
             id: self.kickstarters.len() as KickstarterId,
             name,
@@ -396,8 +432,10 @@ impl KatherineFundraising {
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
         };
+        kickstarter.assert_timestamps();
         self.kickstarters.push(&kickstarter);
         self.kickstarter_id_by_slug.insert(&kickstarter.slug, &kickstarter.id);
+        self.active_projects.insert(&kickstarter.id);
         kickstarter.id.into()
     }
 
@@ -420,10 +458,8 @@ impl KatherineFundraising {
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
         let old_kickstarter = self.internal_get_kickstarter(id);
-        assert!(
-            old_kickstarter.open_timestamp <= get_current_epoch_millis(),
-            "Changes are not allow after the funding period started!"
-        );
+        assert!(old_kickstarter.open_timestamp >= get_current_epoch_millis(), "Changes are not allow after the funding period started!");
+
         let kickstarter = Kickstarter {
             id,
             name,
@@ -448,6 +484,7 @@ impl KatherineFundraising {
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
         };
+        kickstarter.assert_timestamps();
         self.kickstarters.replace(id as u64, &kickstarter);
         self.kickstarter_id_by_slug.remove(&old_kickstarter.slug);
         self.kickstarter_id_by_slug.insert(&kickstarter.slug, &kickstarter.id);

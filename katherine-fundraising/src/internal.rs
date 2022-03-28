@@ -136,6 +136,7 @@ impl KatherineFundraising {
                 );
                 kickstarter.winner_goal_id = Some(goal.id);
                 kickstarter.active = false;
+                self.active_projects.remove(&kickstarter.id);
                 kickstarter.successful = Some(true);
                 kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
                 kickstarter.stnear_price_at_freeze = Some(st_near_price.into());

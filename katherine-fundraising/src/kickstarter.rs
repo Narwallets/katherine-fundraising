@@ -71,9 +71,20 @@ impl Kickstarter {
     pub(crate) fn assert_unfreezed_funds(&self) {
         assert!(self.get_goal().unfreeze_timestamp < get_current_epoch_millis(), "Assets are still freezed.");
     }
+
+    #[inline]
+    pub(crate) fn assert_timestamps(&self) {
+        assert!(self.open_timestamp >= get_current_epoch_millis(), "Incorrect open timestamp!");
+        assert!(self.close_timestamp >= self.open_timestamp, "Incorrect close timestamp!");
+    }
 }
 
 impl Kickstarter {
+    pub fn is_within_funding_period(&self) -> bool {
+        let now = get_current_epoch_millis();
+        self.open_timestamp <= now && self.close_timestamp > now
+    }
+    
     pub fn get_supporter_ids(&self) -> Vec<AccountId> {
         let supporter_ids: Vec<AccountId> = self.deposits.to_vec().into_iter().map(|p| p.0).collect();
         // supporter_ids.sort_unstable();
@@ -198,8 +209,25 @@ impl Kickstarter {
         KickstarterJSON {
             id: self.id.into(),
             total_supporters: self.total_supporters,
+            total_deposited: BalanceJSON::from(self.total_deposited),
             open_timestamp: self.open_timestamp,
             close_timestamp: self.close_timestamp,
+        }
+    }
+
+    pub fn to_details_json(&self) -> KickstarterDetailsJSON {
+        let mut goals: Vec<GoalJSON> = Vec::new();
+        for goal in self.goals.iter() {
+            goals.push(goal.to_json());
+        }
+        KickstarterDetailsJSON {
+            id: self.id.into(),
+            total_supporters: self.total_supporters,
+            total_deposited: BalanceJSON::from(self.total_deposited),
+            open_timestamp: self.open_timestamp,
+            close_timestamp: self.close_timestamp,
+            token_contract_address: self.token_contract_address.clone(),
+            goals,
         }
     }
 }

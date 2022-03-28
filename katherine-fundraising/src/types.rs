@@ -35,8 +35,21 @@ construct_uint! {
 pub struct KickstarterJSON {
     pub id: KickstarterIdJSON,
     pub total_supporters: u32,
+    pub total_deposited: BalanceJSON,
     pub open_timestamp: EpochMillis,
     pub close_timestamp: EpochMillis,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct KickstarterDetailsJSON {
+    pub id: KickstarterIdJSON,
+    pub total_supporters: u32,
+    pub total_deposited: BalanceJSON,
+    pub open_timestamp: EpochMillis,
+    pub close_timestamp: EpochMillis,
+    pub token_contract_address: AccountId,
+    pub goals: Vec<GoalJSON>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -56,6 +69,13 @@ pub struct GoalJSON {
 pub struct KickstarterStatusJSON {
     pub successful: Vec<KickstarterIdJSON>,
     pub unsuccessful: Vec<KickstarterIdJSON>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ActiveKickstarterJSON {
+    pub active: Vec<KickstarterJSON>,
+    pub open: Vec<KickstarterJSON>,
 }
 
 #[derive(Serialize)]

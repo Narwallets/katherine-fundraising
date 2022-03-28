@@ -68,6 +68,12 @@ echo "------------------ Get Goal by Id"
 GOAL_1_ID=0
 NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter_goal '{"kickstarter_id": '$KICKSTARTER_ID', "goal_id": '$GOAL_1_ID'}' --accountId $KATHERINE_OWNER_ID
 
+# FRONTEND CALL: get_active_projects
+echo "------------------ FRONTEND: Get Active Projects"
+ACTIVE_FROM_IX=0
+ACTIVE_TO_IX=10
+NEAR_ENV=testnet near view $CONTRACT_NAME get_active_projects '{"from_index": '$ACTIVE_FROM_IX', "limit": '$ACTIVE_TO_IX'}' --accountId $KATHERINE_OWNER_ID
+
 # Sending stnear tokens to Kickstarter
 NOW_IN_SECS=$(date +%s)
 OPEN_DATE_IN_SECS=$(($KICKSTARTER_OPEN_DATE / 1000))
@@ -83,5 +89,15 @@ NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiv
 # Get/view the supporter deposit
 echo "------------------ Supporter deposit!"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_supporter_total_deposit_in_kickstarter '{"supporter_id": "'$SUPPORTER_ID'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+
+# FRONTEND CALL: get_active_projects
+echo "------------------ FRONTEND: Get Active Projects"
+ACTIVE_FROM_IX=0
+ACTIVE_TO_IX=10
+NEAR_ENV=testnet near view $CONTRACT_NAME get_active_projects '{"from_index": '$ACTIVE_FROM_IX', "limit": '$ACTIVE_TO_IX'}' --accountId $KATHERINE_OWNER_ID
+
+# FRONTEND CALL: get_project_details
+echo "------------------ FRONTEND: Get Project Details"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_project_details '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
 
 # Withdraw stnear tokens from Kickstarter
