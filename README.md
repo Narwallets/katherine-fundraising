@@ -53,7 +53,7 @@ NEAR_ACCOUNT="imcsk8.testnet" make publish-dev-init
 ```sh
 export NEAR_ENV=testnet
 
-rm -rf neardev/ && near dev-deploy --wasmFile res/katherine_fundraising.wasm --initFunction new --initArgs '{"owner_id": "jomsox.testnet", "staking_goal": 10}' && export $(grep -v '^#' neardev/dev-account.env | xargs)
+rm -rf neardev/ && near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm --initFunction new --initArgs '{"owner_id": "jomsox.testnet", "staking_goal": 10}' && export $(grep -v '^#' neardev/dev-account.env | xargs)
 ```
 
 A new account will be created for the contract. Note how the last command exported CONTRACT_NAME.
@@ -114,9 +114,9 @@ RUSTFLAGS='-C link-arg=-s' cargo +stable build --all --target wasm32-unknown-unk
 https://docs.near.org/docs/tools/near-cli#near-deploy
 
 ```sh
-cd katherine-fundraising
+cd katherine-fundraising-contract
 
-local_near deploy --accountId jomsox.test.near --wasmFile target/wasm32-unknown-unknown/release/katherine_fundraising.wasm --initFunction new --initArgs '{"owner_id": "jomsox.test.near", "staking_goal": 10000}'
+local_near deploy --accountId jomsox.test.near --wasmFile target/wasm32-unknown-unknown/release/katherine_fundraising_contract.wasm --initFunction new --initArgs '{"owner_id": "jomsox.test.near", "staking_goal": 10000}'
 ```
 
 3. Deposit to the contract
