@@ -52,4 +52,8 @@ pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: EpochMill
     }
 }
 
+pub fn convert_to_valid_account_id(account_id: AccountId) -> SupporterIdJSON {
+    near_sdk::serde_json::from_str(&format!("\"{}\"", account_id)).unwrap()
+}
+
 
