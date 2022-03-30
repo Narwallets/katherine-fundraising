@@ -1,12 +1,8 @@
 use uint::construct_uint;
 
-use near_sdk::json_types::{U128, U64, ValidAccountId};
-use near_sdk::{AccountId, EpochHeight};
-use near_sdk::serde::{Serialize, Deserialize};
-
-/// Balance wrapped into a struct for JSON serialization as a string.
-pub type U128String = U128;
-pub type U64String = U64;
+use near_sdk::json_types::{ValidAccountId, U128};
+use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::AccountId;
 
 pub type BalanceJSON = U128;
 
@@ -20,15 +16,10 @@ pub type BasisPoints = u32;
 pub type SupporterId = AccountId;
 pub type SupporterIdJSON = ValidAccountId;
 
-// Double Index used for the IOU Notes
-// Concatenate KickstarterId + SupporterId as String.
-pub type KickstarterSupporterDx = String;
-
 construct_uint! {
     /// 256-bit unsigned integer.
     pub struct U256(4);
 }
-
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]

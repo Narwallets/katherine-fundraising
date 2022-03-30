@@ -1,5 +1,5 @@
 [package]
-name = "katherine-fundraising"
+name = "katherine-fundraising-contract"
 version = "0.1.0"
 edition = "2018"
 authors = ["Narwallets.com <hello@narwallets.com>"]

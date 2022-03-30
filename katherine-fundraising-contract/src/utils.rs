@@ -1,7 +1,6 @@
-use near_sdk::{Balance, env};
-use crate::types::*;
-use crate::constants::*;
 use crate::*;
+
+use near_sdk::{env, Balance};
 
 /// is_close returns true if total-0.001N < requested < total+0.001N
 /// it is used to avoid leaving "dust" in the accounts and to manage rounding simplification for the users
@@ -25,12 +24,17 @@ pub fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {
     return (U256::from(amount) * U256::from(numerator) / U256::from(denominator)).as_u128();
 }
 
-pub fn proportional_with_steps(amount: Balance, numerator: u128, denominator: u128, steps: u128) -> u128 {
+pub fn proportional_with_steps(
+    amount: Balance,
+    numerator: u128,
+    denominator: u128,
+    steps: u128,
+) -> u128 {
     let mut amount_to_release: u128 = 0;
     let result = proportional(amount, numerator, denominator);
     for index in 1..steps {
-        let mut proportion = proportional(amount, index, steps);
-        if  proportion <= result {
+        let proportion = proportional(amount, index, steps);
+        if proportion <= result {
             amount_to_release = proportion;
         } else {
             break;
@@ -39,7 +43,11 @@ pub fn proportional_with_steps(amount: Balance, numerator: u128, denominator: u1
     amount_to_release
 }
 
-pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: EpochMillis, end_timestamp: EpochMillis) -> u128 {
+pub fn get_linear_release_proportion(
+    amount: Balance,
+    cliff_timestamp: EpochMillis,
+    end_timestamp: EpochMillis,
+) -> u128 {
     let now = get_current_epoch_millis();
     if now < cliff_timestamp {
         0
@@ -55,5 +63,3 @@ pub fn get_linear_release_proportion(amount: Balance, cliff_timestamp: EpochMill
 pub fn convert_to_valid_account_id(account_id: AccountId) -> SupporterIdJSON {
     near_sdk::serde_json::from_str(&format!("\"{}\"", account_id)).unwrap()
 }
-
-

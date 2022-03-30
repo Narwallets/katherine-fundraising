@@ -2,9 +2,9 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
+use super::*;
 use near_sdk::json_types::Base58PublicKey;
 use near_sdk::{AccountId, MockedBlockchain, PromiseResult, VMContext};
-use super::*;
 
 /// Tests constants
 pub const SYSTEM_ACCOUNT: &'static str = "system";
@@ -50,7 +50,7 @@ pub fn get_context(
 
 /// Convert near to yocto
 pub fn ntoy(near_amount: u128) -> u128 {
-    return near_amount * 10u128.pow(24)
+    return near_amount * 10u128.pow(24);
 }
 
 /// Convert to Timestamp
@@ -61,17 +61,19 @@ pub fn to_ts(num_days: u64) -> u64 {
 
 /// Convert days to nanoseconds
 pub fn to_nanos(num_days: u64) -> u64 {
-    return num_days * 86400_000_000_000
+    return num_days * 86400_000_000_000;
 }
 
-pub fn _new_kickstarter(_context: VMContext, contract: &mut KatherineFundraising) -> KickstarterIdJSON {
-	contract.create_kickstarter(
-       	KICKSTARTER_NAME.into(),
-       	KICKSTARTER_SLUG.into(),
-       	OWNER_ACCOUNT.into(),
-       	to_ts(START_TIME_IN_DAYS),      // open_timestamp
-       	to_ts(START_TIME_IN_DAYS * 50), // close_timestamp
-       	CONTRACT_ACCOUNT.into()         // token_contract_address
-	)
+pub fn _new_kickstarter(
+    _context: VMContext,
+    contract: &mut KatherineFundraising,
+) -> KickstarterIdJSON {
+    contract.create_kickstarter(
+        KICKSTARTER_NAME.into(),
+        KICKSTARTER_SLUG.into(),
+        OWNER_ACCOUNT.into(),
+        to_ts(START_TIME_IN_DAYS),      // open_timestamp
+        to_ts(START_TIME_IN_DAYS * 50), // close_timestamp
+        CONTRACT_ACCOUNT.into(),        // token_contract_address
+    )
 }
-

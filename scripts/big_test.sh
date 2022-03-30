@@ -9,7 +9,7 @@ YOCTO_UNITS="000000000000000000000000"
 
 # Deploy contract to Testnet
 rm -rf neardev/
-NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising.wasm --initFunction new --initArgs '{"owner_id": "'${KATHERINE_OWNER_ID}'", "min_deposit_amount": '${KATHERINE_MIN_DEPOSIT_AMOUNT}', "metapool_contract_address": "'${METAPOOL_CONTRACT_ADDRESS}'", "katherine_fee_percent": '${KATHERINE_FEE_PERCENT}'}'
+NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm --initFunction new --initArgs '{"owner_id": "'${KATHERINE_OWNER_ID}'", "min_deposit_amount": '${KATHERINE_MIN_DEPOSIT_AMOUNT}', "metapool_contract_address": "'${METAPOOL_CONTRACT_ADDRESS}'", "katherine_fee_percent": '${KATHERINE_FEE_PERCENT}'}'
 
 export $(grep -v '^#' neardev/dev-account.env | xargs)
 echo '------------------ Contract deployed to: '$CONTRACT_NAME

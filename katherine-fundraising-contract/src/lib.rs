@@ -1,26 +1,22 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap, Vector, UnorderedSet, LookupMap};
-use near_sdk::json_types::{U128, U64};
-use near_sdk::{
-    env, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, Promise, PromiseResult
-};
+use near_sdk::collections::{UnorderedMap, UnorderedSet, Vector};
+use near_sdk::json_types::U128;
+use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult};
 
 mod constants;
-mod errors;
-mod types;
-pub mod internal;
+mod internal;
 mod metapool;
+mod types;
 
-pub mod interface;
-pub mod supporter;
-pub mod kickstarter;
 pub mod goal;
+pub mod interface;
+pub mod kickstarter;
+pub mod supporter;
 pub mod utils;
 pub use crate::utils::*;
 
-use crate::{constants::*, goal::*, kickstarter::*, metapool::*, supporter::*, types::*, utils::*, interface::*};
-pub use metapool::{ext_self, ext_metapool};
-
+use crate::{constants::*, goal::*, interface::*, kickstarter::*, supporter::*, types::*};
+pub use metapool::{ext_metapool, ext_self};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -51,7 +47,7 @@ impl KatherineFundraising {
         owner_id: AccountId,
         min_deposit_amount: Balance,
         metapool_contract_address: AccountId,
-        katherine_fee_percent: BasisPoints
+        katherine_fee_percent: BasisPoints,
     ) -> Self {
         // assert!(!env::state_exists(), "The contract is already initialized");
         Self {
@@ -68,90 +64,70 @@ impl KatherineFundraising {
         }
     }
 
-    pub fn withdraw_kickstarter_tokens(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        let supporter_id = env::predecessor_account_id();
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &supporter_id);
+    /************************/
+    /*    Robot methods     */
+    /************************/
 
-        let supporter_id: SupporterIdJSON = near_sdk::serde_json::from_str(&supporter_id).unwrap();
-        nep141_token::ft_transfer_call(
-            supporter_id.clone(),
-            amount,
-            None,
-            "withdraw from kickstarter".to_string(),
-            &kickstarter.token_contract_address,
-            1,
-            GAS_FOR_FT_TRANSFER,
-        )
-        // restore user balance on error
-        .then(ext_self_kikstarter::return_tokens_from_kickstarter_callback(
-            supporter_id,
-            kickstarter_id,
-            amount,
-            &env::current_account_id(),
-            0,
-            GAS_FOR_FT_TRANSFER
-        ));
-    }
-
-    #[private]
-    pub fn return_tokens_from_kickstarter_callback(&mut self, user: SupporterIdJSON, kickstarter_id: KickstarterIdJSON, amount: U128){
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!("token transfer {}", u128::from(amount));
-            },
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering account state",
-                    amount.0
-                );
-                let supporter_id: SupporterId = user.to_string();
-                self.internal_restore_kickstarter_withdraw(amount.into(), kickstarter_id.into(), supporter_id)
-            }
-        }
-    }
-
-    /*********************************/
-    /*    Frontend View Methods     */
-    /********************************/
-
-    pub fn get_active_projects(
+    /// Returns both successfull and unsuccessfull kickstarter ids in a single struc 
+    pub fn get_kickstarters_to_process(
         &self,
-        from_index: u32,
-        limit: u32,
-    ) -> Option<ActiveKickstarterJSON> {
-        let projects = self.active_projects.to_vec();
-        let projects_len = projects.len() as u64;
+        from_index: KickstarterIdJSON,
+        limit: KickstarterIdJSON,
+    ) -> Option<KickstarterStatusJSON> {
+        let kickstarters_len = self.kickstarters.len();
         let start: u64 = from_index.into();
-        if start >= projects_len {
+        if start >= kickstarters_len {
             return None;
-        }        
-        let mut active: Vec<KickstarterJSON> = Vec::new();
-        let mut open: Vec<KickstarterJSON> = Vec::new();
-        for index in start..std::cmp::min(start + limit as u64, projects_len) {
-            let kickstarter_id = projects.get(index as usize).expect("Out of index!");
-            let kickstarter = self.internal_get_kickstarter(*kickstarter_id);
-            if kickstarter.is_within_funding_period() {
-                open.push(kickstarter.to_json());
-            } else {
-                active.push(kickstarter.to_json());
+        }
+        let mut successful: Vec<KickstarterIdJSON> = Vec::new();
+        let mut unsuccessful: Vec<KickstarterIdJSON> = Vec::new();
+        for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
+            let kickstarter = self.internal_get_kickstarter(index as u32);
+            if kickstarter.active && kickstarter.close_timestamp <= get_current_epoch_millis() {
+                if kickstarter.any_achieved_goal() {
+                    successful.push(KickstarterIdJSON::from(kickstarter.id));
+                } else {
+                    unsuccessful.push(KickstarterIdJSON::from(kickstarter.id));
+                }
             }
         }
-        Some(ActiveKickstarterJSON{active, open})
+        Some(KickstarterStatusJSON {
+            successful,
+            unsuccessful,
+        })
     }
 
-    pub fn get_project_details(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterDetailsJSON {
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        kickstarter.to_details_json()
+    pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        if kickstarter.successful.is_none() {
+            if kickstarter.any_achieved_goal() {
+                self.internal_activate_kickstarter(kickstarter_id.into());
+                log!("kickstarter was successfully activated");
+            } else {
+                kickstarter.active = false;
+                self.active_projects.remove(&kickstarter.id);
+                kickstarter.successful = Some(false);
+                log!("kickstarter successfully deactivated");
+            }
+        } else {
+            panic!("kickstarter already activated");
+        }
     }
-    
-    /***************************/
-    /*    Withdraw methods     */
-    /***************************/
+
+    /// Start the cross-contract call to unfreeze the kickstarter funds.
+    pub fn unfreeze_kickstarter_funds(&mut self, kickstarter_id: KickstarterIdJSON) {
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        if kickstarter.successful == Some(true) && kickstarter.stnear_price_at_unfreeze == None {
+            kickstarter.assert_unfreezed_funds();
+            self.internal_unfreeze_kickstarter_funds(kickstarter_id);
+        }
+    }
+
+    /*****************************/
+    /*   Supporters functions    */
+    /*****************************/
 
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
-    #[payable]
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
         let min_prepaid_gas = GAS_FOR_FT_TRANSFER + GAS_FOR_RESOLVE_TRANSFER + FIVE_TGAS;
         assert!(env::prepaid_gas() > min_prepaid_gas, "gas required {}", min_prepaid_gas);
@@ -221,130 +197,77 @@ impl KatherineFundraising {
         }
     }
 
-    /************************/
-    /*    Robot methods     */
-    /************************/
-
-    /// Returns both successfull and unsuccessfull kickstarter ids in a single struc 
-    pub fn get_kickstarters_to_process(
-        &self,
-        from_index: KickstarterIdJSON,
-        limit: KickstarterIdJSON
-    ) -> Option<KickstarterStatusJSON> {
-        let kickstarters_len = self.kickstarters.len();
-        let start: u64 = from_index.into();
-        if start >= kickstarters_len {
-            return None;
-        }
-        let mut successful: Vec<KickstarterIdJSON> = Vec::new();
-        let mut unsuccessful: Vec<KickstarterIdJSON> = Vec::new();
-        for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
-            let kickstarter = self.internal_get_kickstarter(index as u32);
-            if kickstarter.active && kickstarter.close_timestamp <= get_current_epoch_millis() {
-                if kickstarter.any_achieved_goal() {
-                    successful.push(KickstarterIdJSON::from(kickstarter.id));
-                }
-                else {
-                    unsuccessful.push(KickstarterIdJSON::from(kickstarter.id));
-                }
-            }
-        }
-        Some(KickstarterStatusJSON{successful, unsuccessful})
-    }
-
-    pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        if kickstarter.successful.is_none() {
-            if kickstarter.any_achieved_goal() {
-                self.internal_activate_kickstarter(kickstarter_id.into());
-                log!("kickstarter was successfully activated");
-            } else {
-                kickstarter.active = false;
-                self.active_projects.remove(&kickstarter.id);
-                kickstarter.successful = Some(false);
-                log!("kickstarter successfully deactivated");
-            }
-        } else {
-            panic!("kickstarter already activated");
-        }
-    }
-
-    /// Start the cross-contract call to unfreeze the kickstarter funds.
-    pub fn unfreeze_kickstarter_funds(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        if kickstarter.successful == Some(true) && kickstarter.stnear_price_at_unfreeze == None {
-            kickstarter.assert_unfreezed_funds();
-            self.internal_unfreeze_kickstarter_funds(kickstarter_id);
-        }
-    }
-
-    /*****************************/
-    /*   Supporters functions   */
-    /*****************************/
-
-    pub fn get_supporter_total_rewards(
-        &self,
-        supporter_id: SupporterIdJSON,
-        kickstarter_id: KickstarterIdJSON
-    ) -> Balance {
-        let supporter_id = SupporterId::from(supporter_id);
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        match self.supporters.get(&supporter_id) {
-            Some(supporter) => {
-                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
-                    let goal = kickstarter.get_goal();
-                    return self.internal_get_supporter_total_rewards(
-                        &supporter_id,
-                        &kickstarter,
-                        goal,
-                    );
-                } else {
-                    panic!("Supporter is not part of Kickstarter!");
-                }
-            },
-            None => panic!("Supporter does not have any reward!"),
-        }
-    }
-
-    pub fn get_supporter_available_rewards(
-        &self,
-        supporter_id: SupporterIdJSON,
-        kickstarter_id: KickstarterIdJSON
-    ) -> Balance {
-        let supporter_id = SupporterId::from(supporter_id);
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        match self.supporters.get(&supporter_id) {
-            Some(supporter) => {
-                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
-                    let goal = kickstarter.get_goal();
-                    let total_rewards = self.internal_get_supporter_total_rewards(
-                        &supporter_id,
-                        &kickstarter,
-                        goal,
-                    );
-                    let supporter_withdraw: Balance = match kickstarter.withdraw.get(&supporter_id) {
-                        Some(value) => value,
-                        None => 0,
-                    };
-                    return total_rewards - supporter_withdraw;
-                } else {
-                    panic!("Supporter is not part of Kickstarter!");
-                }
-            },
-            None => panic!("Supporter does not have any reward!"),
-        }
-    }
-
     /*****************************/
     /*   Kickstarter functions   */
     /*****************************/
 
-    pub fn kickstarter_withdraw_excedent(&self, kickstarter_id: KickstarterIdJSON){
-        let kickstarter = self.kickstarters.get(kickstarter_id.into()).expect("kickstarter not found");
-        kickstarter.assert_only_owner();
+    pub fn withdraw_kickstarter_tokens(
+        &mut self,
+        amount: BalanceJSON,
+        kickstarter_id: KickstarterIdJSON,
+    ) {
+        let account = env::predecessor_account_id();
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
 
-        
-        let excedent = kickstarter.available_reward_tokens - kickstarter.get_goal().tokens_to_release;
+        nep141_token::ft_transfer_call(
+            convert_to_valid_account_id(account.clone()),
+            amount,
+            None,
+            "withdraw from kickstarter".to_string(),
+            &kickstarter.token_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER,
+
+        )
+        // restore user balance on error
+        .then(
+            ext_self_kikstarter::return_tokens_from_kickstarter_callback(
+                convert_to_valid_account_id(account.clone()),
+                kickstarter_id,
+                amount,
+                &env::current_account_id(),
+                0,
+                GAS_FOR_FT_TRANSFER,
+            ),
+        );
+    }
+
+    #[private]
+    pub fn return_tokens_from_kickstarter_callback(
+        &mut self,
+        user: AccountId,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128,
+    ) {
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!("token transfer {}", u128::from(amount));
+            }
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering account state",
+                    amount.0
+                );
+                self.internal_restore_kickstarter_withdraw(
+                    amount.into(),
+                    kickstarter_id.into(),
+                    user,
+                )
+            }
+        }
+    }
+
+    pub fn kickstarter_withdraw_excedent(&self, kickstarter_id: KickstarterIdJSON) {
+        let kickstarter = self
+            .kickstarters
+            .get(kickstarter_id.into())
+            .expect("kickstarter not found");
+        kickstarter.assert_kickstarter_owner();
+
+        let excedent =
+            kickstarter.available_reward_tokens - kickstarter.get_winner_goal().tokens_to_release;
 
         let receiver_id: SupporterIdJSON = near_sdk::serde_json::from_str(&env::predecessor_account_id()).unwrap();
         if excedent > 0 {
@@ -363,46 +286,38 @@ impl KatherineFundraising {
                 excedent.into(),
                 &env::current_account_id(),
                 0,
-                GAS_FOR_FT_TRANSFER
+                GAS_FOR_FT_TRANSFER,
             ));
         }
-
-        
     }
 
-    pub fn kickstarter_withdraw_excedent_callback(&mut self, kickstarter_id: KickstarterIdJSON, amount: U128){
+    #[private]
+    pub fn kickstarter_withdraw_excedent_callback(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128,
+    ) {
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
                 log!("token transfer {}", u128::from(amount));
-            },
+            }
             PromiseResult::Failed => {
                 log!(
                     "token transfer failed {}. recovering kickstarter state",
                     amount.0
                 );
-                self.internal_restore_kickstarter_excedent_withdraw(amount.into(), kickstarter_id.into())
+                self.internal_restore_kickstarter_excedent_withdraw(
+                    amount.into(),
+                    kickstarter_id.into(),
+                )
             }
         }
     }
 
-    pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
-        let kickstarters_len = self.kickstarters.len() as usize;
-        assert!(from_index <= kickstarters_len, "from_index is out of range!");
-        let mut results: Vec<KickstarterJSON> = Vec::new();
-        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
-            let kickstarter = self.internal_get_kickstarter(index as u32);
-            results.push(kickstarter.to_json());
-        }
-        results
-    }
-
-    pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
-        let kickstarters_len = self.get_total_kickstarters();
-        assert!(kickstarter_id <= kickstarters_len, "Index is out of range!");
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        kickstarter.to_json()
-    }
+    /***********************/
+    /*   Admin functions   */
+    /***********************/
 
     /// Creates a new kickstarter entry in persistent storage.
     pub fn create_kickstarter(
@@ -414,7 +329,7 @@ impl KatherineFundraising {
         close_timestamp: EpochMillis,
         token_contract_address: AccountId,
     ) -> KickstarterIdJSON {
-        //ONLY ADMINS CAN CREATE KICKSTARTERS?
+        //ONLY ADMINS CAN CREATE KICKSTARTERS? YES
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
 
@@ -425,8 +340,6 @@ impl KatherineFundraising {
             goals: Vector::new(b"Goal".to_vec()),
             winner_goal_id: None,
             katherine_fee: None,
-            // supporters: Vec::new(),
-            total_supporters: 0,
             deposits: UnorderedMap::new(b"Deposits".to_vec()),
             withdraw: UnorderedMap::new(b"Withdraw".to_vec()),
             total_deposited: 0,
@@ -444,7 +357,8 @@ impl KatherineFundraising {
         };
         kickstarter.assert_timestamps();
         self.kickstarters.push(&kickstarter);
-        self.kickstarter_id_by_slug.insert(&kickstarter.slug, &kickstarter.id);
+        self.kickstarter_id_by_slug
+            .insert(&kickstarter.slug, &kickstarter.id);
         self.active_projects.insert(&kickstarter.id);
         kickstarter.id.into()
     }
@@ -454,7 +368,6 @@ impl KatherineFundraising {
         panic!("Kickstarter must not be deleted!");
     }
 
-    /// Update a kickstarter
     pub fn update_kickstarter(
         &mut self,
         id: KickstarterId,
@@ -468,7 +381,10 @@ impl KatherineFundraising {
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
         let old_kickstarter = self.internal_get_kickstarter(id);
-        assert!(old_kickstarter.open_timestamp >= get_current_epoch_millis(), "Changes are not allow after the funding period started!");
+        assert!(
+            old_kickstarter.open_timestamp >= get_current_epoch_millis(),
+            "Changes are not allow after the funding period started!"
+        );
 
         let kickstarter = Kickstarter {
             id,
@@ -477,8 +393,6 @@ impl KatherineFundraising {
             goals: Vector::new(b"Goal".to_vec()),
             winner_goal_id: None,
             katherine_fee: None,
-            // supporters: Vec::new(),
-            total_supporters: 0,
             deposits: UnorderedMap::new(b"A".to_vec()),
             withdraw: UnorderedMap::new(b"W".to_vec()),
             total_deposited: 0,
@@ -497,12 +411,118 @@ impl KatherineFundraising {
         kickstarter.assert_timestamps();
         self.kickstarters.replace(id as u64, &kickstarter);
         self.kickstarter_id_by_slug.remove(&old_kickstarter.slug);
-        self.kickstarter_id_by_slug.insert(&kickstarter.slug, &kickstarter.id);
+        self.kickstarter_id_by_slug
+            .insert(&kickstarter.slug, &kickstarter.id);
     }
 
-    /********************/
-    /*   View methods   */
-    /********************/
+    /**********************/
+    /*   View functions   */
+    /**********************/
+
+    pub fn get_supporter_total_rewards(
+        &self,
+        supporter_id: SupporterIdJSON,
+        kickstarter_id: KickstarterIdJSON,
+    ) -> Balance {
+        let supporter_id = SupporterId::from(supporter_id);
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        match self.supporters.get(&supporter_id) {
+            Some(supporter) => {
+                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
+                    let goal = kickstarter.get_winner_goal();
+                    return self.internal_get_supporter_total_rewards(
+                        &supporter_id,
+                        &kickstarter,
+                        goal,
+                    );
+                } else {
+                    panic!("Supporter is not part of Kickstarter!");
+                }
+            }
+            None => panic!("Supporter does not have any reward!"),
+        }
+    }
+
+    pub fn get_supporter_available_rewards(
+        &self,
+        supporter_id: SupporterIdJSON,
+        kickstarter_id: KickstarterIdJSON,
+    ) -> Balance {
+        let supporter_id = SupporterId::from(supporter_id);
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        match self.supporters.get(&supporter_id) {
+            Some(supporter) => {
+                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
+                    let goal = kickstarter.get_winner_goal();
+                    let total_rewards = self.internal_get_supporter_total_rewards(
+                        &supporter_id,
+                        &kickstarter,
+                        goal,
+                    );
+                    let supporter_withdraw: Balance = match kickstarter.withdraw.get(&supporter_id)
+                    {
+                        Some(value) => value,
+                        None => 0,
+                    };
+                    return total_rewards - supporter_withdraw;
+                } else {
+                    panic!("Supporter is not part of Kickstarter!");
+                }
+            }
+            None => panic!("Supporter does not have any reward!"),
+        }
+    }
+
+    pub fn get_active_projects(
+        &self,
+        from_index: u32,
+        limit: u32,
+    ) -> Option<ActiveKickstarterJSON> {
+        let projects = self.active_projects.to_vec();
+        let projects_len = projects.len() as u64;
+        let start: u64 = from_index.into();
+        if start >= projects_len {
+            return None;
+        }
+        let mut active: Vec<KickstarterJSON> = Vec::new();
+        let mut open: Vec<KickstarterJSON> = Vec::new();
+        for index in start..std::cmp::min(start + limit as u64, projects_len) {
+            let kickstarter_id = projects.get(index as usize).expect("Out of index!");
+            let kickstarter = self.internal_get_kickstarter(*kickstarter_id);
+            if kickstarter.is_within_funding_period() {
+                open.push(kickstarter.to_json());
+            } else {
+                active.push(kickstarter.to_json());
+            }
+        }
+        Some(ActiveKickstarterJSON { active, open })
+    }
+
+    pub fn get_project_details(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterDetailsJSON {
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.to_details_json()
+    }
+
+    pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
+        let kickstarters_len = self.kickstarters.len() as usize;
+        assert!(
+            from_index <= kickstarters_len,
+            "from_index is out of range!"
+        );
+        let mut results: Vec<KickstarterJSON> = Vec::new();
+        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
+            let kickstarter = self.internal_get_kickstarter(index as u32);
+            results.push(kickstarter.to_json());
+        }
+        results
+    }
+
+    pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
+        let kickstarters_len = self.get_total_kickstarters();
+        assert!(kickstarter_id <= kickstarters_len, "Index is out of range!");
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.to_json()
+    }
 
     pub fn get_total_kickstarters(&self) -> u32 {
         return self.kickstarters.len() as u32;
@@ -520,7 +540,11 @@ impl KatherineFundraising {
         kickstarter.get_number_of_goals()
     }
 
-    pub fn get_kickstarter_goal(&self, kickstarter_id: KickstarterIdJSON, goal_id: GoalIdJSON) -> GoalJSON {
+    pub fn get_kickstarter_goal(
+        &self,
+        kickstarter_id: KickstarterIdJSON,
+        goal_id: GoalIdJSON,
+    ) -> GoalJSON {
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         let goal = kickstarter.get_goal_by_id(goal_id.into());
         goal.to_json()
@@ -541,6 +565,9 @@ impl KatherineFundraising {
     }
 }
 
+/*************/
+/*   Tests   */
+/*************/
 
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
@@ -552,7 +579,6 @@ mod tests {
     use unit_test_utils::*;
 
     use super::*;
-
 
     /// Get initial context for tests
     fn basic_context() -> VMContext {
@@ -567,7 +593,7 @@ mod tests {
 
     /// Creates a new contract
     fn new_contract() -> KatherineFundraising {
-       KatherineFundraising::new(
+        KatherineFundraising::new(
             OWNER_ACCOUNT.into(),
             2,
             METAPOOL_CONTRACT_ADDRESS.to_string(),
@@ -582,7 +608,6 @@ mod tests {
         return (context, contract);
     }
 
-
     #[test]
     fn test_create_kickstarter() {
         let (_context, mut contract) = contract_only_setup();
@@ -590,12 +615,10 @@ mod tests {
         assert_eq!(1, contract.kickstarters.len());
     }
 
-
     #[test]
     fn test_get_kickstarters() {
         let (_context, mut contract) = contract_only_setup();
         contract.get_kickstarters(0, 49);
-        
     }
 
     #[test]
@@ -615,14 +638,15 @@ mod tests {
         let kickstarter_id = contract.kickstarters.len() - 1;
         let mut k = contract.kickstarters.get(kickstarter_id).unwrap();
         k.update_supporter_deposits(&String::from(SUPPORTER_ACCOUNT), &DEPOSIT_AMOUNT);
-        contract.create_goal(k.id,
+        contract.create_goal(
+            k.id,
             "test_goal".to_string(),
             U128::from(100),
+            to_ts(START_TIME_IN_DAYS * 30), // WIP agregue para que compile
             U128::from(200),
             to_ts(START_TIME_IN_DAYS * 30),
-            to_ts(START_TIME_IN_DAYS * 50)
+            to_ts(START_TIME_IN_DAYS * 50),
         );
         contract.withdraw(U128::from(50), k.id);
     }
 }
-

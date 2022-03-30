@@ -13,14 +13,14 @@ lint:
 build:
 	echo "Building katherine fundrising"
 	RUSTFLAGS='-C link-arg=-s' cargo +stable build --all --target wasm32-unknown-unknown --release
-	cp target/wasm32-unknown-unknown/release/katherine_fundraising.wasm res/
+	cp target/wasm32-unknown-unknown/release/katherine_fundraising_contract.wasm res/
 
 publish-dev: build
-	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising.wasm
+	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm
 
 publish-dev-init: build
 	rm -rf neardev/
-	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising.wasm --initFunction new --initArgs '{"owner_id": ${NEAR_ACCOUNT}, "min_deposit_amount": 2, "metapool_contract_address": "meta-v2.pool.testnet", "katherine_fee_percent": 100 }'
+	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm --initFunction new --initArgs '{"owner_id": ${NEAR_ACCOUNT}, "min_deposit_amount": 2, "metapool_contract_address": "meta-v2.pool.testnet", "katherine_fee_percent": 100 }'
 
 big-test: build
 	scripts/big_test.sh
