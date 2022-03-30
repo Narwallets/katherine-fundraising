@@ -158,7 +158,7 @@ impl KatherineFundraising {
             }
         };
 
-        self.internal_withdraw(amount_to_remove, &mut kickstarter, &supporter_id);
+        self.internal_supporter_withdraw(amount_to_remove, &mut kickstarter, &supporter_id);
         let supporter_id = convert_to_valid_account_id(supporter_id);
         nep141_token::ft_transfer(
             supporter_id.clone(),

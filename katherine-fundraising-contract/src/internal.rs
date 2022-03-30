@@ -272,7 +272,7 @@ impl KatherineFundraising {
             .replace(kickstarter_id as u64, &kickstarter);
     }
 
-    pub(crate) fn internal_withdraw(
+    pub(crate) fn internal_supporter_withdraw(
         &mut self,
         requested_amount: Balance,
         kickstarter: &mut Kickstarter,
