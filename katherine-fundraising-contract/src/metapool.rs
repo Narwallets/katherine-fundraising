@@ -35,6 +35,7 @@ impl FungibleTokenReceiver for KatherineFundraising {
         let mut kickstarter: Kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if env::predecessor_account_id() == self.metapool_contract_address {
             // Deposit is in stNEAR.
+            self.assert_min_deposit_amount(amount.0);
             log!(
                 "DEPOSIT: {} stNEAR deposited from {} to KickstarterId {}",
                 amount.0,
