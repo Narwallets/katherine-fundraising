@@ -275,58 +275,20 @@ impl KatherineFundraising {
     pub(crate) fn internal_withdraw(
         &mut self,
         requested_amount: Balance,
-        kickstarter_id: KickstarterId,
-        supporter_id: &AccountId,
-    ) -> Balance {
-        let mut kickstarter = self
-            .kickstarters
-            .get(kickstarter_id as u64)
-            .expect("kickstarter not found");
-
-        let mut deposit = kickstarter
-            .deposits
-            .get(&supporter_id)
-            .expect("deposit not found");
-        let amount_to_remove = if kickstarter.successful == Some(true) {
-            assert!(
-                kickstarter.get_winner_goal().end_timestamp >= get_current_epoch_millis(),
-                "can not withdraw from successfull kickstarter before vesting period ends"
-            );
-            kickstarter.assert_unfreezed_funds();
-            let price_at_freeze = kickstarter
-                .stnear_price_at_freeze
-                .expect("Price at freeze is not defined!");
-            let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!");
-            let max_amount_to_withdraw = proportional(deposit, price_at_freeze, price_at_unfreeze);
-            assert!(
-                requested_amount <= max_amount_to_withdraw,
-                "Amount not available!"
-            );
-            if is_close(requested_amount, max_amount_to_withdraw) {
-                max_amount_to_withdraw
-            } else {
-                requested_amount
-            }
-        } else {
-            assert!(requested_amount <= deposit, "Amount not available!");
-            if is_close(requested_amount, deposit) {
-                deposit
-            } else {
-                requested_amount
-            }
-        };
-
-        if deposit == amount_to_remove {
+        kickstarter: &mut Kickstarter,
+        supporter_id: &SupporterId
+    ) {
+        let mut deposit = kickstarter.get_deposit(&supporter_id);
+        assert!(requested_amount <= deposit, "withdraw amount exceeds balance");
+        if deposit == requested_amount{
             kickstarter.deposits.remove(&supporter_id);
-        } else {
-            deposit -= amount_to_remove;
+        }
+        else{
+            deposit -= requested_amount;
             kickstarter.deposits.insert(&supporter_id, &deposit);
         }
-        self.kickstarters
-            .replace(kickstarter_id as u64, &kickstarter);
-        //UPG check if it should refund freed storage
-        amount_to_remove
-    }
+        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
+    } 
 
     pub(crate) fn internal_restore_withdraw(
         &mut self,

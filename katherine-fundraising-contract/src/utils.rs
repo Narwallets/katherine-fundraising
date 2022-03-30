@@ -59,3 +59,7 @@ pub fn get_linear_release_proportion(
         proportional_with_steps(amount, numerator, denominator, 10) // TODO: constants steps
     }
 }
+
+pub fn convert_to_valid_account_id(account_id: AccountId) -> SupporterIdJSON {
+    near_sdk::serde_json::from_str(&format!("\"{}\"", account_id)).unwrap()
+}

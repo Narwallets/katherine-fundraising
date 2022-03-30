@@ -64,11 +64,11 @@ impl KatherineFundraising {
         }
     }
 
-    /**************************/
-    /*    Robot functions     */
-    /**************************/
+    /************************/
+    /*    Robot methods     */
+    /************************/
 
-    /// Returns both successfull and unsuccessfull kickstarter ids in a single struc
+    /// Returns both successfull and unsuccessfull kickstarter ids in a single struc 
     pub fn get_kickstarters_to_process(
         &self,
         from_index: KickstarterIdJSON,
@@ -129,46 +129,70 @@ impl KatherineFundraising {
 
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
-        let supporter_id = env::predecessor_account_id();
-        let amount_to_withdraw =
-            self.internal_withdraw(amount.into(), kickstarter_id, &supporter_id);
-        nep141_token::ft_transfer_call(
+        let min_prepaid_gas = GAS_FOR_FT_TRANSFER + GAS_FOR_RESOLVE_TRANSFER + FIVE_TGAS;
+        assert!(env::prepaid_gas() > min_prepaid_gas, "gas required {}", min_prepaid_gas);
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let amount = Balance::from(amount);
+        let supporter_id: SupporterId = env::predecessor_account_id();
+        let deposit = kickstarter.get_deposit(&supporter_id);
+        let (amount_to_remove, amount_to_send) = if kickstarter.successful == Some(true) {
+            kickstarter.assert_unfreezed_funds();
+            let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("Price at freeze is not defined!");
+            let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!");
+            let max_amount_to_withdraw = proportional(deposit, price_at_freeze, price_at_unfreeze);
+            assert!(amount <= max_amount_to_withdraw, "Not available amount!");
+            if is_close(amount, max_amount_to_withdraw) {
+                (deposit, max_amount_to_withdraw)
+            } else {
+                (
+                    proportional(amount, price_at_unfreeze, price_at_freeze),
+                    amount
+                )
+            }
+        } else {
+            assert!(amount <= deposit, "Not available amount!");
+            if is_close(amount, deposit) {
+                (deposit, deposit)
+            } else {
+                (amount, amount)
+            }
+        };
+
+        self.internal_withdraw(amount_to_remove, &mut kickstarter, &supporter_id);
+        let supporter_id = convert_to_valid_account_id(supporter_id);
+        nep141_token::ft_transfer(
             supporter_id.clone(),
-            amount_to_withdraw.into(),
-            Some("withdraw from kickstarter".to_string()),
+            BalanceJSON::from(amount_to_send),
+            None,
             &self.metapool_contract_address,
             1,
             GAS_FOR_FT_TRANSFER,
         )
         // restore user balance on error
         .then(ext_self_metapool::return_tokens_callback(
-            supporter_id.clone(),
+            supporter_id,
             kickstarter_id,
-            amount_to_withdraw.into(),
+            BalanceJSON::from(amount_to_remove),
             &env::current_account_id(),
             0,
-            GAS_FOR_FT_TRANSFER,
+            GAS_FOR_RESOLVE_TRANSFER
         ));
     }
 
     #[private]
-    pub fn return_tokens_callback(
-        &mut self,
-        user: AccountId,
-        kickstarter_id: KickstarterIdJSON,
-        amount: BalanceJSON,
-    ) {
+    pub fn return_tokens_callback(&mut self, user: SupporterIdJSON, kickstarter_id: KickstarterIdJSON, amount: BalanceJSON) {
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
                 log!("token transfer {}", u128::from(amount));
-            }
+            },
             PromiseResult::Failed => {
                 log!(
                     "token transfer failed {}. recovering account state",
                     amount.0
                 );
-                self.internal_restore_withdraw(amount.into(), kickstarter_id.into(), user)
+                let supporter_id: SupporterId = user.to_string();
+                self.internal_restore_withdraw(amount.into(), kickstarter_id.into(), supporter_id)
             }
         }
     }
@@ -187,17 +211,19 @@ impl KatherineFundraising {
         self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
 
         nep141_token::ft_transfer_call(
-            account.clone(),
+            convert_to_valid_account_id(account.clone()),
             amount,
-            Some("withdraw from kickstarter".to_string()),
+            None,
+            "withdraw from kickstarter".to_string(),
             &kickstarter.token_contract_address,
             1,
             GAS_FOR_FT_TRANSFER,
+
         )
         // restore user balance on error
         .then(
             ext_self_kikstarter::return_tokens_from_kickstarter_callback(
-                account.clone(),
+                convert_to_valid_account_id(account.clone()),
                 kickstarter_id,
                 amount,
                 &env::current_account_id(),
@@ -243,11 +269,13 @@ impl KatherineFundraising {
         let excedent =
             kickstarter.available_reward_tokens - kickstarter.get_winner_goal().tokens_to_release;
 
+        let receiver_id: SupporterIdJSON = near_sdk::serde_json::from_str(&env::predecessor_account_id()).unwrap();
         if excedent > 0 {
             nep141_token::ft_transfer_call(
-                env::predecessor_account_id().clone(),
+                receiver_id,
                 excedent.into(),
-                Some("withdraw excedent from kickstarter".to_string()),
+                None,
+                "withdraw excedent from kickstarter".to_string(),
                 &kickstarter.token_contract_address,
                 1,
                 GAS_FOR_FT_TRANSFER,

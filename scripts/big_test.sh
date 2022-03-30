@@ -101,3 +101,18 @@ echo "------------------ FRONTEND: Get Project Details"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_project_details '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
 
 # Withdraw stnear tokens from Kickstarter
+echo "------------------ Supporter withdraw FIRST HALF before freeze!"
+SUPPORTER_AMOUNT_HALF="500000000000000000000000"
+NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOUNT_HALF'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+
+# Get/view the supporter deposit
+echo "------------------ Support"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_supporter_total_deposit_in_kickstarter '{"supporter_id": "'$SUPPORTER_ID'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+
+# Withdraw stnear tokens from Kickstarter
+echo "------------------ Supporter withdraw SECOND HALF before freeze!"
+NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOUNT_HALF'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+
+# Get/view the supporter deposit
+echo "------------------ Supporter IS NOW EMPTY!"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_supporter_total_deposit_in_kickstarter '{"supporter_id": "'$SUPPORTER_ID'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
