@@ -116,3 +116,23 @@ NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOU
 # Get/view the supporter deposit
 echo "------------------ Supporter IS NOW EMPTY!"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_supporter_total_deposit_in_kickstarter '{"supporter_id": "'$SUPPORTER_ID'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+
+# Supporter deposits Again
+echo "------------------ Supporter deposits again to freeze funds!"
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$CONTRACT_NAME'", "amount": "'$SUPPORTER_AMOUNT'", "msg": "'$SUPPORTER_MSG'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+
+# Try to withdraw when freezed funds
+NOW_IN_SECS=$(date +%s)
+CLOSE_DATE_IN_SECS=$(($KICKSTARTER_CLOSE_DATE / 1000))
+WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
+echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
+sleep $WAITING_SECONDS
+NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOUNT'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+
+# Try to withdraw when unfreezed funds
+NOW_IN_SECS=$(date +%s)
+CLOSE_DATE_IN_SECS=$(($GOAL_1_UNFREEZE_DATE / 1000))
+WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
+echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
+sleep $WAITING_SECONDS
+NEAR_ENV=testnet near call $CONTRACT_NAME withdraw_all '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
