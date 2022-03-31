@@ -22,11 +22,11 @@ To create a Kickstarter, Katherine admin must call:
 fn create_kickstarter(
     name: String,
     slug: String,
-    owner_id: AccountId,
-    open_timestamp: EpochMillis,
-    close_timestamp: EpochMillis,
-    token_contract_address: AccountId,
-) -> KickstarterIdJSON
+    owner_id: String,
+    open_timestamp: u64,
+    close_timestamp: u64,
+    token_contract_address: String,
+) -> u32
 ```
 
 An example using the terminal:
@@ -45,12 +45,12 @@ To create one of the multiple goals, the MAX number of goals is 5:
 fn create_goal(
     kickstarter_id: KickstarterId,
     name: String,
-    desired_amount: BalanceJSON,
-    unfreeze_timestamp: EpochMillis,
-    tokens_to_release: BalanceJSON,
-    cliff_timestamp: EpochMillis,
-    end_timestamp: EpochMillis,
-) -> GoalId
+    desired_amount: String,
+    unfreeze_timestamp: u64,
+    tokens_to_release: String,
+    cliff_timestamp: u64,
+    end_timestamp: u64,
+) -> u8
 ```
 
 An example using the terminal:
