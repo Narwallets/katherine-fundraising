@@ -19,73 +19,73 @@ These are the functions to interact with Katherine.
 ### 1. Create a Kickstarter
 
 **Katherine admin**:
-create_kickstarter
-update_kickstarter
+- [create_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#create_kickstarter)
+- update_kickstarter
 
 **Public**:
-get_kickstarter_id_from_slug
-get_total_kickstarters
-get_kickstarters
-get_kickstarter
+- get_kickstarter_id_from_slug
+- get_total_kickstarters
+- get_kickstarters
+- get_kickstarter
 
 ### 2. Create the Kickstarter Goals
 
 **Katherine admin and Kickstarter**:
-create_goal
-delete_last_goal
+- create_goal
+- delete_last_goal
 
 **Public**:
-get_kickstarter_total_goals
-get_kickstarter_goal
+-  get_kickstarter_total_goals
+-  get_kickstarter_goal
 
 ### 3. Funding period begins
 
 **Supporter**:
-withdraw
+-  withdraw
 
 **Public**:
-get_active_projects
-get_project_details
-get_supporter_total_deposit_in_kickstarter
+- get_active_projects
+- get_project_details
+- get_supporter_total_deposit_in_kickstarter
 
 ### 4. Evaluate Goal
 
 **Robot**:
-get_kickstarters_to_process
-process_kickstarter
+- get_kickstarters_to_process
+- process_kickstarter
 
 
 **Public**:
-unfreeze_kickstarter_funds
+- unfreeze_kickstarter_funds
 
 ### 5. Close unsuccessful Kickstarter
 
 **Kickstarter**:
-kickstarter_withdraw_excedent
+- kickstarter_withdraw_excedent
 
 ### 6. Freeze Supporter funds
 
-Kickstarter:
-kickstarter_withdraw_excedent
+**Kickstarter**:
+- kickstarter_withdraw_excedent
 
 ### 7. Allow the Kickstarter to withdraw stNear
 
 ### 8. Allow the Supporter to withdraw project Tokens
 
 **Supporter**:
-withdraw_kickstarter_tokens
+- withdraw_kickstarter_tokens
 
 **Public**:
-get_supporter_total_rewards
-get_supporter_available_rewards
+- get_supporter_total_rewards
+- get_supporter_available_rewards
 
 ### 9. Allow the Supporter to withdraw stNear
 
 **Robot**:
-unfreeze_kickstarter_funds
+- unfreeze_kickstarter_funds
 
 **Supporter**:
-withdraw
+- withdraw
 
 ## Function list
 
