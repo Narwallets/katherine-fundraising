@@ -38,6 +38,9 @@ These are the functions to interact with Katherine.
 - get_kickstarter_total_goals
 - get_kickstarter_goal
 
+**Kickstarter**:
+- ft_transfer_call (Called on Project Contract)
+
 ### 3. Funding period begins
 
 **Supporter**:
