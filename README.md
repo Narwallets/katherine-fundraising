@@ -64,6 +64,9 @@ These are the functions to interact with Katherine.
 **Kickstarter**:
 - kickstarter_withdraw_excedent
 
+**Supporter**:
+- withdraw
+
 ### 6. Freeze Supporter funds
 
 **Kickstarter**:
