@@ -35,13 +35,14 @@ These are the functions to interact with Katherine.
 - delete_last_goal
 
 **Public**:
--  get_kickstarter_total_goals
--  get_kickstarter_goal
+- get_kickstarter_total_goals
+- get_kickstarter_goal
 
 ### 3. Funding period begins
 
 **Supporter**:
--  withdraw
+- withdraw
+- ft_transfer_call (Called on Meta Pool)
 
 **Public**:
 - get_active_projects
