@@ -20,7 +20,7 @@ KICKSTARTER_NAME="The_Best_Project_Ever"
 KICKSTARTER_SLUG="the-best-project-ever"
 KICKSTARTER_OWNER_ID="jomsox.testnet"
 KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 60000))
-KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 60000))
+KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 120000))
 KICKSTARTER_TOKEN_ADDRESS="meta-v2.pool.testnet"
 echo "------------------ Creating a Kickstarter"
 NEAR_ENV=testnet near call $CONTRACT_NAME create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$KICKSTARTER_TOKEN_ADDRESS'"}' --accountId $KATHERINE_OWNER_ID
@@ -36,7 +36,7 @@ NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarter '{"kickstarter_id": '$
 
 # Create 2 goals
 GOAL_1_NAME="Goal_Number_1"
-GOAL_1_DESIRED_AMOUNT="10"$YOCTO_UNITS
+GOAL_1_DESIRED_AMOUNT="1"$YOCTO_UNITS
 GOAL_1_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))
 GOAL_1_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
 GOAL_1_UNFREEZE_DATE=$GOAL_1_END_DATE
@@ -115,7 +115,11 @@ NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOU
 
 # Get/view the supporter deposit
 echo "------------------ Supporter IS NOW EMPTY!"
-NEAR_ENV=testnet near view $CONTRACT_NAME get_supporter_total_deposit_in_kickstarter '{"supporter_id": "'$SUPPORTER_ID'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+{
+    NEAR_ENV=testnet near view $CONTRACT_NAME get_supporter_total_deposit_in_kickstarter '{"supporter_id": "'$SUPPORTER_ID'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KATHERINE_OWNER_ID
+} || {
+    echo "ERROR EXPECTED! Supporter is EMPTY!"
+}
 
 # Supporter deposits Again
 echo "------------------ Supporter deposits again to freeze funds!"
@@ -126,8 +130,21 @@ NOW_IN_SECS=$(date +%s)
 CLOSE_DATE_IN_SECS=$(($KICKSTARTER_CLOSE_DATE / 1000))
 WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
 echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
-sleep $WAITING_SECONDS
-NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOUNT'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+sleep $(($WAITING_SECONDS + 1))
+
+# ROBOT
+echo "------------------ ROBOT: Get Projects"
+NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarters_to_process '{"from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
+
+echo "------------------ ROBOT: Processing kickstarter"
+NEAR_ENV=testnet near call $CONTRACT_NAME process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID
+
+echo "------------------ Supporter is trying to withdraw before unfreeze!"
+{
+    NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOUNT'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+} || {
+    echo "ERROR EXPECTED! Supporter is not allow to withdraw before unfreeze!"
+}
 
 # Try to withdraw when unfreezed funds
 NOW_IN_SECS=$(date +%s)
@@ -135,4 +152,8 @@ CLOSE_DATE_IN_SECS=$(($GOAL_1_UNFREEZE_DATE / 1000))
 WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
 echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
 sleep $WAITING_SECONDS
+echo "------------------ ROBOT: Unfreezing funds!"
+NEAR_ENV=testnet near call $CONTRACT_NAME unfreeze_kickstarter_funds '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID
+
+echo "------------------ Supporter if FINALLY withdrawing all his funds!"
 NEAR_ENV=testnet near call $CONTRACT_NAME withdraw_all '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS

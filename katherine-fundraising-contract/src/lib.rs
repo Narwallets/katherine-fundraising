@@ -107,6 +107,8 @@ impl KatherineFundraising {
                 kickstarter.active = false;
                 self.active_projects.remove(&kickstarter.id);
                 kickstarter.successful = Some(false);
+                self.kickstarters
+                    .replace(kickstarter_id as u64, &kickstarter);
                 log!("kickstarter successfully deactivated");
             }
         } else {
@@ -127,6 +129,12 @@ impl KatherineFundraising {
     /*   Supporters functions    */
     /*****************************/
 
+    pub fn withdraw_all(&mut self, kickstarter_id: KickstarterIdJSON) {
+        let supporter_id = convert_to_valid_account_id(env::predecessor_account_id());
+        let amount = self.get_supporter_total_deposit_in_kickstarter(supporter_id, kickstarter_id);
+        self.withdraw(amount, kickstarter_id);
+    }
+
     /// Withdraw a valid amount of user's balance. Call this before or after the Locking Period.
     pub fn withdraw(&mut self, amount: BalanceJSON, kickstarter_id: KickstarterIdJSON) {
         let min_prepaid_gas = GAS_FOR_FT_TRANSFER + GAS_FOR_RESOLVE_TRANSFER + FIVE_TGAS;
@@ -135,30 +143,45 @@ impl KatherineFundraising {
         let amount = Balance::from(amount);
         let supporter_id: SupporterId = env::predecessor_account_id();
         let deposit = kickstarter.get_deposit(&supporter_id);
-        let (amount_to_remove, amount_to_send) = if kickstarter.successful == Some(true) {
-            kickstarter.assert_unfreezed_funds();
-            let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("Price at freeze is not defined!");
-            let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!");
-            let max_amount_to_withdraw = proportional(deposit, price_at_freeze, price_at_unfreeze);
-            assert!(amount <= max_amount_to_withdraw, "Not available amount!");
-            if is_close(amount, max_amount_to_withdraw) {
-                (deposit, max_amount_to_withdraw)
-            } else {
-                (
-                    proportional(amount, price_at_unfreeze, price_at_freeze),
-                    amount
-                )
-            }
-        } else {
-            assert!(amount <= deposit, "Not available amount!");
-            if is_close(amount, deposit) {
-                (deposit, deposit)
-            } else {
-                (amount, amount)
+        let (amount_to_remove, amount_to_send) = match kickstarter.successful {
+            Some(true) => {
+                kickstarter.assert_unfreezed_funds();
+                let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("Price at freeze is not defined!");
+                let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!");
+                let max_amount_to_withdraw = proportional(deposit, price_at_freeze, price_at_unfreeze);
+                assert!(amount <= max_amount_to_withdraw, "Not available amount!");
+                if is_close(amount, max_amount_to_withdraw) {
+                    (deposit, max_amount_to_withdraw)
+                } else {
+                    (
+                        proportional(amount, price_at_unfreeze, price_at_freeze),
+                        amount
+                    )
+                }
+            },
+            Some(false) => {
+                assert!(amount <= deposit, "Not available amount!");
+                if is_close(amount, deposit) {
+                    (deposit, deposit)
+                } else {
+                    (amount, amount)
+                }                
+            },
+            None => {
+                assert!(
+                    get_current_epoch_millis() < kickstarter.close_timestamp,
+                    "The funding period is over, Kickstarter must be evaluated!"
+                );
+                assert!(amount <= deposit, "Not available amount!");
+                if is_close(amount, deposit) {
+                    (deposit, deposit)
+                } else {
+                    (amount, amount)
+                }
             }
         };
 
-        self.internal_supporter_withdraw(amount_to_remove, &mut kickstarter, &supporter_id);
+        self.internal_supporter_withdraw(amount_to_remove, deposit, &mut kickstarter, &supporter_id);
         let supporter_id = convert_to_valid_account_id(supporter_id);
         nep141_token::ft_transfer(
             supporter_id.clone(),

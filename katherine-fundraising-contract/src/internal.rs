@@ -54,13 +54,7 @@ impl KatherineFundraising {
         amount: &Balance,
         kickstarter: &mut Kickstarter,
     ) {
-        let current_timestamp = get_current_epoch_millis();
-        if current_timestamp >= kickstarter.close_timestamp
-            || current_timestamp < kickstarter.open_timestamp
-        {
-            panic!("Not within the funding period.");
-        }
-
+        kickstarter.assert_within_funding_period();
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.total_in_deposits += amount;
         self.supporters.insert(&supporter_id, &supporter);
@@ -81,11 +75,10 @@ impl KatherineFundraising {
             &kickstarter.token_contract_address,
             "Deposited tokens do not correspond to the Kickstarter contract."
         );
-
-        let current_timestamp = get_current_epoch_millis();
-        if current_timestamp > kickstarter.open_timestamp {
-            panic!("Kickstarter Tokens should be provided before the funding period starts.");
-        }
+        assert!(
+            get_current_epoch_millis() < kickstarter.open_timestamp,
+            "Kickstarter Tokens should be provided before the funding period starts."
+        );
         kickstarter.available_reward_tokens += amount;
         self.kickstarters
             .replace(kickstarter.id as u64, &kickstarter);
@@ -272,20 +265,26 @@ impl KatherineFundraising {
             .replace(kickstarter_id as u64, &kickstarter);
     }
 
+    /// This function is for the Supporter withdrawal of stNear tokens. The kickstarter.total_deposited
+    /// is only modified during the funding period. After the project evaluation, the value is kept only
+    /// as a reference.
     pub(crate) fn internal_supporter_withdraw(
         &mut self,
         requested_amount: Balance,
+        deposit: Balance,
         kickstarter: &mut Kickstarter,
         supporter_id: &SupporterId
     ) {
-        let mut deposit = kickstarter.get_deposit(&supporter_id);
         assert!(requested_amount <= deposit, "withdraw amount exceeds balance");
         if deposit == requested_amount{
             kickstarter.deposits.remove(&supporter_id);
         }
         else{
-            deposit -= requested_amount;
-            kickstarter.deposits.insert(&supporter_id, &deposit);
+            let new_total = deposit - requested_amount; 
+            kickstarter.deposits.insert(&supporter_id, &new_total);
+        }
+        if kickstarter.is_within_funding_period() {
+            kickstarter.total_deposited -= requested_amount;
         }
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     } 

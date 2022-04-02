@@ -20,3 +20,5 @@ Cargo.lock
 neardev/
 res/
 
+# Mac
+.DS_Store

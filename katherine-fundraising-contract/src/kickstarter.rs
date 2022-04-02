@@ -18,6 +18,10 @@ pub struct Kickstarter {
     // Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
     pub withdraw: UnorderedMap<SupporterId, Balance>,
+
+    // Important Note: the kickstarter.total_deposited variable will only increase or decrease within
+    // the funding period. After the project evaluation, this value will stay CONSTANT to store a 
+    // record of the achieved funds, even though all stNear will be withdraw from the kickstarter.
     pub total_deposited: Balance,
     pub owner_id: AccountId,
     // True if the kickstart project is active and waiting for funding.
@@ -90,13 +94,22 @@ impl Kickstarter {
             "Incorrect close timestamp!"
         );
     }
+
+    #[inline]
+    pub(crate) fn assert_within_funding_period(&self) {
+        assert!(
+            self.is_within_funding_period(),
+            "Not within the funding period."
+        )
+    }
 }
 
 impl Kickstarter {
     pub fn is_within_funding_period(&self) -> bool {
         let now = get_current_epoch_millis();
-        self.open_timestamp <= now && self.close_timestamp > now
+        now < self.close_timestamp && now >= self.open_timestamp
     }
+
     pub fn get_supporter_ids(&self) -> Vec<AccountId> {
         let supporter_ids: Vec<AccountId> =
             self.deposits.to_vec().into_iter().map(|p| p.0).collect();
