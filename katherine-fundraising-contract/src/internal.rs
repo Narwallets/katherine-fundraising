@@ -2,6 +2,8 @@ use crate::*;
 use near_sdk::json_types::U128;
 use near_sdk::{near_bindgen, AccountId};
 
+use crate::interface::*;
+
 /*************/
 /*  Asserts  */
 /*************/
@@ -85,19 +87,21 @@ impl KatherineFundraising {
     }
 
     /// Start the cross-contract call to activate the kickstarter.
-    pub(crate) fn internal_activate_kickstarter(&mut self, kickstarter_id: KickstarterId) {
-        ext_metapool::get_st_near_price(
+    pub fn internal_activate_kickstarter(&mut self, kickstarter_id: KickstarterId, goal_id: GoalId) {
+        log!("HERE WE ARE_4_test4");
+        ext_self_metapool::get_st_near_price(
             //promise params
             &self.metapool_contract_address,
-            NO_DEPOSIT,
+            0,
             GAS_FOR_GET_STNEAR,
         )
-        .then(ext_self::activate_successful_kickstarter_after(
+        .then(ext_self_kikstarter::activate_successful_kickstarter_after(
             kickstarter_id,
+            goal_id,
             //promise params
             &env::current_account_id(),
             NO_DEPOSIT,
-            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR
+            GAS_FOR_GET_STNEAR,
         ));
     }
 
@@ -107,15 +111,33 @@ impl KatherineFundraising {
     pub(crate) fn activate_successful_kickstarter_after(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        #[callback] st_near_price: U128,
+        goal_id: GoalIdJSON,
     ) {
         // NOTE: be careful on `#[callback]` here. If the get_stnear_price view call fails for some
         //    reason this call will not be entered, because #[callback] fails for failed_promises
         //    So *never* have something to rollback if the callback uses #[callback] params
         //    because the .after() will not be execute on error
 
+        log!("START: after");
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "This is a callback method"
+        );
+
+        let st_near_price = match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Failed => panic!("Meta Pool is not available!"),
+            PromiseResult::Successful(result) => {
+                let price = near_sdk::serde_json::from_slice::<U128>(&result).unwrap();
+                Balance::from(price)
+            },
+        };
+        log!("price: {}", st_near_price);
+
+        log!("MIDDLE: here");
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        let winning_goal = kickstarter.get_achieved_goal();
+        let winning_goal = kickstarter.goals.get(goal_id as u64);
         match winning_goal {
             None => panic!("Kickstarter did not achieved any goal!"),
             Some(goal) => {
@@ -123,11 +145,12 @@ impl KatherineFundraising {
                     kickstarter.available_reward_tokens >= goal.tokens_to_release,
                     "Not enough available reward tokens to back the supporters rewards!"
                 );
-                kickstarter.winner_goal_id = Some(goal.id);
-                kickstarter.active = false;
-                self.active_projects.remove(&kickstarter.id);
-                kickstarter.successful = Some(true);
-                kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
+                // kickstarter.winner_goal_id = Some(goal.id);
+                // kickstarter.active = false;
+                // self.active_projects.remove(&kickstarter.id);
+                // kickstarter.successful = Some(true);
+                // kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
+                log!("END: here");
                 kickstarter.stnear_price_at_freeze = Some(st_near_price.into());
                 self.kickstarters
                     .replace(kickstarter_id as u64, &kickstarter);
@@ -136,13 +159,13 @@ impl KatherineFundraising {
     }
 
     pub(crate) fn internal_unfreeze_kickstarter_funds(&mut self, kickstarter_id: KickstarterId) {
-        ext_metapool::get_st_near_price(
+        ext_self_metapool::get_st_near_price(
             //promise params
             &self.metapool_contract_address,
             NO_DEPOSIT,
             GAS_FOR_GET_STNEAR,
         )
-        .then(ext_self::set_stnear_price_at_unfreeze(
+        .then(ext_self_kikstarter::set_stnear_price_at_unfreeze(
             kickstarter_id,
             //promise params
             &env::current_account_id(),

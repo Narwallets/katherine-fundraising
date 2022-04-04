@@ -137,7 +137,7 @@ echo "------------------ ROBOT: Get Projects"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarters_to_process '{"from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
 
 echo "------------------ ROBOT: Processing kickstarter"
-NEAR_ENV=testnet near call $CONTRACT_NAME process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000
 
 echo "------------------ Supporter is trying to withdraw before unfreeze!"
 {

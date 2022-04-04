@@ -29,6 +29,8 @@ pub trait ExtSelfMetapool {
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     );
+
+    fn get_st_near_price(&self) -> U128String;
 }
 
 #[ext_contract(ext_self_kikstarter)]
@@ -44,4 +46,8 @@ pub trait ExtSelfKickstarter {
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     );
+
+    fn activate_successful_kickstarter_after(&mut self, kickstarter_id: KickstarterIdJSON, goal_id: GoalIdJSON);
+
+    fn set_stnear_price_at_unfreeze(&mut self, kickstarter_id: KickstarterIdJSON);
 }

@@ -2,23 +2,9 @@ use core::panic;
 
 use crate::*;
 use near_sdk::json_types::{ValidAccountId, U128};
-use near_sdk::{env, ext_contract, log, near_bindgen, PromiseOrValue};
+use near_sdk::{env, log, near_bindgen, PromiseOrValue};
 
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
-
-// define the methods we'll use on the other contract
-#[ext_contract(ext_metapool)]
-pub trait MetaPool {
-    fn get_contract_state(&self) -> GetContractStateResult;
-    fn get_st_near_price(&self) -> U128String;
-}
-
-// define methods we'll use as callbacks on our contract
-#[ext_contract(ext_self)]
-pub trait KatherineFundraising {
-    fn activate_successful_kickstarter_after(&mut self, kickstarter_id: KickstarterIdJSON);
-    fn set_stnear_price_at_unfreeze(&mut self, kickstarter_id: KickstarterIdJSON);
-}
 
 #[near_bindgen]
 impl FungibleTokenReceiver for KatherineFundraising {

@@ -16,7 +16,6 @@ pub mod utils;
 pub use crate::utils::*;
 
 use crate::{constants::*, goal::*, interface::*, kickstarter::*, supporter::*, types::*};
-pub use metapool::{ext_metapool, ext_self};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -100,16 +99,19 @@ impl KatherineFundraising {
     pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if kickstarter.successful.is_none() {
-            if kickstarter.any_achieved_goal() {
-                self.internal_activate_kickstarter(kickstarter_id.into());
-                log!("kickstarter was successfully activated");
-            } else {
-                kickstarter.active = false;
-                self.active_projects.remove(&kickstarter.id);
-                kickstarter.successful = Some(false);
-                self.kickstarters
-                    .replace(kickstarter_id as u64, &kickstarter);
-                log!("kickstarter successfully deactivated");
+            match kickstarter.get_achieved_goal() {
+                Some(goal) => {
+                    self.internal_activate_kickstarter(kickstarter_id.into(), goal.id);
+                    log!("kickstarter was successfully activated");
+                },
+                None => {
+                    kickstarter.active = false;
+                    self.active_projects.remove(&kickstarter.id);
+                    kickstarter.successful = Some(false);
+                    self.kickstarters
+                        .replace(kickstarter_id as u64, &kickstarter);
+                    log!("kickstarter successfully deactivated");                    
+                },
             }
         } else {
             panic!("kickstarter already activated");
