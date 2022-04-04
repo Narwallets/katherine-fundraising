@@ -97,7 +97,7 @@ impl KatherineFundraising {
             //promise params
             &env::current_account_id(),
             NO_DEPOSIT,
-            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
+            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR
         ));
     }
 

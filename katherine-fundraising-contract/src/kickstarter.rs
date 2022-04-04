@@ -143,18 +143,25 @@ impl Kickstarter {
     }
 
     pub fn get_achieved_goal(&mut self) -> Option<Goal> {
-        let mut achieved_goals: Vec<Goal> = self
-            .goals
-            .iter()
-            .filter(|goal| goal.desired_amount <= self.total_deposited)
-            .collect();
-        if achieved_goals.len() > 0 {
-            achieved_goals.sort_by_key(|goal| goal.desired_amount);
-            let winner_goal_id = achieved_goals.last().unwrap().id;
-            let winner_goal = self.goals.get(winner_goal_id as u64).unwrap();
-            return Some(winner_goal);
-        } else {
-            return None;
+        let iter = self.goals.iter();
+        let result = iter.next();
+        if result == None {
+            return None
+        }
+        else{
+            let winner_goal = result.unwrap();
+            for goal in iter {
+                if goal.desired_amount > winner_goal.desired_amount && goal.desired_amount >= self.total_deposited{
+                    winner_goal = goal;
+                }
+            }
+            
+            if winner_goal.desired_amount >= self.total_deposited {
+                return Some(winner_goal)
+            }
+            else{
+                return None
+            }
         }
     }
 
