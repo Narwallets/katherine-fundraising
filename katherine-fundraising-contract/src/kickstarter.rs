@@ -143,13 +143,13 @@ impl Kickstarter {
     }
 
     pub fn get_achieved_goal(&mut self) -> Option<Goal> {
-        let iter = self.goals.iter();
+        let mut iter = self.goals.iter();
         let result = iter.next();
         if result == None {
             return None
         }
         else{
-            let winner_goal = result.unwrap();
+            let mut winner_goal = result.unwrap();
             for goal in iter {
                 if goal.desired_amount > winner_goal.desired_amount && goal.desired_amount >= self.total_deposited{
                     winner_goal = goal;

@@ -100,8 +100,6 @@ impl KatherineFundraising {
     pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if kickstarter.successful.is_none() {
-            let goal = kickstarter.get_achieved_goal();
-            kickstarter.ac
             if kickstarter.any_achieved_goal() {
                 self.internal_activate_kickstarter(kickstarter_id.into());
                 log!("kickstarter was successfully activated");
