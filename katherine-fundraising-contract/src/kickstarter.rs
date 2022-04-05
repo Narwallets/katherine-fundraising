@@ -76,10 +76,19 @@ impl Kickstarter {
     }
 
     #[inline]
-    pub(crate) fn assert_unfreezed_funds(&self) {
+    pub(crate) fn assert_funds_can_be_unfreezed(&self) {
         assert!(
-            self.get_winner_goal().unfreeze_timestamp < get_current_epoch_millis(),
+            self.funds_can_be_unfreezed(),
             "Assets are still freezed."
+        );
+    }
+
+    #[inline]
+    pub(crate) fn assert_funds_must_be_unfreezed(&self) {
+        self.assert_funds_can_be_unfreezed();
+        assert!(
+            self.stnear_price_at_unfreeze.is_some(),
+            "Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!"
         );
     }
 
@@ -110,12 +119,8 @@ impl Kickstarter {
         now < self.close_timestamp && now >= self.open_timestamp
     }
 
-    pub fn get_supporter_ids(&self) -> Vec<AccountId> {
-        let supporter_ids: Vec<AccountId> =
-            self.deposits.to_vec().into_iter().map(|p| p.0).collect();
-        // supporter_ids.sort_unstable();
-        // supporter_ids.dedup();
-        supporter_ids.to_vec()
+    pub fn funds_can_be_unfreezed(&self) -> bool {
+        self.get_winner_goal().unfreeze_timestamp < get_current_epoch_millis()
     }
 
     pub fn get_total_supporters(&self) -> u32 {
@@ -135,23 +140,15 @@ impl Kickstarter {
         }
     }
 
-    /// Deprecated!
-    pub fn get_total_deposited_amount(&self) -> Balance {
-        self.total_deposited
-        //let total_amount: Vec<Balance> = self.deposits.to_vec().into_iter().map(|p| p.1).collect();
-        //total_amount.into_iter().sum()
-    }
-
     pub fn get_achieved_goal(&mut self) -> Option<Goal> {
         let mut iter = self.goals.iter();
         let result = iter.next();
         if result == None {
             return None;
-        }
-        else {
+        } else {
             let mut winner_goal = result.unwrap();
             for goal in iter {
-                if goal.desired_amount > winner_goal.desired_amount && goal.desired_amount >= self.total_deposited{
+                if goal.desired_amount > winner_goal.desired_amount && goal.desired_amount >= self.total_deposited {
                     winner_goal = goal;
                 }
             }
@@ -230,10 +227,22 @@ impl Kickstarter {
         for goal in self.goals.iter() {
             goals.push(goal.to_json());
         }
+        let stnear_price_at_freeze = if self.stnear_price_at_freeze.is_some() {
+            BalanceJSON::from(self.stnear_price_at_freeze.unwrap())
+        } else {
+            BalanceJSON::from(0)
+        };
+        let stnear_price_at_unfreeze = if self.stnear_price_at_unfreeze.is_some() {
+            BalanceJSON::from(self.stnear_price_at_unfreeze.unwrap())
+        } else {
+            BalanceJSON::from(0)
+        };
         KickstarterDetailsJSON {
             id: self.id.into(),
             total_supporters: self.deposits.len() as u32,
             total_deposited: BalanceJSON::from(self.total_deposited),
+            stnear_price_at_freeze,
+            stnear_price_at_unfreeze,
             open_timestamp: self.open_timestamp,
             close_timestamp: self.close_timestamp,
             token_contract_address: self.token_contract_address.clone(),

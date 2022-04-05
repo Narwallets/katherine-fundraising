@@ -146,14 +146,14 @@ echo "------------------ Supporter is trying to withdraw before unfreeze!"
     echo "ERROR EXPECTED! Supporter is not allow to withdraw before unfreeze!"
 }
 
-# Try to withdraw when unfreezed funds
-NOW_IN_SECS=$(date +%s)
-CLOSE_DATE_IN_SECS=$(($GOAL_1_UNFREEZE_DATE / 1000))
-WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
-echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
-sleep $WAITING_SECONDS
-echo "------------------ ROBOT: Unfreezing funds!"
-NEAR_ENV=testnet near call $CONTRACT_NAME unfreeze_kickstarter_funds '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000
+# # Try to withdraw when unfreezed funds
+# NOW_IN_SECS=$(date +%s)
+# CLOSE_DATE_IN_SECS=$(($GOAL_1_UNFREEZE_DATE / 1000))
+# WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
+# echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
+# sleep $WAITING_SECONDS
+# echo "------------------ ROBOT: Unfreezing funds!"
+# NEAR_ENV=testnet near call $CONTRACT_NAME unfreeze_kickstarter_funds '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000
 
-echo "------------------ Supporter if FINALLY withdrawing all his funds!"
-NEAR_ENV=testnet near call $CONTRACT_NAME withdraw_all '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+# echo "------------------ Supporter if FINALLY withdrawing all his funds!"
+# NEAR_ENV=testnet near call $CONTRACT_NAME withdraw_all '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS

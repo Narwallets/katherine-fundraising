@@ -67,7 +67,7 @@ impl KatherineFundraising {
     /*    Robot methods     */
     /************************/
 
-    /// Returns both successfull and unsuccessfull kickstarter ids in a single struc 
+    /// Returns both successful and unsuccessful kickstarter ids in a single struc 
     pub fn get_kickstarters_to_process(
         &self,
         from_index: KickstarterIdJSON,
@@ -122,7 +122,7 @@ impl KatherineFundraising {
     pub fn unfreeze_kickstarter_funds(&mut self, kickstarter_id: KickstarterIdJSON) {
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if kickstarter.successful == Some(true) && kickstarter.stnear_price_at_unfreeze == None {
-            kickstarter.assert_unfreezed_funds();
+            kickstarter.assert_funds_can_be_unfreezed();
             self.internal_unfreeze_kickstarter_funds(kickstarter_id);
         }
     }
@@ -147,9 +147,9 @@ impl KatherineFundraising {
         let deposit = kickstarter.get_deposit(&supporter_id);
         let (amount_to_remove, amount_to_send) = match kickstarter.successful {
             Some(true) => {
-                kickstarter.assert_unfreezed_funds();
+                kickstarter.assert_funds_must_be_unfreezed();
                 let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("Price at freeze is not defined!");
-                let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!");
+                let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze.expect("Price at unfreeze is not defined!");
                 let max_amount_to_withdraw = proportional(deposit, price_at_freeze, price_at_unfreeze);
                 assert!(amount <= max_amount_to_withdraw, "Not available amount!");
                 if is_close(amount, max_amount_to_withdraw) {
@@ -583,9 +583,39 @@ impl KatherineFundraising {
         let supporter_id = SupporterId::from(supporter_id);
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         let deposit = kickstarter.get_deposit(&supporter_id);
-        match kickstarter.successful {
-            Some(true) => unimplemented!(),
-            _ => BalanceJSON::from(deposit),
+        let result = match kickstarter.successful {
+            Some(true) => {
+                if kickstarter.stnear_price_at_unfreeze.is_some() {
+                    let price_at_freeze = kickstarter.stnear_price_at_freeze
+                        .expect("Price at freeze is not defined!");
+                    let price_at_unfreeze = kickstarter.stnear_price_at_unfreeze
+                        .expect("Price at unfreeze is not defined!");
+                    proportional(deposit, price_at_freeze, price_at_unfreeze)
+                } else {
+                    panic!("Run get_supporter_estimated_stnear fn, to get an estimation while the funds are freezed!")
+                }
+            },
+            _ => deposit,
+        };
+        BalanceJSON::from(result) 
+    }
+
+    pub fn get_supporter_estimated_stnear(
+        &self,
+        supporter_id: SupporterIdJSON,
+        kickstarter_id: KickstarterIdJSON,
+        st_near_price: BalanceJSON,
+    ) -> BalanceJSON {
+        let supporter_id = SupporterId::from(supporter_id);
+        let st_near_price = Balance::from(st_near_price);
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        if kickstarter.successful == Some(true) && kickstarter.stnear_price_at_unfreeze.is_none() {
+            let price_at_freeze = kickstarter.stnear_price_at_freeze.unwrap();
+            let deposit = kickstarter.get_deposit(&supporter_id);
+            assert!(st_near_price >= price_at_freeze, "Please check the st_near_price you sent.");
+            return BalanceJSON::from(proportional(deposit, price_at_freeze, st_near_price));
+        } else {
+            panic!("Run this fn only if the kickstarter has freezed funds.");
         }
     }
 }

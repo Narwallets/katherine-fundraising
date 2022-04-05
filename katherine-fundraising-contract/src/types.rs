@@ -40,6 +40,8 @@ pub struct KickstarterDetailsJSON {
     pub open_timestamp: EpochMillis,
     pub close_timestamp: EpochMillis,
     pub token_contract_address: AccountId,
+    pub stnear_price_at_freeze: BalanceJSON,
+    pub stnear_price_at_unfreeze: BalanceJSON,
     pub goals: Vec<GoalJSON>,
 }
 

@@ -32,9 +32,11 @@ impl KatherineFundraising {
         );
     }
 }
+
 /**********************/
 /*  Internal methods  */
 /**********************/
+
 #[near_bindgen]
 impl KatherineFundraising {
     /// Inner method to get the given supporter or a new default value supporter.
