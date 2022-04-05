@@ -101,7 +101,7 @@ impl KatherineFundraising {
         if kickstarter.successful.is_none() {
             match kickstarter.get_achieved_goal() {
                 Some(goal) => {
-                    self.internal_activate_kickstarter(kickstarter_id.into(), goal.id);
+                    self.activate_successful_kickstarter(kickstarter_id, goal.id);
                     log!("kickstarter was successfully activated");
                 },
                 None => {
@@ -247,7 +247,7 @@ impl KatherineFundraising {
         )
         // restore user balance on error
         .then(
-            ext_self_kikstarter::return_tokens_from_kickstarter_callback(
+            ext_self_kickstarter::return_tokens_from_kickstarter_callback(
                 convert_to_valid_account_id(account.clone()),
                 kickstarter_id,
                 amount,
@@ -306,7 +306,7 @@ impl KatherineFundraising {
                 GAS_FOR_FT_TRANSFER,
             )
             // restore user balance on error
-            .then(ext_self_kikstarter::kickstarter_withdraw_excedent_callback(
+            .then(ext_self_kickstarter::kickstarter_withdraw_excedent_callback(
                 kickstarter_id,
                 excedent.into(),
                 &env::current_account_id(),
