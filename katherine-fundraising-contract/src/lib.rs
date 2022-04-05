@@ -16,7 +16,6 @@ pub mod utils;
 pub use crate::utils::*;
 
 use crate::{constants::*, goal::*, interface::*, kickstarter::*, supporter::*, types::*};
-pub use metapool::{ext_metapool, ext_self};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -100,16 +99,19 @@ impl KatherineFundraising {
     pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if kickstarter.successful.is_none() {
-            if kickstarter.any_achieved_goal() {
-                self.internal_activate_kickstarter(kickstarter_id.into());
-                log!("kickstarter was successfully activated");
-            } else {
-                kickstarter.active = false;
-                self.active_projects.remove(&kickstarter.id);
-                kickstarter.successful = Some(false);
-                self.kickstarters
-                    .replace(kickstarter_id as u64, &kickstarter);
-                log!("kickstarter successfully deactivated");
+            match kickstarter.get_achieved_goal() {
+                Some(goal) => {
+                    self.activate_successful_kickstarter(kickstarter_id, goal.id);
+                    log!("kickstarter was successfully activated");
+                },
+                None => {
+                    kickstarter.active = false;
+                    self.active_projects.remove(&kickstarter.id);
+                    kickstarter.successful = Some(false);
+                    self.kickstarters
+                        .replace(kickstarter_id as u64, &kickstarter);
+                    log!("kickstarter successfully deactivated");                    
+                },
             }
         } else {
             panic!("kickstarter already activated");
@@ -245,7 +247,7 @@ impl KatherineFundraising {
         )
         // restore user balance on error
         .then(
-            ext_self_kikstarter::return_tokens_from_kickstarter_callback(
+            ext_self_kickstarter::return_tokens_from_kickstarter_callback(
                 convert_to_valid_account_id(account.clone()),
                 kickstarter_id,
                 amount,
@@ -304,7 +306,7 @@ impl KatherineFundraising {
                 GAS_FOR_FT_TRANSFER,
             )
             // restore user balance on error
-            .then(ext_self_kikstarter::kickstarter_withdraw_excedent_callback(
+            .then(ext_self_kickstarter::kickstarter_withdraw_excedent_callback(
                 kickstarter_id,
                 excedent.into(),
                 &env::current_account_id(),

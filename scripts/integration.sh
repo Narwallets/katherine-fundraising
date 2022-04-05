@@ -137,7 +137,7 @@ echo "------------------ ROBOT: Get Projects"
 NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarters_to_process '{"from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
 
 echo "------------------ ROBOT: Processing kickstarter"
-NEAR_ENV=testnet near call $CONTRACT_NAME process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000
 
 echo "------------------ Supporter is trying to withdraw before unfreeze!"
 {
@@ -153,7 +153,7 @@ WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
 echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
 sleep $WAITING_SECONDS
 echo "------------------ ROBOT: Unfreezing funds!"
-NEAR_ENV=testnet near call $CONTRACT_NAME unfreeze_kickstarter_funds '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME unfreeze_kickstarter_funds '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000
 
 echo "------------------ Supporter if FINALLY withdrawing all his funds!"
 NEAR_ENV=testnet near call $CONTRACT_NAME withdraw_all '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS

@@ -146,9 +146,9 @@ impl Kickstarter {
         let mut iter = self.goals.iter();
         let result = iter.next();
         if result == None {
-            return None
+            return None;
         }
-        else{
+        else {
             let mut winner_goal = result.unwrap();
             for goal in iter {
                 if goal.desired_amount > winner_goal.desired_amount && goal.desired_amount >= self.total_deposited{
