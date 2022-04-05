@@ -27,7 +27,7 @@ pub trait ExtSelfMetapool {
         &mut self,
         user: ValidAccountId,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        amount: U128
     );
 }
 
@@ -37,11 +37,21 @@ pub trait ExtSelfKickstarter {
         &mut self,
         user: ValidAccountId,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        amount: U128
     );
     fn kickstarter_withdraw_excedent_callback(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        amount: U128
+    );
+    fn kickstarter_withdraw_callback(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128
+    );
+    fn kickstarter_withdraw_resolve_transfer(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128
     );
 }

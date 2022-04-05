@@ -241,7 +241,7 @@ impl KatherineFundraising {
             .replace(kickstarter_id as u64, &kickstarter);
     }
 
-    pub(crate) fn internal_restore_kickstarter_withdraw(
+    pub(crate) fn internal_restore_supporter_withdraw_from_kickstarter(
         &mut self,
         amount: Balance,
         kickstarter_id: KickstarterId,
@@ -305,5 +305,49 @@ impl KatherineFundraising {
         kickstarter.deposits.insert(&supporter_id, &deposit);
         self.kickstarters
             .replace(kickstarter_id as u64, &kickstarter);
+    }
+
+    pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &mut Kickstarter, stnear_cur_price: Balance, _amount: Balance) {
+        let mut amount = _amount;
+        let stnear_at_freeze = kickstarter.stnear_price_at_freeze.expect("stnear price at freeze not defined");
+        assert!(stnear_cur_price > stnear_at_freeze, "maximum amount to withdraw is 0");
+        let max_withdraw = ((U256::from(stnear_cur_price) - U256::from(stnear_at_freeze)) * U256::from(kickstarter.total_deposited)).as_u128() - kickstarter.kickstarter_withdraw;        
+        assert!(max_withdraw >= amount, "amount to withdraw exceeds balance");
+
+        if is_close(amount, max_withdraw) {
+            amount = max_withdraw;
+        }
+        kickstarter.kickstarter_withdraw += amount;
+        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
+        nep141_token::ft_transfer_call(
+            convert_to_valid_account_id(env::predecessor_account_id()),
+            amount.into(),
+            None,
+            "kickstarter stnear withdraw".to_owned(),
+            &self.metapool_contract_address,
+            0,
+            GAS_FOR_FT_TRANSFER
+        )
+        .then(ext_self_kikstarter::kickstarter_withdraw_resolve_transfer(
+            kickstarter.id.into(), 
+            amount.into(),
+            &env::current_account_id(),
+            0,
+            env::prepaid_gas() - env::used_gas() - GAS_FOR_FT_TRANSFER
+        ));
+    }
+
+    pub(crate) fn internal_restore_kickstarter_withdraw(
+        &mut self,
+        amount: Balance,
+        kickstarter_id: KickstarterId
+    ){
+        let mut kickstarter = self
+        .kickstarters
+        .get(kickstarter_id.into())
+        .expect("kickstarter not found");
+        assert!(kickstarter.kickstarter_withdraw <= amount, "withdrawn amount is higher than expected");
+        kickstarter.kickstarter_withdraw -= amount;
+        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     }
 }
