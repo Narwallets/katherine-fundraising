@@ -20,22 +20,22 @@ These are the functions to interact with Katherine.
 
 **Katherine admin**:
 - [create_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#create_kickstarter)
-- update_kickstarter
+- [update_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#update_kickstarter)
 
 **Public**:
-- get_kickstarter_id_from_slug
-- get_total_kickstarters
-- get_kickstarters
-- get_kickstarter
+- [get_kickstarter_id_from_slug](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_id_from_slug)
+- [get_total_kickstarters](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_total_kickstarters)
+- [get_kickstarters](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarters)
+- [get_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter)
 
 ### 2. Create the Kickstarter Goals
 
 **Katherine admin and Kickstarter**:
-- create_goal
-- delete_last_goal
+- [create_goal](https://github.com/Narwallets/katherine-fundraising/tree/dev#create_goal)
+- [delete_last_goal](https://github.com/Narwallets/katherine-fundraising/tree/dev#delete_last_goal)
 
 **Public**:
-- get_kickstarter_total_goals
+- [get_kickstarter_total_goals](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_total_goals)
 - get_kickstarter_goal
 
 **Kickstarter**:
@@ -74,6 +74,9 @@ These are the functions to interact with Katherine.
 
 **Kickstarter**:
 - kickstarter_withdraw_excedent
+
+**Supporter**:
+- get_supporter_estimated_stnear - When the supporter funds are freezed by the Kickstarter, use this function to calculate an estimation of the current amount of stNear that Katherine has for the supporter.
 
 ### 7. Allow the Kickstarter to withdraw stNear
 
@@ -119,13 +122,73 @@ NEAR_ENV=testnet near call $CONTRACT_NAME create_kickstarter '{"name": "'$KICKST
 
 The returned value is the **Kickstarter Id**.
 
+### **update_kickstarter**
+
+Update the Kickstarter ONLY before the funding period opens.
+
+```rust
+fn update_kickstarter(
+    id: u32,
+    name: String,
+    slug: String,
+    owner_id: String,
+    open_timestamp: u64,
+    close_timestamp: u64,
+    token_contract_address: String,
+)
+```
+
+### **get_kickstarter_id_from_slug**
+
+You could retreat the Kickstarter Id from the Kickstarter unique slug.
+
+```rust
+fn get_kickstarter_id_from_slug(slug: String) -> u32 
+```
+
+### **get_total_kickstarters**
+
+Get the total number of Kickstarters, this value equals the maximum Kickstarter Id.
+
+```rust
+fn get_total_kickstarters() -> u32
+```
+
+### **get_kickstarters**
+
+Get a list of Kickstarters starting from index `from_index`. See [get_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter) to get the details of the `KickstarterJSON` response.
+
+```rust
+fn get_kickstarters(from_index: usize, limit: usize) -> Vec<KickstarterJSON>
+```
+
+### **get_kickstarter**
+
+Get the simple information about the Kickstarter with the `KickstarterJSON` object. To get a more detailed view of the Kickstarter use [get_project_details](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_project_details).
+
+```rust
+fn get_kickstarter(kickstarter_id: KickstarterIdJSON) -> KickstarterJSON
+```
+
+The `KickstarterJSON` response:
+
+```rust
+struct KickstarterJSON {
+    pub id: u32,
+    pub total_supporters: u32,
+    pub total_deposited: String,
+    pub open_timestamp: u64,
+    pub close_timestamp: u64,
+}
+```
+
 ### **create_goal**
 
 To create one of the multiple goals, the MAX number of goals is 5:
 
 ```rust
 fn create_goal(
-    kickstarter_id: KickstarterId,
+    kickstarter_id: u32,
     name: String,
     desired_amount: String,
     unfreeze_timestamp: u64,
@@ -148,7 +211,40 @@ The Kickstarter owner could detele a goal, before the funding period is open.
 ### **delete_last_goal**
 
 ```rust
-fn delete_last_goal(kickstarter_id: KickstarterId)
+fn delete_last_goal(kickstarter_id: u32)
+```
+
+### **get_kickstarter_total_goals**
+
+Returns the number of goals for a Kickstarter.
+
+```rust
+fn get_kickstarter_total_goals(kickstarter_id: u32) -> u8
+```
+
+### **get_kickstarter_goal**
+
+Return the Goal using the Goal Id.
+
+```rust
+fn get_kickstarter_goal(
+        kickstarter_id: u32,
+        goal_id: u32,
+    ) -> GoalJSON
+```
+
+The `GoalJSON` response:
+
+```rust
+struct GoalJSON {
+    pub id: u8,
+    pub name: String,
+    pub desired_amount: String,
+    pub unfreeze_timestamp: u64,
+    pub tokens_to_release: String,
+    pub cliff_timestamp: u64,
+    pub end_timestamp: u64,
+}
 ```
 
 Contract Logic:
