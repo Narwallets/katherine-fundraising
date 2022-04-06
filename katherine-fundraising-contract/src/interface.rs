@@ -27,7 +27,7 @@ pub trait ExtSelfMetapool {
         &mut self,
         user: ValidAccountId,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        amount: U128
     );
 
     fn get_st_near_price(&self) -> U128String;
@@ -39,14 +39,24 @@ pub trait ExtSelfKickstarter {
     fn kickstarter_withdraw_excedent_callback(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        amount: U128
     );
 
     fn return_tokens_from_kickstarter_callback(
         &mut self,
         user: ValidAccountId,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        amount: U128
+    );
+    fn kickstarter_withdraw_callback(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128
+    );
+    fn kickstarter_withdraw_resolve_transfer(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128
     );
 
     fn set_stnear_price_at_unfreeze(&mut self, kickstarter_id: KickstarterIdJSON);
