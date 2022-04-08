@@ -139,12 +139,12 @@ NEAR_ENV=testnet near view $CONTRACT_NAME get_kickstarters_to_process '{"from_in
 echo "------------------ ROBOT: Processing kickstarter"
 NEAR_ENV=testnet near call $CONTRACT_NAME process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000
 
-echo "------------------ Supporter is trying to withdraw before unfreeze!"
-{
-    NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOUNT'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
-} || {
-    echo "ERROR EXPECTED! Supporter is not allow to withdraw before unfreeze!"
-}
+# echo "------------------ Supporter is trying to withdraw before unfreeze!"
+# {
+#     NEAR_ENV=testnet near call $CONTRACT_NAME withdraw '{"amount": "'$SUPPORTER_AMOUNT'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+# } || {
+#     echo "ERROR EXPECTED! Supporter is not allow to withdraw before unfreeze!"
+# }
 
 # # Try to withdraw when unfreezed funds
 # NOW_IN_SECS=$(date +%s)

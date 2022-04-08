@@ -339,11 +339,14 @@ impl KatherineFundraising {
             .replace(kickstarter_id as u64, &kickstarter);
     }
 
-    pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &mut Kickstarter, stnear_cur_price: Balance, _amount: Balance) {
+    pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &mut Kickstarter, st_near_price: Balance, _amount: Balance) {
         let mut amount = _amount;
-        let stnear_at_freeze = kickstarter.stnear_price_at_freeze.expect("stnear price at freeze not defined");
-        assert!(stnear_cur_price > stnear_at_freeze, "maximum amount to withdraw is 0");
-        let max_withdraw = ((U256::from(stnear_cur_price) - U256::from(stnear_at_freeze)) * U256::from(kickstarter.total_deposited)).as_u128() - kickstarter.kickstarter_withdraw;        
+        let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("stnear price at freeze not defined");
+
+        assert!(st_near_price > price_at_freeze, "stNear price has not been updated, please wait!");
+        let price_increment = st_near_price - price_at_freeze;
+
+        let max_withdraw = (U256::from(price_increment) * U256::from(kickstarter.total_deposited)).as_u128() - kickstarter.kickstarter_withdraw;        
         assert!(max_withdraw >= amount, "amount to withdraw exceeds balance");
 
         if is_close(amount, max_withdraw) {
@@ -360,7 +363,7 @@ impl KatherineFundraising {
             0,
             GAS_FOR_FT_TRANSFER
         )
-        .then(ext_self_kikstarter::kickstarter_withdraw_resolve_transfer(
+        .then(ext_self_kickstarter::kickstarter_withdraw_resolve_transfer(
             kickstarter.id.into(), 
             amount.into(),
             &env::current_account_id(),

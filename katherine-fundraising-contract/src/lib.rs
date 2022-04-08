@@ -67,7 +67,7 @@ impl KatherineFundraising {
     /*    Robot methods     */
     /************************/
 
-    /// Returns both successful and unsuccessful kickstarter ids in a single struc 
+    /// Returns both successful and unsuccessful kickstarter ids in a single struc.
     pub fn get_kickstarters_to_process(
         &self,
         from_index: KickstarterIdJSON,
@@ -221,6 +221,7 @@ impl KatherineFundraising {
             }
         }
     }
+
     // lets supporters withdraw the tokens emited by the kickstarter
     pub fn withdraw_kickstarter_tokens(
         &mut self,
@@ -284,50 +285,47 @@ impl KatherineFundraising {
     /*   Kickstarter functions   */
     /*****************************/
 
+    pub fn withdraw_stnear_interest(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: BalanceJSON,
+    ) {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        kickstarter.assert_kickstarter_owner();
+        assert_eq!(kickstarter.successful, Some(true), "Kickstarter is unsuccessful!");
 
-    pub fn withdraw_stnear_interest(&mut self, kickstarter_id: KickstarterIdJSON, _amount: BalanceJSON){
-        let mut kickstarter = self
-        .kickstarters
-        .get(kickstarter_id.into())
-        .expect("kickstarter not found");
-    kickstarter.assert_kickstarter_owner();
-    assert!(kickstarter.successful == Some(true));
+        let amount: Balance = amount.into();
 
-    let mut amount = _amount.into();
+        if let Some(st_near_price) = kickstarter.stnear_price_at_unfreeze {
+            // No need to get stnear price from metapool.
+            self.internal_kickstarter_withdraw(&mut kickstarter, st_near_price, amount);
+        } else {
+            assert!(!kickstarter.funds_can_be_unfreezed(), "Unfreeze funds before interest withdraw!");
+            // Get stNear price from metapool.
+            ext_self_metapool::get_st_near_price(
+                &self.metapool_contract_address,
+                0,
+                GAS_FOR_GET_STNEAR
+            )
+            .then(ext_self_kickstarter::kickstarter_withdraw_callback(
+                kickstarter_id, 
+                amount.into(),
+                &env::current_account_id(),
+                0,
+                env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR
+            ));
+        }        
+    }
 
-    if let Some(stnear_cur_price) = kickstarter.stnear_price_at_unfreeze {
-        // no need to get stnear price from metapool
-        self.internal_kickstarter_withdraw(&mut kickstarter, stnear_cur_price, amount);
-    }
-    else{
-        // get snear price from metapool
-        ext_metapool::get_st_near_price(
-            &self.metapool_contract_address,
-            0,
-            GAS_FOR_GET_STNEAR
-        )
-        .then(ext_self_kikstarter::kickstarter_withdraw_callback(
-            kickstarter_id, 
-            amount.into(),
-            &env::current_account_id(),
-            0,
-            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR
-        ));
-    }
-        
-    }
     #[private]
     pub fn kickstarter_withdraw_callback(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
-        #[callback] stnear_cur_price: U128
+        #[callback] st_near_price: U128
     ){
-        let mut kickstarter = self
-        .kickstarters
-        .get(kickstarter_id.into())
-        .expect("kickstarter not found");
-        self.internal_kickstarter_withdraw(&mut kickstarter, stnear_cur_price.into(), amount.into());
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        self.internal_kickstarter_withdraw(&mut kickstarter, st_near_price.into(), amount.into());
     }
 
     #[private]
@@ -699,12 +697,9 @@ impl KatherineFundraising {
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 mod tests {
-
     use near_sdk::{testing_env, MockedBlockchain, VMContext};
-
     mod unit_test_utils;
     use unit_test_utils::*;
-
     use super::*;
 
     /// Get initial context for tests
