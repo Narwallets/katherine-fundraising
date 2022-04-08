@@ -36,16 +36,16 @@ These are the functions to interact with Katherine.
 
 **Public**:
 - [get_kickstarter_total_goals](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_total_goals)
-- get_kickstarter_goal
+- [get_kickstarter_goal](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_goal)
 
 **Kickstarter**:
-- ft_transfer_call (Called on Project Contract)
+- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_goal) (Called on Project/Token Contract)
 
 ### 3. Funding period begins
 
 **Supporter**:
 - withdraw
-- ft_transfer_call (Called on Meta Pool)
+- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_goal) (Called on Meta Pool)
 
 **Public**:
 - get_active_projects
@@ -246,6 +246,24 @@ struct GoalJSON {
     pub end_timestamp: u64,
 }
 ```
+
+### **ft_transfer_call**
+
+Funds can be transfered to Kathering using the standard transfer with callback.
+
+When an account send **stNear** for the first time to Katherine, a supporter is created.
+
+The `"msg"` argument MUST be included with the `Kickstarter_id`. If the `msg` does not contain a valid `Kickstarter_id` the funds will be rejected and returned to the sending account.
+
+```rust
+fn ft_transfer_call(
+        receiver_id: String,
+        amount: String,
+        msg: String,
+    )
+```
+
+If the funds are being send by the Kickstarter, the tokens must be sent from the token address reported when the Kickstarter was created.
 
 Contract Logic:
 
