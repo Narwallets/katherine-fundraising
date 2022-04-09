@@ -39,16 +39,16 @@ These are the functions to interact with Katherine.
 - [get_kickstarter_goal](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_goal)
 
 **Kickstarter**:
-- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_goal) (Called on Project/Token Contract)
+- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#ft_transfer_call) (Called on Project/Token Contract)
 
 ### 3. Funding period begins
 
 **Supporter**:
 - withdraw
-- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_goal) (Called on Meta Pool)
+- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#ft_transfer_call) (Called on Meta Pool)
 
 **Public**:
-- get_active_projects
+- [get_active_projects](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_active_projects)
 - get_project_details
 - get_supporter_total_deposit_in_kickstarter
 
@@ -264,6 +264,22 @@ fn ft_transfer_call(
 ```
 
 If the funds are being send by the Kickstarter, the tokens must be sent from the token address reported when the Kickstarter was created.
+
+### **get_active_projects**
+
+This is a function destinated for the FRONTEND to call the active and open projects.
+
+**Active** project are waiting for funding. **Open** projects are in funding period.
+
+```rust
+fn get_active_projects(
+        &self,
+        from_index: u32,
+        limit: u32,
+    ) -> Option<ActiveKickstarterJSON>
+```
+
+If the returned value is `null` then the `from_index` value is larger than the total number of kickstarters.
 
 Contract Logic:
 
