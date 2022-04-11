@@ -523,7 +523,7 @@ impl KatherineFundraising {
         let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         match self.supporters.get(&supporter_id) {
             Some(supporter) => {
-                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
+                if supporter.supported_projects.to_vec().contains(&kickstarter.id) {
                     let goal = kickstarter.get_winner_goal();
                     return self.internal_get_supporter_total_rewards(
                         &supporter_id,
@@ -547,7 +547,7 @@ impl KatherineFundraising {
         let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         match self.supporters.get(&supporter_id) {
             Some(supporter) => {
-                if supporter.kickstarters.to_vec().contains(&kickstarter.id) {
+                if supporter.supported_projects.to_vec().contains(&kickstarter.id) {
                     let goal = kickstarter.get_winner_goal();
                     let total_rewards = self.internal_get_supporter_total_rewards(
                         &supporter_id,
@@ -687,6 +687,40 @@ impl KatherineFundraising {
         } else {
             panic!("Run this fn only if the kickstarter has freezed funds.");
         }
+    }
+
+    pub fn get_supported_projects(&self, supporter_id: SupporterIdJSON) -> Vec<KickstarterIdJSON> {
+        let supporter = self.internal_get_supporter(&supporter_id.into());
+        supporter.supported_projects.to_vec()
+    }
+
+    pub fn get_supported_detailed_list(
+        &self,
+        supporter_id: SupporterIdJSON,
+        from_index: u32,
+        limit: u32,
+    ) -> Option<Vec<SupporterDetailedJSON>> {
+        let kickstarter_ids = self.get_supported_projects(supporter_id.clone());
+        let kickstarters_len = kickstarter_ids.len() as u64;
+        let start: u64 = from_index.into();
+        if start > kickstarters_len {
+            return None;
+        }
+        let mut result = Vec::new();
+        for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
+            let kickstarter_id = kickstarter_ids.get(index as usize).unwrap();
+            let kickstarter = self.internal_get_kickstarter(*kickstarter_id);
+            let kickstarter_id = kickstarter.id;
+            result.push(
+                SupporterDetailedJSON {
+                    kickstarter_id: KickstarterIdJSON::from(kickstarter_id),
+                    supporter_deposit: self.get_supporter_total_deposit_in_kickstarter(supporter_id.clone(), kickstarter_id),
+                    active: kickstarter.active,
+                    successful: kickstarter.successful,
+                }
+            );
+        }
+        Some(result)
     }
 }
 

@@ -78,3 +78,12 @@ pub struct KickstarterSupporterJSON {
     pub kickstarter_id: KickstarterIdJSON,
     pub total_deposited: BalanceJSON,
 }
+
+#[derive(Serialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct SupporterDetailedJSON {
+    pub kickstarter_id: KickstarterIdJSON,
+    pub supporter_deposit: BalanceJSON,
+    pub active: bool,
+    pub successful: Option<bool>,
+}
