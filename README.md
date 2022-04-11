@@ -58,7 +58,6 @@ These are the functions to interact with Katherine.
 - get_kickstarters_to_process
 - process_kickstarter
 
-
 **Public**:
 - unfreeze_kickstarter_funds
 
@@ -229,7 +228,7 @@ Return the Goal using the Goal Id.
 ```rust
 fn get_kickstarter_goal(
         kickstarter_id: u32,
-        goal_id: u32,
+        goal_id: u8,
     ) -> GoalJSON
 ```
 
@@ -273,13 +272,36 @@ This is a function destinated for the FRONTEND to call the active and open proje
 
 ```rust
 fn get_active_projects(
-        &self,
         from_index: u32,
         limit: u32,
     ) -> Option<ActiveKickstarterJSON>
 ```
 
 If the returned value is `null` then the `from_index` value is larger than the total number of kickstarters.
+
+### **get_project_details**
+
+Get all the details from a particular Kickstarter.
+
+```rust
+fn get_project_details(kickstarter_id: KickstarterIdJSON) -> KickstarterDetailsJSON
+```
+
+The result is the `KickstarterDetailsJSON`:
+
+```rust
+struct KickstarterDetailsJSON {
+    pub id: u32,
+    pub total_supporters: u32,
+    pub total_deposited: String,
+    pub open_timestamp: u64,
+    pub close_timestamp: u64,
+    pub token_contract_address: String,
+    pub stnear_price_at_freeze: String,
+    pub stnear_price_at_unfreeze: String,
+    pub goals: Vec<GoalJSON>,
+}
+```
 
 Contract Logic:
 
