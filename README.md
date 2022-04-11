@@ -59,13 +59,10 @@ These are the functions to interact with Katherine.
 - [get_kickstarters_to_process](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarters_to_process)
 - [process_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#process_kickstarter)
 
-**Public**:
-- unfreeze_kickstarter_funds
-
 ### 5. Close unsuccessful Kickstarter
 
 **Kickstarter**:
-- kickstarter_withdraw_excedent
+- [kickstarter_withdraw_excedent](https://github.com/Narwallets/katherine-fundraising/tree/dev#kickstarter_withdraw_excedent)
 
 **Supporter**:
 - [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw)
@@ -74,7 +71,7 @@ These are the functions to interact with Katherine.
 ### 6. Freeze Supporter funds
 
 **Kickstarter**:
-- kickstarter_withdraw_excedent
+- [kickstarter_withdraw_excedent](https://github.com/Narwallets/katherine-fundraising/tree/dev#kickstarter_withdraw_excedent)
 
 **Supporter**:
 - get_supporter_estimated_stnear - When the supporter funds are freezed by the Kickstarter, use this function to calculate an estimation of the current amount of stNear that Katherine has for the supporter.
@@ -100,7 +97,7 @@ These are the functions to interact with Katherine.
 ### 9. Allow the Supporter to withdraw stNear
 
 **Robot**:
-- unfreeze_kickstarter_funds
+- [unfreeze_kickstarter_funds](https://github.com/Narwallets/katherine-fundraising/tree/dev#process_kickstarter)
 
 **Supporter**:
 - [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw)
@@ -287,7 +284,7 @@ fn withdraw(amount: String, kickstarter_id: u32)
 Same as [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw), but automatically calculate all the available tokens for the user.
 
 ```rust
-fn withdraw_all(kickstarter_id: KickstarterIdJSON)
+fn withdraw_all(kickstarter_id: u32)
 ```
 
 ### **get_active_projects**
@@ -346,8 +343,8 @@ This is a view function for the **robot**. It returns a list of the successful a
 
 ```rust
 pub fn get_kickstarters_to_process(
-    from_index: KickstarterIdJSON,
-    limit: KickstarterIdJSON,
+    from_index: u32,
+    limit: u32,
 ) -> Option<KickstarterStatusJSON>
 ```
 
@@ -355,8 +352,8 @@ The result could be `null`, this would mean that the maximum number of kickstart
 
 ```rust
 pub struct KickstarterStatusJSON {
-    pub successful: Vec<KickstarterIdJSON>,
-    pub unsuccessful: Vec<KickstarterIdJSON>,
+    pub successful: Vec<u32>,
+    pub unsuccessful: Vec<u32>,
 }
 ```
 
@@ -365,7 +362,23 @@ pub struct KickstarterStatusJSON {
 This is a call function for the **robot**. It processes the successful and unsuccessful Kickstarters to **evaluate** if a Goal was reached or not.
 
 ```rust
-fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON)
+fn process_kickstarter(kickstarter_id: u32)
+```
+
+### **unfreeze_kickstarter_funds**
+
+After the `unfreeze_timestamp` date, any account should be able to unfreeze the stNear funds.
+
+```rust
+fn unfreeze_kickstarter_funds(kickstarter_id: u32)
+```
+
+### **kickstarter_withdraw_excedent**
+
+Function for the Kickstarter. This function is used to withdraw all the **pTokens** that are not going to be delivered to the Supporters.
+
+```rust
+fn kickstarter_withdraw_excedent(kickstarter_id: u32)
 ```
 
 Contract Logic:
