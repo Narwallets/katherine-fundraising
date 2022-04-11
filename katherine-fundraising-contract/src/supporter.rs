@@ -16,7 +16,7 @@ impl Default for Supporter {
             available: 0,
             total_in_deposits: 0,
             locked: 0,
-            kickstarters: Vector::new(b"Kickstarter".to_vec()),
+            kickstarters: Vector::new(Keys::SupporterKickstarters),
         }
     }
 }

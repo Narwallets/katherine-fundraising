@@ -17,6 +17,7 @@ pub use crate::utils::*;
 
 use crate::{constants::*, goal::*, interface::*, kickstarter::*, supporter::*, types::*};
 
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct KatherineFundraising {
@@ -51,15 +52,15 @@ impl KatherineFundraising {
         // assert!(!env::state_exists(), "The contract is already initialized");
         Self {
             owner_id,
-            supporters: UnorderedMap::new(b"Supporters".to_vec()),
-            kickstarters: Vector::new(b"Kickstarters".to_vec()),
-            kickstarter_id_by_slug: UnorderedMap::new(b"KickstarterId".to_vec()),
+            supporters: UnorderedMap::new(Keys::Supporters),
+            kickstarters: Vector::new(Keys::Kickstarters),
+            kickstarter_id_by_slug: UnorderedMap::new(Keys::KickstarterId),
             total_available: 0,
             min_deposit_amount,
             metapool_contract_address,
             katherine_fee_percent,
             max_goals_per_kickstarter: 5,
-            active_projects: UnorderedSet::new(b"Active".to_vec()),
+            active_projects: UnorderedSet::new(Keys::Active),
         }
     }
 
@@ -430,11 +431,11 @@ impl KatherineFundraising {
             id: self.kickstarters.len() as KickstarterId,
             name,
             slug,
-            goals: Vector::new(b"Goal".to_vec()),
+            goals: Vector::new(Keys::Goals),
             winner_goal_id: None,
             katherine_fee: None,
-            deposits: UnorderedMap::new(b"Deposits".to_vec()),
-            withdraw: UnorderedMap::new(b"Withdraw".to_vec()),
+            deposits: UnorderedMap::new(Keys::Deposits),
+            withdraw: UnorderedMap::new(Keys::Withdraws),
             total_deposited: 0,
             owner_id,
             active: true,
@@ -484,11 +485,11 @@ impl KatherineFundraising {
             id,
             name,
             slug,
-            goals: Vector::new(b"Goal".to_vec()),
+            goals: Vector::new(Keys::Goals),
             winner_goal_id: None,
             katherine_fee: None,
-            deposits: UnorderedMap::new(b"A".to_vec()),
-            withdraw: UnorderedMap::new(b"W".to_vec()),
+            deposits: UnorderedMap::new(Keys::Deposits),
+            withdraw: UnorderedMap::new(Keys::Withdraws),
             total_deposited: 0,
             owner_id,
             active: true,
