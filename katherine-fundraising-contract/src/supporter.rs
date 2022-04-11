@@ -1,12 +1,11 @@
 use crate::*;
-use near_sdk::collections::Vector;
 
-#[derive(BorshDeserialize, BorshSerialize, Debug)]
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Supporter {
     pub total_in_deposits: Balance,
     pub locked: Balance,
     pub available: u128,
-    pub kickstarters: Vector<KickstarterId>,
+    pub supported_projects: UnorderedSet<KickstarterId>,
 }
 
 /// Supporter account on this contract
@@ -16,16 +15,17 @@ impl Default for Supporter {
             available: 0,
             total_in_deposits: 0,
             locked: 0,
-            kickstarters: Vector::new(Keys::SupporterKickstarters),
+            supported_projects: UnorderedSet::new(Keys::SupporterKickstarters),
         }
     }
 }
+
 impl Supporter {
     /// when the supporter.is_empty() it will be removed
     pub fn is_empty(&self) -> bool {
         return self.available == 0
             && self.total_in_deposits == 0
             && self.locked == 0
-            && self.kickstarters.is_empty();
+            && self.supported_projects.is_empty();
     }
 }

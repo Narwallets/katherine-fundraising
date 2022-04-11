@@ -58,10 +58,14 @@ impl KatherineFundraising {
         amount: &Balance,
         kickstarter: &mut Kickstarter,
     ) {
+        // Update Supporter.
         kickstarter.assert_within_funding_period();
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.total_in_deposits += amount;
+        supporter.supported_projects.insert(&kickstarter.id);
         self.supporters.insert(&supporter_id, &supporter);
+
+        // Update Kickstarter
         kickstarter.total_deposited += amount;
         kickstarter.update_supporter_deposits(&supporter_id, amount);
         self.kickstarters
@@ -210,7 +214,7 @@ impl KatherineFundraising {
             get_linear_release_proportion(total_rewards, cliff_timestamp, end_timestamp);
         if available_rewards == 0 {
             return 0;
-        };
+        }
         let deposit = kickstarter
             .deposits
             .get(&supporter_id)
@@ -310,13 +314,15 @@ impl KatherineFundraising {
         assert!(requested_amount <= deposit, "withdraw amount exceeds balance");
         if deposit == requested_amount{
             kickstarter.deposits.remove(&supporter_id);
-        }
-        else{
+        } else {
             let new_total = deposit - requested_amount; 
             kickstarter.deposits.insert(&supporter_id, &new_total);
         }
         if kickstarter.is_within_funding_period() {
             kickstarter.total_deposited -= requested_amount;
+            let mut supporter = self.internal_get_supporter(&supporter_id);
+            supporter.supported_projects.remove(&kickstarter.id);
+            self.supporters.insert(&supporter_id, &supporter);
         }
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     } 
