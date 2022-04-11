@@ -74,10 +74,10 @@ These are the functions to interact with Katherine.
 - [kickstarter_withdraw_excedent](https://github.com/Narwallets/katherine-fundraising/tree/dev#kickstarter_withdraw_excedent)
 
 **Supporter**:
-- get_supporter_estimated_stnear - When the supporter funds are freezed by the Kickstarter, use this function to calculate an estimation of the current amount of stNear that Katherine has for the supporter.
+- [get_supporter_estimated_stnear](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_estimated_stnear) - When the supporter funds are freezed by the Kickstarter, use this function to calculate an estimation of the current amount of stNear that Katherine has for the supporter.
 
 **Supporter Dashboard**:
-- get_supported_projects
+- [get_supported_projects](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supported_projects)
 - get_supported_detailed_list
 
 ### 7. Allow the Kickstarter to withdraw stNear
@@ -379,6 +379,51 @@ Function for the Kickstarter. This function is used to withdraw all the **pToken
 
 ```rust
 fn kickstarter_withdraw_excedent(kickstarter_id: u32)
+```
+
+### **get_supporter_estimated_stnear**
+
+Get an estimation of the current amount of stnear that Katherine owns to the supporter. This is only available during the freezed period, after the funds are unfreezed the exact value could be calculated using the [get_supporter_total_deposit_in_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_total_deposit_in_kickstarter) function.
+
+The returned value is a decreasing value, due to the appreciation of the stNear.
+
+```rust
+fn get_supporter_estimated_stnear(
+        supporter_id: String,
+        kickstarter_id: u32,
+        st_near_price: String,
+    ) -> String
+```
+
+### **get_supported_projects**
+
+Get a list of the projects supported by the Supporter.
+
+```rust
+fn get_supported_projects(supporter_id: String) -> Vec<u32>
+```
+
+### **get_supported_detailed_list**
+
+This function is for the Meta Yield Dashboard, in order to get the projects from `from_index` to `from_index + limit` which had receive support from the Supporter. The `SupporterDetailedJSON` must have all the required information of the Supporter investment. If the result is `null` then no more kickstarters are available.
+
+```rust
+fn get_supported_detailed_list(
+        supporter_id: String,
+        from_index: u32,
+        limit: u32,
+    ) -> Option<Vec<SupporterDetailedJSON>>
+```
+
+The result is:
+
+```rust
+struct SupporterDetailedJSON {
+    pub kickstarter_id: u32,
+    pub supporter_deposit: String,
+    pub active: bool,
+    pub successful: Option<bool>,
+}
 ```
 
 Contract Logic:
