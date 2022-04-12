@@ -307,7 +307,7 @@ If the returned value is `null` then the `from_index` value is larger than the t
 Get all the details from a particular Kickstarter.
 
 ```rust
-fn get_project_details(kickstarter_id: KickstarterIdJSON) -> KickstarterDetailsJSON
+fn get_project_details(kickstarter_id: u32) -> KickstarterDetailsJSON
 ```
 
 The result is the `KickstarterDetailsJSON`:
@@ -323,6 +323,8 @@ struct KickstarterDetailsJSON {
     pub stnear_price_at_freeze: String,
     pub stnear_price_at_unfreeze: String,
     pub goals: Vec<GoalJSON>,
+    pub active: bool,
+    pub successful: Option<bool>,
 }
 ```
 

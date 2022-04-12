@@ -43,6 +43,8 @@ pub struct KickstarterDetailsJSON {
     pub stnear_price_at_freeze: BalanceJSON,
     pub stnear_price_at_unfreeze: BalanceJSON,
     pub goals: Vec<GoalJSON>,
+    pub active: bool,
+    pub successful: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize)]

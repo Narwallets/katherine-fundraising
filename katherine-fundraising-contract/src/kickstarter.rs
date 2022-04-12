@@ -248,6 +248,8 @@ impl Kickstarter {
             close_timestamp: self.close_timestamp,
             token_contract_address: self.token_contract_address.clone(),
             goals,
+            active: self.active,
+            successful: self.successful,
         }
     }
 }
