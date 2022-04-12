@@ -97,7 +97,7 @@ These are the functions to interact with Katherine.
 ### 9. Allow the Supporter to withdraw stNear
 
 **Robot**:
-- [unfreeze_kickstarter_funds](https://github.com/Narwallets/katherine-fundraising/tree/dev#process_kickstarter)
+- [unfreeze_kickstarter_funds](https://github.com/Narwallets/katherine-fundraising/tree/dev#unfreeze_kickstarter_funds)
 
 **Supporter**:
 - [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw)
@@ -325,6 +325,7 @@ struct KickstarterDetailsJSON {
     pub goals: Vec<GoalJSON>,
     pub active: bool,
     pub successful: Option<bool>,
+    pub winner_goal_id: Option<u8>,
 }
 ```
 
