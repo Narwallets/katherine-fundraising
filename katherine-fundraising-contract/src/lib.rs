@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet, Vector};
-use near_sdk::json_types::U128;
+use near_sdk::json_types::{U128, U64};
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult};
 
 mod constants;
@@ -45,7 +45,7 @@ impl KatherineFundraising {
     #[init]
     pub fn new(
         owner_id: AccountId,
-        min_deposit_amount: Balance,
+        min_deposit_amount: BalanceJSON,
         metapool_contract_address: AccountId,
         katherine_fee_percent: BasisPoints,
     ) -> Self {
@@ -56,7 +56,7 @@ impl KatherineFundraising {
             kickstarters: Vector::new(Keys::Kickstarters),
             kickstarter_id_by_slug: UnorderedMap::new(Keys::KickstarterId),
             total_available: 0,
-            min_deposit_amount,
+            min_deposit_amount: min_deposit_amount.into(),
             metapool_contract_address,
             katherine_fee_percent,
             max_goals_per_kickstarter: 5,
@@ -71,8 +71,8 @@ impl KatherineFundraising {
     /// Returns both successful and unsuccessful kickstarter ids in a single struc.
     pub fn get_kickstarters_to_process(
         &self,
-        from_index: KickstarterIdJSON,
-        limit: KickstarterIdJSON,
+        from_index: U64,
+        limit: U64,
     ) -> Option<KickstarterStatusJSON> {
         let kickstarters_len = self.kickstarters.len();
         let start: u64 = from_index.into();
@@ -81,7 +81,7 @@ impl KatherineFundraising {
         }
         let mut successful: Vec<KickstarterIdJSON> = Vec::new();
         let mut unsuccessful: Vec<KickstarterIdJSON> = Vec::new();
-        for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
+        for index in start..std::cmp::min(start + u64::from(limit), kickstarters_len) {
             let kickstarter = self.internal_get_kickstarter(index as u32);
             if kickstarter.active && kickstarter.close_timestamp <= get_current_epoch_millis() {
                 if kickstarter.any_achieved_goal() {
@@ -133,7 +133,7 @@ impl KatherineFundraising {
     /*****************************/
 
     pub fn withdraw_all(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let supporter_id = convert_to_valid_account_id(env::predecessor_account_id());
+        let supporter_id = env::predecessor_account_id();
         let amount = self.get_supporter_total_deposit_in_kickstarter(supporter_id, kickstarter_id);
         self.withdraw(amount, kickstarter_id);
     }
@@ -185,7 +185,7 @@ impl KatherineFundraising {
         };
 
         self.internal_supporter_withdraw(amount_to_remove, deposit, &mut kickstarter, &supporter_id);
-        let supporter_id = convert_to_valid_account_id(supporter_id);
+
         nep141_token::ft_transfer(
             supporter_id.clone(),
             BalanceJSON::from(amount_to_send),
@@ -234,7 +234,7 @@ impl KatherineFundraising {
         self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
 
         nep141_token::ft_transfer_call(
-            convert_to_valid_account_id(account.clone()),
+            account.clone(),
             amount,
             None,
             "withdraw from kickstarter".to_string(),
@@ -246,7 +246,7 @@ impl KatherineFundraising {
         // restore user balance on error
         .then(
             ext_self_kickstarter::return_tokens_from_kickstarter_callback(
-                convert_to_valid_account_id(account.clone()),
+                account.clone(),
                 kickstarter_id,
                 amount,
                 &env::current_account_id(),
@@ -419,8 +419,8 @@ impl KatherineFundraising {
         name: String,
         slug: String,
         owner_id: AccountId,
-        open_timestamp: EpochMillis,
-        close_timestamp: EpochMillis,
+        open_timestamp: U64,
+        close_timestamp: U64,
         token_contract_address: AccountId,
     ) -> KickstarterIdJSON {
         //ONLY ADMINS CAN CREATE KICKSTARTERS? YES
@@ -443,8 +443,8 @@ impl KatherineFundraising {
             stnear_price_at_freeze: None,
             stnear_price_at_unfreeze: None,
             creation_timestamp: get_current_epoch_millis(),
-            open_timestamp,
-            close_timestamp,
+            open_timestamp: open_timestamp.into(),
+            close_timestamp: close_timestamp.into(),
             token_contract_address,
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
@@ -459,18 +459,18 @@ impl KatherineFundraising {
     }
 
     #[allow(unused)]
-    pub fn delete_kickstarter(&mut self, id: KickstarterId) {
+    pub fn delete_kickstarter(&mut self, id: KickstarterIdJSON) {
         panic!("Kickstarter must not be deleted!");
     }
 
     pub fn update_kickstarter(
         &mut self,
-        id: KickstarterId,
+        id: KickstarterIdJSON,
         name: String,
         slug: String,
         owner_id: AccountId,
-        open_timestamp: EpochMillis,
-        close_timestamp: EpochMillis,
+        open_timestamp: U64,
+        close_timestamp: U64,
         token_contract_address: AccountId,
     ) {
         self.assert_only_admin();
@@ -497,8 +497,8 @@ impl KatherineFundraising {
             stnear_price_at_freeze: None,
             stnear_price_at_unfreeze: None,
             creation_timestamp: get_current_epoch_millis(),
-            open_timestamp,
-            close_timestamp,
+            open_timestamp: open_timestamp.into(),
+            close_timestamp: close_timestamp.into(),
             token_contract_address,
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
@@ -571,8 +571,8 @@ impl KatherineFundraising {
 
     pub fn get_active_projects(
         &self,
-        from_index: u32,
-        limit: u32,
+        from_index: U64,
+        limit: U64,
     ) -> Option<ActiveKickstarterJSON> {
         let projects = self.active_projects.to_vec();
         let projects_len = projects.len() as u64;
@@ -582,7 +582,7 @@ impl KatherineFundraising {
         }
         let mut active: Vec<KickstarterJSON> = Vec::new();
         let mut open: Vec<KickstarterJSON> = Vec::new();
-        for index in start..std::cmp::min(start + limit as u64, projects_len) {
+        for index in start..std::cmp::min(start + u64::from(limit), projects_len) {
             let kickstarter_id = projects.get(index as usize).expect("Out of index!");
             let kickstarter = self.internal_get_kickstarter(*kickstarter_id);
             if kickstarter.is_within_funding_period() {
@@ -599,14 +599,15 @@ impl KatherineFundraising {
         kickstarter.to_details_json()
     }
 
-    pub fn get_kickstarters(&self, from_index: usize, limit: usize) -> Vec<KickstarterJSON> {
-        let kickstarters_len = self.kickstarters.len() as usize;
+    pub fn get_kickstarters(&self, from_index: U64, limit: U64) -> Vec<KickstarterJSON> {
+        let kickstarters_len = self.kickstarters.len();
+        let start: u64 = from_index.into();
         assert!(
-            from_index <= kickstarters_len,
+            start <= kickstarters_len,
             "from_index is out of range!"
         );
         let mut results: Vec<KickstarterJSON> = Vec::new();
-        for index in from_index..std::cmp::min(from_index + limit, kickstarters_len) {
+        for index in start..std::cmp::min(start + u64::from(limit), kickstarters_len) {
             let kickstarter = self.internal_get_kickstarter(index as u32);
             results.push(kickstarter.to_json());
         }
@@ -615,13 +616,13 @@ impl KatherineFundraising {
 
     pub fn get_kickstarter(&self, kickstarter_id: KickstarterIdJSON) -> KickstarterJSON {
         let kickstarters_len = self.get_total_kickstarters();
-        assert!(kickstarter_id <= kickstarters_len, "Index is out of range!");
+        assert!(kickstarter_id as u64 <= kickstarters_len, "Index is out of range!");
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.to_json()
     }
 
-    pub fn get_total_kickstarters(&self) -> u32 {
-        return self.kickstarters.len() as u32;
+    pub fn get_total_kickstarters(&self) -> u64 {
+        return self.kickstarters.len();
     }
 
     pub fn get_kickstarter_id_from_slug(&self, slug: String) -> KickstarterId {
@@ -698,8 +699,8 @@ impl KatherineFundraising {
     pub fn get_supported_detailed_list(
         &self,
         supporter_id: SupporterIdJSON,
-        from_index: u32,
-        limit: u32,
+        from_index: U64,
+        limit: U64,
     ) -> Option<Vec<SupporterDetailedJSON>> {
         let kickstarter_ids = self.get_supported_projects(supporter_id.clone());
         let kickstarters_len = kickstarter_ids.len() as u64;
@@ -708,7 +709,7 @@ impl KatherineFundraising {
             return None;
         }
         let mut result = Vec::new();
-        for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
+        for index in start..std::cmp::min(start + u64::from(limit), kickstarters_len) {
             let kickstarter_id = kickstarter_ids.get(index as usize).unwrap();
             let kickstarter = self.internal_get_kickstarter(*kickstarter_id);
             let kickstarter_id = kickstarter.id;
@@ -752,7 +753,7 @@ mod tests {
     fn new_contract() -> KatherineFundraising {
         KatherineFundraising::new(
             OWNER_ACCOUNT.into(),
-            2,
+            U128(2),
             METAPOOL_CONTRACT_ADDRESS.to_string(),
             2,
         )
@@ -775,7 +776,7 @@ mod tests {
     #[test]
     fn test_get_kickstarters() {
         let (_context, mut contract) = contract_only_setup();
-        contract.get_kickstarters(0, 49);
+        contract.get_kickstarters(U64(0), U64(49));
     }
 
     #[test]

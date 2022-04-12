@@ -1,13 +1,14 @@
 use crate::*;
 
 use near_sdk::ext_contract;
-use near_sdk::json_types::{U128, ValidAccountId};
+use near_sdk::AccountId;
+use near_sdk::json_types::{U128};
 
 #[ext_contract(nep141_token)]
 pub trait NEP141Token {
     fn ft_transfer_call(
         &mut self,
-        receiver_id: ValidAccountId,
+        receiver_id: AccountId,
         amount: U128,
         memo: Option<String>,
         msg: String,
@@ -15,7 +16,7 @@ pub trait NEP141Token {
 
     fn ft_transfer(
         &mut self,
-        receiver_id: ValidAccountId,
+        receiver_id: AccountId,
         amount: U128,
         memo: Option<String>,
     );
@@ -25,7 +26,7 @@ pub trait NEP141Token {
 pub trait ExtSelfMetapool {
     fn return_tokens_callback(
         &mut self,
-        user: ValidAccountId,
+        user: AccountId,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     );
@@ -49,7 +50,7 @@ pub trait ExtSelfKickstarter {
 
     fn return_tokens_from_kickstarter_callback(
         &mut self,
-        user: ValidAccountId,
+        user: AccountId,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     );

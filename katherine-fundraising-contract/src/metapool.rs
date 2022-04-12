@@ -78,7 +78,7 @@ mod tests {
             .build());
         let contract = KatherineFundraising::new(
             acc_owner().to_string(), // owner
-            0,
+            U128(0),
             acc_metapool().to_string(),
             1,
         );
@@ -97,8 +97,8 @@ mod tests {
             "first_kickstarter".to_owned(),
             "FK".to_owned(),
             kickstarter_owner.to_string(),
-            get_time_millis(&ctx),
-            get_time_millis(&ctx) + 1_000 * 60 * 5,
+            U64(get_time_millis(&ctx)),
+            U64(get_time_millis(&ctx) + 1_000 * 60 * 5),
             kickstarter_token_acc.to_string(),
         );
         // become a supporter

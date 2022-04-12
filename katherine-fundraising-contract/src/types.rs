@@ -1,6 +1,6 @@
 use uint::construct_uint;
 
-use near_sdk::json_types::{ValidAccountId, U128};
+use near_sdk::json_types::{U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 
@@ -14,7 +14,7 @@ pub type GoalIdJSON = u8;
 pub type EpochMillis = u64;
 pub type BasisPoints = u32;
 pub type SupporterId = AccountId;
-pub type SupporterIdJSON = ValidAccountId;
+pub type SupporterIdJSON = AccountId;
 
 construct_uint! {
     /// 256-bit unsigned integer.

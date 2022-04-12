@@ -361,7 +361,7 @@ impl KatherineFundraising {
         kickstarter.kickstarter_withdraw += amount;
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
         nep141_token::ft_transfer_call(
-            convert_to_valid_account_id(env::predecessor_account_id()),
+            env::predecessor_account_id(),
             amount.into(),
             None,
             "kickstarter stnear withdraw".to_owned(),

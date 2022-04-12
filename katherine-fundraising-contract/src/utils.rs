@@ -1,7 +1,6 @@
 use crate::*;
 
 use near_sdk::{env, Balance};
-use near_sdk::json_types::ValidAccountId;
 
 /// is_close returns true if total-0.001N < requested < total+0.001N
 /// it is used to avoid leaving "dust" in the accounts and to manage rounding simplification for the users
@@ -59,8 +58,4 @@ pub fn get_linear_release_proportion(
         let denominator = end_timestamp as u128 - cliff_timestamp as u128;
         proportional_with_steps(amount, numerator, denominator, 10) // TODO: constants steps
     }
-}
-
-pub fn convert_to_valid_account_id(account_id: AccountId) -> ValidAccountId {
-    near_sdk::serde_json::from_str(&format!("\"{}\"", account_id)).unwrap()
 }

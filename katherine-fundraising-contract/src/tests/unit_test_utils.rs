@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use super::*;
-use near_sdk::json_types::Base58PublicKey;
+use near_sdk::json_types::{Base58PublicKey, U64};
 use near_sdk::{AccountId, MockedBlockchain, PromiseResult, VMContext};
 
 /// Tests constants
@@ -72,8 +72,8 @@ pub fn _new_kickstarter(
         KICKSTARTER_NAME.into(),
         KICKSTARTER_SLUG.into(),
         OWNER_ACCOUNT.into(),
-        to_ts(START_TIME_IN_DAYS),      // open_timestamp
-        to_ts(START_TIME_IN_DAYS * 50), // close_timestamp
+        U64(to_ts(START_TIME_IN_DAYS)),      // open_timestamp
+        U64(to_ts(START_TIME_IN_DAYS * 50)), // close_timestamp
         CONTRACT_ACCOUNT.into(),        // token_contract_address
     )
 }
