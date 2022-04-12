@@ -325,6 +325,7 @@ struct KickstarterDetailsJSON {
     pub goals: Vec<GoalJSON>,
     pub active: bool,
     pub successful: Option<bool>,
+    pub winner_goal_id: Option<u8>,
 }
 ```
 
