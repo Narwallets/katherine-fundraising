@@ -78,21 +78,21 @@ These are the functions to interact with Katherine.
 
 **Supporter Dashboard**:
 - [get_supported_projects](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supported_projects)
-- get_supported_detailed_list
+- [get_supported_detailed_list](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supported_detailed_list)
 
 ### 7. Allow the Kickstarter to withdraw stNear
 
 **Kickstarter**:
-- withdraw_stnear_interest
+- [withdraw_stnear_interest](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_stnear_interest)
 
 ### 8. Allow the Supporter to withdraw project Tokens
 
 **Supporter**:
-- withdraw_kickstarter_tokens
+- [withdraw_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_kickstarter_tokens)
 
 **Public**:
-- get_supporter_total_rewards
-- get_supporter_available_rewards
+- [get_supporter_total_rewards](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_total_rewards)
+- [get_supporter_available_rewards](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_available_rewards)
 
 ### 9. Allow the Supporter to withdraw stNear
 
@@ -173,7 +173,7 @@ fn get_kickstarters(from_index: usize, limit: usize) -> Vec<KickstarterJSON>
 Get the simple information about the Kickstarter with the `KickstarterJSON` object. To get a more detailed view of the Kickstarter use [get_project_details](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_project_details).
 
 ```rust
-fn get_kickstarter(kickstarter_id: KickstarterIdJSON) -> KickstarterJSON
+fn get_kickstarter(kickstarter_id: u32) -> KickstarterJSON
 ```
 
 The `KickstarterJSON` response:
@@ -234,9 +234,9 @@ Return the Goal using the Goal Id.
 
 ```rust
 fn get_kickstarter_goal(
-        kickstarter_id: u32,
-        goal_id: u8,
-    ) -> GoalJSON
+    kickstarter_id: u32,
+    goal_id: u8,
+) -> GoalJSON
 ```
 
 The `GoalJSON` response:
@@ -263,10 +263,10 @@ The `"msg"` argument MUST be included with the `Kickstarter_id`. If the `msg` do
 
 ```rust
 fn ft_transfer_call(
-        receiver_id: String,    // Katherine Contract Address
-        amount: String,
-        msg: String,
-    )
+    receiver_id: String,    // Katherine Contract Address
+    amount: String,
+    msg: String,
+)
 ```
 
 If the funds are being send by the Kickstarter, the **pTokens**, the tokens must be sent from the token address reported when the Kickstarter was created.
@@ -295,9 +295,9 @@ This is a function destinated for the FRONTEND to call the active and open proje
 
 ```rust
 fn get_active_projects(
-        from_index: u32,
-        limit: u32,
-    ) -> Option<ActiveKickstarterJSON>
+    from_index: u32,
+    limit: u32,
+) -> Option<ActiveKickstarterJSON>
 ```
 
 If the returned value is `null` then the `from_index` value is larger than the total number of kickstarters.
@@ -332,9 +332,9 @@ An **important** function to get the total amount that a supporter has deposited
 
 ```rust
 fn get_supporter_total_deposit_in_kickstarter(
-        supporter_id: String,
-        kickstarter_id: u32,
-    ) -> String
+    supporter_id: String,
+    kickstarter_id: u32,
+) -> String
 ```
 
 ### **get_kickstarters_to_process**
@@ -389,10 +389,10 @@ The returned value is a decreasing value, due to the appreciation of the stNear.
 
 ```rust
 fn get_supporter_estimated_stnear(
-        supporter_id: String,
-        kickstarter_id: u32,
-        st_near_price: String,
-    ) -> String
+    supporter_id: String,
+    kickstarter_id: u32,
+    st_near_price: String,
+) -> String
 ```
 
 ### **get_supported_projects**
@@ -409,10 +409,10 @@ This function is for the Meta Yield Dashboard, in order to get the projects from
 
 ```rust
 fn get_supported_detailed_list(
-        supporter_id: String,
-        from_index: u32,
-        limit: u32,
-    ) -> Option<Vec<SupporterDetailedJSON>>
+    supporter_id: String,
+    from_index: u32,
+    limit: u32,
+) -> Option<Vec<SupporterDetailedJSON>>
 ```
 
 The result is:
@@ -424,6 +424,50 @@ struct SupporterDetailedJSON {
     pub active: bool,
     pub successful: Option<bool>,
 }
+```
+
+### **withdraw_stnear_interest**
+
+Function for the Kickstarter to withdraw the earned interest in stNear.
+
+```rust
+fn withdraw_stnear_interest(
+    kickstarter_id: u32,
+    amount: String,
+)
+```
+
+### **withdraw_kickstarter_tokens**
+
+Function for the Supporter to claim the Kickstarter **pTokens** rewards.
+
+```rust
+fn withdraw_kickstarter_tokens(
+    amount: String,
+    kickstarter_id: u32,
+)
+```
+
+### **get_supporter_total_rewards**
+
+View the total rewards available at `end_timestamp` for the Supporter.
+
+```rust
+pub fn get_supporter_total_rewards(
+    supporter_id: String,
+    kickstarter_id: u32,
+) -> String
+```
+
+### **get_supporter_available_rewards**
+
+View the current available rewards for the Supporter to withdraw.
+
+```rust
+fn get_supporter_available_rewards(
+    supporter_id: String,
+    kickstarter_id: u32,
+) -> String
 ```
 
 Contract Logic:
