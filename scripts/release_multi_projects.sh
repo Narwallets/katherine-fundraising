@@ -3,13 +3,13 @@ set -e
 
 METAPOOL_CONTRACT_ADDRESS="meta-v2.pool.testnet"
 KATHERINE_OWNER_ID="huxley.testnet"
-KATHERINE_MIN_DEPOSIT_AMOUNT=2
+KATHERINE_MIN_DEPOSIT_AMOUNT="2000000000000"
 KATHERINE_FEE_PERCENT=100
 YOCTO_UNITS="000000000000000000000000"
 
 # Deploy contract to Testnet
 rm -rf neardev/
-NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm --initFunction new --initArgs '{"owner_id": "'${KATHERINE_OWNER_ID}'", "min_deposit_amount": '${KATHERINE_MIN_DEPOSIT_AMOUNT}', "metapool_contract_address": "'${METAPOOL_CONTRACT_ADDRESS}'", "katherine_fee_percent": '${KATHERINE_FEE_PERCENT}'}'
+NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm --initFunction new --initArgs '{"owner_id": "'${KATHERINE_OWNER_ID}'", "min_deposit_amount": "'${KATHERINE_MIN_DEPOSIT_AMOUNT}'", "metapool_contract_address": "'${METAPOOL_CONTRACT_ADDRESS}'", "katherine_fee_percent": '${KATHERINE_FEE_PERCENT}'}'
 
 export $(grep -v '^#' neardev/dev-account.env | xargs)
 echo '------------------ Contract deployed to: '$CONTRACT_NAME

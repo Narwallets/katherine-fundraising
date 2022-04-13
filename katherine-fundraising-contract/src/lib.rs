@@ -45,7 +45,7 @@ impl KatherineFundraising {
     #[init]
     pub fn new(
         owner_id: AccountId,
-        min_deposit_amount: Balance,
+        min_deposit_amount: BalanceJSON,
         metapool_contract_address: AccountId,
         katherine_fee_percent: BasisPoints,
     ) -> Self {
@@ -56,7 +56,7 @@ impl KatherineFundraising {
             kickstarters: Vector::new(Keys::Kickstarters),
             kickstarter_id_by_slug: UnorderedMap::new(Keys::KickstarterId),
             total_available: 0,
-            min_deposit_amount,
+            min_deposit_amount: Balance::from(min_deposit_amount),
             metapool_contract_address,
             katherine_fee_percent,
             max_goals_per_kickstarter: 5,

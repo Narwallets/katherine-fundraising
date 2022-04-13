@@ -19,25 +19,26 @@ impl FungibleTokenReceiver for KatherineFundraising {
             Err(_) => panic!("Invalid KickstarterId."),
         };
         let mut kickstarter: Kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let amount = Balance::from(amount);
         if env::predecessor_account_id() == self.metapool_contract_address {
             // Deposit is in stNEAR.
-            self.assert_min_deposit_amount(amount.0);
+            self.assert_min_deposit_amount(amount);
             log!(
                 "DEPOSIT: {} stNEAR deposited from {} to KickstarterId {}",
-                amount.0,
+                amount,
                 sender_id.as_ref(),
                 msg
             );
-            self.internal_supporter_deposit(sender_id.as_ref(), &amount.0, &mut kickstarter);
+            self.internal_supporter_deposit(sender_id.as_ref(), &amount, &mut kickstarter);
         } else {
             // Deposit is in a Kickstarter Token.
             log!(
                 "DEPOSIT: {} tokens deposited from {} to KickstarterId {}",
-                amount.0,
+                amount,
                 sender_id.as_ref(),
                 msg
             );
-            self.internal_kickstarter_deposit(&amount.0, &mut kickstarter);
+            self.internal_kickstarter_deposit(&amount, &mut kickstarter);
         }
         // Return unused amount
         PromiseOrValue::Value(U128::from(0))
