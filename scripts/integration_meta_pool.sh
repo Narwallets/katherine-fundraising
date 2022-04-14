@@ -40,7 +40,7 @@ KICKSTARTER_SLUG="the-best-project-ever"
 KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 30000))
 KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 30000))
 echo "------------------ Creating a Kickstarter"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$METAPOOL_CONTRACT_ADDRESS'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$METAPOOL_CONTRACT_ADDRESS'", "deposits_hard_cap": "'9$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'2$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID
 
 # Create 2 goals
 GOAL_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))

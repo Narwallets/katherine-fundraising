@@ -194,7 +194,6 @@ impl Kickstarter {
         self.goals.get(goal_id as u64).expect("Goal not found!")
     }
 
-    // WARNING: This is only callable by Katherine.
     pub(crate) fn update_supporter_deposits(&mut self, supporter_id: &AccountId, amount: &Balance) {
         let current_supporter_deposit = match self.deposits.get(&supporter_id) {
             Some(total) => total,

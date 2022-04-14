@@ -98,19 +98,25 @@ impl KatherineFundraising {
         amount: &Balance,
         kickstarter: &mut Kickstarter,
     ) {
-        // Update Supporter.
+        // Update Kickstarter
         kickstarter.assert_within_funding_period();
         kickstarter.assert_enough_reward_tokens();
+
+        let new_total_deposited = kickstarter.total_deposited + amount;
+        assert!(
+            new_total_deposited <= kickstarter.deposits_hard_cap,
+            "The deposits hard cap cannot be exceeded!"
+        );
+        kickstarter.total_deposited = new_total_deposited;
+        kickstarter.update_supporter_deposits(&supporter_id, amount);
+        self.kickstarters
+            .replace(kickstarter.id as u64, &kickstarter);
+
+        // Update Supporter.
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.total_in_deposits += amount;
         supporter.supported_projects.insert(&kickstarter.id);
         self.supporters.insert(&supporter_id, &supporter);
-
-        // Update Kickstarter
-        kickstarter.total_deposited += amount;
-        kickstarter.update_supporter_deposits(&supporter_id, amount);
-        self.kickstarters
-            .replace(kickstarter.id as u64, &kickstarter);
     }
 
     /// Process a reward token deposit to Katherine Contract.
