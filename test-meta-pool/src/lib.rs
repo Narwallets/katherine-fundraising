@@ -87,6 +87,10 @@ impl Contract {
         log!("Account @{} burned {}", account_id, amount);
     }
 
+    pub fn register_account(&mut self, account_id: AccountId) {
+        self.token.internal_register_account(&account_id);
+    }
+
     pub fn get_st_near_price(&self) -> U128 {
         // 1805993457215512332027729
         let timestamp = env::block_timestamp().to_string();
