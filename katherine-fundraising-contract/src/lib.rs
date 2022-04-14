@@ -358,27 +358,33 @@ impl KatherineFundraising {
     }
 
     pub fn kickstarter_withdraw_excedent(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let kickstarter = self
-            .kickstarters
-            .get(kickstarter_id.into())
-            .expect("kickstarter not found");
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         kickstarter.assert_kickstarter_owner();
-
         assert!(
             kickstarter.close_timestamp < get_current_epoch_millis(),
             "The excedent is avalable only after the funding period ends"
         );
-        // TODO: Consider both scenarios: when the kickstarter is successful and unsuccessful.
-        let excedent =
-            kickstarter.available_reward_tokens - kickstarter.get_winner_goal().tokens_to_release;
 
-        let receiver_id: SupporterIdJSON = near_sdk::serde_json::from_str(&env::predecessor_account_id()).unwrap();
+        let excedent: Balance = match kickstarter.successful {
+            Some(true) => {
+                let katherine_fee = kickstarter.katherine_fee.unwrap();
+                let total_tokens_to_release = kickstarter.total_tokens_to_release.unwrap();
+                kickstarter.available_reward_tokens - (
+                    katherine_fee + total_tokens_to_release
+                )
+            },
+            Some(false) => {
+                log!("Returning all available reward tokens!");
+                kickstarter.available_reward_tokens
+            },
+            None => panic!("Before withdrawing pTOKEN, evaluate the project using the process_kickstarter fn!"),
+        };
+
         if excedent > 0 {
-            nep141_token::ft_transfer_call(
-                receiver_id,
+            nep141_token::ft_transfer(
+                convert_to_valid_account_id(env::predecessor_account_id()),
                 excedent.into(),
-                None,
-                "withdraw excedent from kickstarter".to_string(),
+                Some("withdraw excedent from kickstarter".to_string()),
                 &kickstarter.token_contract_address,
                 1,
                 GAS_FOR_FT_TRANSFER,
@@ -391,6 +397,8 @@ impl KatherineFundraising {
                 0,
                 GAS_FOR_FT_TRANSFER,
             ));
+        } else {
+            panic!("No remaining excedent pTOKEN!");
         }
     }
 

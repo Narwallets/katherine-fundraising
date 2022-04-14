@@ -95,3 +95,15 @@ NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_kickstarters_to_proce
 
 echo "------------------ ROBOT: Processing kickstarter"
 NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000
+
+echo "------------------ Get project details"
+NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_project_details '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID
+
+echo "------------------ Checking kickstarter pToken balance"
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
+echo "------------------ Withdraw Kickstarter Excedent"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS kickstarter_withdraw_excedent '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KICKSTARTER_OWNER_ID --gas 300000000000000
+
+echo "------------------ Checking kickstarter pToken balance"
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID

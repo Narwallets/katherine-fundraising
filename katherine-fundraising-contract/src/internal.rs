@@ -318,16 +318,13 @@ impl KatherineFundraising {
         self.kickstarters
             .replace(kickstarter.id as u64, &kickstarter);
     }
+
     pub(crate) fn internal_restore_kickstarter_excedent_withdraw(
         &mut self,
         amount: Balance,
         kickstarter_id: KickstarterId,
     ) {
-        let mut kickstarter = self
-            .kickstarters
-            .get(kickstarter_id as u64)
-            .expect("kickstarter not found");
-
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.available_reward_tokens += amount;
         self.kickstarters
             .replace(kickstarter_id as u64, &kickstarter);

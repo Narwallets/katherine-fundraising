@@ -49,12 +49,39 @@ impl KatherineFundraising {
         kickstarter.assert_goal_status();
         kickstarter.assert_before_funding_period();
         kickstarter.assert_number_of_goals(self.max_goals_per_kickstarter);
+
+        let desired_amount = Balance::from(desired_amount);
+        let tokens_to_release = Balance::from(tokens_to_release);
+        let id = kickstarter.get_number_of_goals();
+        assert!(
+            kickstarter.deposits_hard_cap >= desired_amount,
+            "Desired amount must not exceed the deposits hard cap!"
+        );
+        assert!(
+            kickstarter.max_tokens_to_release_per_stnear >= tokens_to_release,
+            "Tokens to release must not exceed the max tokens to release per stNEAR!"
+        );
+        if id > 0 {
+            let last_goal = kickstarter.goals.get((id - 1) as u64).unwrap();
+            assert!(
+                desired_amount >= last_goal.desired_amount,
+                "Next goal cannot have a lower desired amount that the last goal!"
+            );
+            assert!(
+                unfreeze_timestamp <= last_goal.unfreeze_timestamp,
+                "Next goal cannot freeze supporter funds any longer than the last goal!"
+            );
+            assert!(
+                tokens_to_release >= last_goal.tokens_to_release,
+                "Next goal cannot release less pTOKEN than the last goal!"
+            );
+        }
         let goal = Goal {
-            id: kickstarter.get_number_of_goals(),
+            id,
             name,
-            desired_amount: desired_amount.into(),
+            desired_amount,
             unfreeze_timestamp,
-            tokens_to_release: tokens_to_release.into(),
+            tokens_to_release,
             cliff_timestamp,
             end_timestamp,
         };
