@@ -25,12 +25,13 @@ publish-dev-init: build
 	rm -rf neardev/
 	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm --initFunction new --initArgs '{"owner_id": ${NEAR_ACCOUNT}, "min_deposit_amount": "2000000000000", "metapool_contract_address": "meta-v2.pool.testnet", "katherine_fee_percent": 100 }'
 
-publish-dev-meta-pool-init: build
+integration-meta-pool: build
 	rm -rf neardev/
 	rm -rf neardev_metapool/
 	NEAR_ENV=testnet near dev-deploy --wasmFile res/test_meta_pool.wasm --initFunction new_default_meta --initArgs '{"owner_id": ${NEAR_ACCOUNT}, "total_supply": "1000${YOCTO_UNITS}" }'
 	mv neardev/ neardev_metapool/
 	NEAR_ACCOUNT=${NEAR_ACCOUNT} scripts/export_meta_pool.sh
+	./scripts/integration_meta_pool.sh
 
 integration: build
 	scripts/integration.sh

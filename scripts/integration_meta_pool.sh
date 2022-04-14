@@ -16,9 +16,9 @@ YOCTO_UNITS="000000000000000000000000"
 TOTAL_PREPAID_GAS=300000000000000
 
 echo "------------------ Registering accounts"
-NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$SUPPORTER_ID'"}' --accountId $KATHERINE_OWNER_ID
-NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KATHERINE_OWNER_ID
-NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KATHERINE_CONTRACT_ADDRESS'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KATHERINE_CONTRACT_ADDRESS'"}' --accountId $KATHERINE_CONTRACT_ADDRESS
 
 echo "------------------ Sending stNear to the supporter"
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer '{"receiver_id": "'$SUPPORTER_ID'", "amount": "'10$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
@@ -37,8 +37,8 @@ KICKSTARTER_ID=0
 NOW_IN_MILLISECS=$(($(date +%s) * 1000))
 KICKSTARTER_NAME="The_Best_Project_Ever"
 KICKSTARTER_SLUG="the-best-project-ever"
-KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 60000))
-KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 120000))
+KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 30000))
+KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 30000))
 echo "------------------ Creating a Kickstarter"
 NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$METAPOOL_CONTRACT_ADDRESS'"}' --accountId $KATHERINE_OWNER_ID
 
@@ -71,3 +71,17 @@ NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiv
 
 echo "------------------ FRONTEND: Supporter Dashboard"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
+
+# Evaluating project
+NOW_IN_SECS=$(date +%s)
+CLOSE_DATE_IN_SECS=$(($KICKSTARTER_CLOSE_DATE / 1000))
+WAITING_SECONDS=$(($CLOSE_DATE_IN_SECS - $NOW_IN_SECS))
+echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
+sleep $(($WAITING_SECONDS + 1))
+
+# ROBOT
+echo "------------------ ROBOT: Get Projects"
+NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_kickstarters_to_process '{"from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
+
+echo "------------------ ROBOT: Processing kickstarter"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS process_kickstarter '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas 300000000000000

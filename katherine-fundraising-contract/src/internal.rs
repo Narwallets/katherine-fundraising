@@ -33,6 +33,35 @@ impl KatherineFundraising {
     }
 }
 
+/*************************/
+/*  pToken Calculations  */
+/*************************/
+
+impl KatherineFundraising {
+    pub(crate) fn calculate_total_tokens_to_release(
+        &self,
+        kickstarter: &Kickstarter,
+        tokens_to_release: Balance
+    ) -> Balance {
+        proportional(
+            kickstarter.total_deposited,
+            tokens_to_release,
+            NEAR
+        )
+    }
+
+    pub(crate) fn calculate_katherine_fee(
+        &self,
+        total_tokens_to_release: Balance
+    ) -> Balance {
+        proportional(
+            self.katherine_fee_percent as u128,
+            total_tokens_to_release,
+            BASIS_POINTS
+        )
+    }
+}
+
 /**********************/
 /*  Internal methods  */
 /**********************/
@@ -84,8 +113,8 @@ impl KatherineFundraising {
             "Deposited tokens do not correspond to the Kickstarter contract."
         );
         assert!(
-            get_current_epoch_millis() < kickstarter.open_timestamp,
-            "Kickstarter Tokens should be provided before the funding period starts."
+            get_current_epoch_millis() < kickstarter.close_timestamp,
+            "Kickstarter Tokens should be provided before the funding period ends."
         );
         kickstarter.available_reward_tokens += amount;
         self.kickstarters
@@ -138,16 +167,21 @@ impl KatherineFundraising {
         match kickstarter.goals.get(goal_id as u64) {
             None => panic!("Kickstarter did not achieved any goal!"),
             Some(goal) => {
+                let total_tokens_to_release = self.calculate_total_tokens_to_release(
+                    &kickstarter,
+                    goal.tokens_to_release
+                );
+                let katherine_fee = self.calculate_katherine_fee(total_tokens_to_release);
                 assert!(
-                    kickstarter.available_reward_tokens >= goal.tokens_to_release,
+                    kickstarter.available_reward_tokens >= (total_tokens_to_release + katherine_fee),
                     "Not enough available reward tokens to back the supporters rewards!"
                 );
                 kickstarter.winner_goal_id = Some(goal.id);
                 kickstarter.active = false;
                 self.active_projects.remove(&kickstarter.id);
                 kickstarter.successful = Some(true);
-                kickstarter.set_katherine_fee(self.katherine_fee_percent, &goal);
-                log!("END: here");
+                kickstarter.katherine_fee = Some(katherine_fee);
+                kickstarter.total_tokens_to_release = Some(total_tokens_to_release);
                 kickstarter.stnear_price_at_freeze = Some(st_near_price.into());
                 self.kickstarters
                     .replace(kickstarter_id as u64, &kickstarter);

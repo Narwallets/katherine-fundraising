@@ -15,13 +15,17 @@ pub struct Kickstarter {
     pub winner_goal_id: Option<u8>,
     // Katherine fee is denominated in Kickstarter Tokens.
     pub katherine_fee: Option<Balance>,
+    // This is the Kickstarter Tokens that will be used to pay the Supporters.
+    // To make a Kickstarter successful:
+    // katherine_fee + total_tokens_to_release > available_reward_tokens
+    pub total_tokens_to_release: Option<Balance>,
     // Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
     pub withdraw: UnorderedMap<SupporterId, Balance>,
 
     // Important Note: the kickstarter.total_deposited variable will only increase or decrease within
     // the funding period. After the project evaluation, this value will stay CONSTANT to store a 
-    // record of the achieved funds, even though all stNear will be withdraw from the kickstarter.
+    // record of the achieved funds, even after all stNear will be withdraw from the kickstarter.
     pub total_deposited: Balance,
     pub owner_id: AccountId,
     // True if the kickstart project is active and waiting for funding.
@@ -198,15 +202,6 @@ impl Kickstarter {
             - self
                 .katherine_fee
                 .expect("Katherine fee must be denominated at goal evaluation")
-    }
-
-    pub fn set_katherine_fee(&mut self, katherine_fee_percent: BasisPoints, goal: &Goal) {
-        let katherine_fee: Balance = proportional(
-            katherine_fee_percent as u128,
-            goal.tokens_to_release,
-            BASIS_POINTS,
-        );
-        self.katherine_fee = Some(katherine_fee);
     }
 
     pub fn get_number_of_goals(&self) -> u8 {

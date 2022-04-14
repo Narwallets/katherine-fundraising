@@ -100,19 +100,23 @@ impl KatherineFundraising {
     pub fn process_kickstarter(&mut self, kickstarter_id: KickstarterIdJSON) {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if kickstarter.successful.is_none() {
-            match kickstarter.get_achieved_goal() {
-                Some(goal) => {
-                    self.activate_successful_kickstarter(kickstarter_id, goal.id);
-                    log!("kickstarter was successfully activated");
-                },
-                None => {
-                    kickstarter.active = false;
-                    self.active_projects.remove(&kickstarter.id);
-                    kickstarter.successful = Some(false);
-                    self.kickstarters
-                        .replace(kickstarter_id as u64, &kickstarter);
-                    log!("kickstarter successfully deactivated");                    
-                },
+            if kickstarter.close_timestamp <= get_current_epoch_millis() {
+                match kickstarter.get_achieved_goal() {
+                    Some(goal) => {
+                        self.activate_successful_kickstarter(kickstarter_id, goal.id);
+                        log!("kickstarter was successfully activated");
+                    },
+                    None => {
+                        kickstarter.active = false;
+                        self.active_projects.remove(&kickstarter.id);
+                        kickstarter.successful = Some(false);
+                        self.kickstarters
+                            .replace(kickstarter_id as u64, &kickstarter);
+                        log!("kickstarter successfully deactivated");                    
+                    },
+                }
+            } else {
+                panic!("Funding period is not over!")
             }
         } else {
             panic!("kickstarter already activated");
@@ -434,6 +438,7 @@ impl KatherineFundraising {
             goals: Vector::new(Keys::Goals),
             winner_goal_id: None,
             katherine_fee: None,
+            total_tokens_to_release: None,
             deposits: UnorderedMap::new(Keys::Deposits),
             withdraw: UnorderedMap::new(Keys::Withdraws),
             total_deposited: 0,
@@ -488,6 +493,7 @@ impl KatherineFundraising {
             goals: Vector::new(Keys::Goals),
             winner_goal_id: None,
             katherine_fee: None,
+            total_tokens_to_release: None,
             deposits: UnorderedMap::new(Keys::Deposits),
             withdraw: UnorderedMap::new(Keys::Withdraws),
             total_deposited: 0,
