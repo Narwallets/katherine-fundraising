@@ -33,7 +33,7 @@ impl FungibleTokenReceiver for KatherineFundraising {
         } else {
             // Deposit is in a Kickstarter Token.
             log!(
-                "DEPOSIT: {} tokens deposited from {} to KickstarterId {}",
+                "DEPOSIT: {} pTOKEN deposited from {} to KickstarterId {}",
                 amount,
                 sender_id.as_ref(),
                 msg

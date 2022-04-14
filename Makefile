@@ -17,6 +17,7 @@ build:
 	RUSTFLAGS='-C link-arg=-s' cargo +stable build --all --target wasm32-unknown-unknown --release
 	cp target/wasm32-unknown-unknown/release/katherine_fundraising_contract.wasm res/
 	cp target/wasm32-unknown-unknown/release/test_meta_pool.wasm res/
+	cp target/wasm32-unknown-unknown/release/test_p_token.wasm res/
 
 publish-dev: build
 	NEAR_ENV=testnet near dev-deploy --wasmFile res/katherine_fundraising_contract.wasm
@@ -28,8 +29,11 @@ publish-dev-init: build
 integration-meta-pool: build
 	rm -rf neardev/
 	rm -rf neardev_metapool/
+	rm -rf neardev_ptoken/
 	NEAR_ENV=testnet near dev-deploy --wasmFile res/test_meta_pool.wasm --initFunction new_default_meta --initArgs '{"owner_id": ${NEAR_ACCOUNT}, "total_supply": "1000${YOCTO_UNITS}" }'
 	mv neardev/ neardev_metapool/
+	NEAR_ENV=testnet near dev-deploy --wasmFile res/test_p_token.wasm --initFunction new_default_meta --initArgs '{"owner_id": ${NEAR_ACCOUNT}, "total_supply": "1000${YOCTO_UNITS}" }'
+	mv neardev/ neardev_ptoken/
 	NEAR_ACCOUNT=${NEAR_ACCOUNT} scripts/export_meta_pool.sh
 	./scripts/integration_meta_pool.sh
 

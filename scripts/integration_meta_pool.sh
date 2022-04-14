@@ -5,11 +5,13 @@ set -e
 
 METAPOOL_CONTRACT_ADDRESS=$(head -n1 ./neardev_metapool/dev-account)
 KATHERINE_CONTRACT_ADDRESS=$(head -n1 ./neardev/dev-account)
+PTOKEN_CONTRACT_ADDRESS=$(head -n1 ./neardev_ptoken/dev-account)
 
 echo "Meta Pool: "$METAPOOL_CONTRACT_ADDRESS
 echo "Katherine: "$KATHERINE_CONTRACT_ADDRESS
+echo "pTOKEN: "$PTOKEN_CONTRACT_ADDRESS
 
-KATHERINE_OWNER_ID="huxley.testnet"
+KATHERINE_OWNER_ID="huxley.testnet" # This account is owner of all the 3 contracts.
 KICKSTARTER_OWNER_ID="jomsox.testnet"
 SUPPORTER_ID="aldous.testnet"
 YOCTO_UNITS="000000000000000000000000"
@@ -19,6 +21,9 @@ echo "------------------ Registering accounts"
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KATHERINE_CONTRACT_ADDRESS'"}' --accountId $KATHERINE_CONTRACT_ADDRESS
+NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS register_account '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS register_account '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS register_account '{"account_id": "'$KATHERINE_CONTRACT_ADDRESS'"}' --accountId $KATHERINE_CONTRACT_ADDRESS
 
 echo "------------------ Sending stNear to the supporter"
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer '{"receiver_id": "'$SUPPORTER_ID'", "amount": "'10$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
@@ -27,20 +32,20 @@ echo "------------------ Checking supporter stNear balance"
 NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
 
 echo "------------------ Sending pToken to the kickstarter"
-NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer '{"receiver_id": "'$KICKSTARTER_OWNER_ID'", "amount": "'30$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS ft_transfer '{"receiver_id": "'$KICKSTARTER_OWNER_ID'", "amount": "'30$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
 
-echo "------------------ Checking supporter stNear balance"
-NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+echo "------------------ Checking kickstarter pToken balance"
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
 
 # Create a Kickstarter project
 KICKSTARTER_ID=0
 NOW_IN_MILLISECS=$(($(date +%s) * 1000))
 KICKSTARTER_NAME="The_Best_Project_Ever"
 KICKSTARTER_SLUG="the-best-project-ever"
-KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 30000))
+KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 35000))
 KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 30000))
 echo "------------------ Creating a Kickstarter"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$METAPOOL_CONTRACT_ADDRESS'", "deposits_hard_cap": "'9$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'2$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$PTOKEN_CONTRACT_ADDRESS'", "deposits_hard_cap": "'9$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'2$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID
 
 # Create 2 goals
 GOAL_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))
@@ -61,12 +66,17 @@ NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarte
 echo "------------------ FRONTEND: Get Active Projects"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_active_projects '{"from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
 
+# Sending pTokens to Kickstarter
+echo "------------------ Sending pTokens to the contract"
+NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'18$YOCTO_UNITS'", "msg": "'$KICKSTARTER_ID'"}' --accountId $KICKSTARTER_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+
 # Sending stnear tokens to Kickstarter
 NOW_IN_SECS=$(date +%s)
 OPEN_DATE_IN_SECS=$(($KICKSTARTER_OPEN_DATE / 1000))
 WAITING_SECONDS=$(($OPEN_DATE_IN_SECS - $NOW_IN_SECS))
 echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
 sleep $WAITING_SECONDS
+echo "------------------ Sending stNEAR to the contract"
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'$GOAL_1_DESIRED_AMOUNT'", "msg": "'$KICKSTARTER_ID'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
 
 echo "------------------ FRONTEND: Supporter Dashboard"

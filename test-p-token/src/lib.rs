@@ -44,8 +44,8 @@ impl Contract {
             total_supply,
             FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
-                name: "Dummy Meta Pool stNEAR".to_string(),
-                symbol: "stNEAR".to_string(),
+                name: "Kickstarter pToken".to_string(),
+                symbol: "pTOKEN".to_string(),
                 icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
                 reference: None,
                 reference_hash: None,
@@ -89,13 +89,6 @@ impl Contract {
 
     pub fn register_account(&mut self, account_id: AccountId) {
         self.token.internal_register_account(&account_id);
-    }
-
-    pub fn get_st_near_price(&self) -> U128 {
-        // 1805993457215512332027729
-        let timestamp = env::block_timestamp().to_string();
-        let result = timestamp.clone() + &"0".repeat(25 as usize - timestamp.len()).to_string();
-        U128::from(result.parse::<u128>().unwrap())
     }
 }
 

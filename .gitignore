@@ -19,6 +19,7 @@ Cargo.lock
 *.bak
 neardev/
 neardev_metapool/
+neardev_ptoken/
 res/
 
 # Mac

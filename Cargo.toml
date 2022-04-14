@@ -1,5 +1,5 @@
 [workspace]
-members = ["katherine-fundraising-contract", "test-meta-pool"]
+members = ["katherine-fundraising-contract", "test-meta-pool", "test-p-token"]
 
 [profile.release]
 codegen-units=1
