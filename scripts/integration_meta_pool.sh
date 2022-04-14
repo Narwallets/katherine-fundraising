@@ -18,6 +18,7 @@ TOTAL_PREPAID_GAS=300000000000000
 echo "------------------ Registering accounts"
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$SUPPORTER_ID'"}' --accountId $KATHERINE_OWNER_ID
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS register_account '{"account_id": "'$KATHERINE_CONTRACT_ADDRESS'"}' --accountId $KATHERINE_OWNER_ID
 
 echo "------------------ Sending stNear to the supporter"
 NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer '{"receiver_id": "'$SUPPORTER_ID'", "amount": "'10$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
@@ -66,8 +67,7 @@ OPEN_DATE_IN_SECS=$(($KICKSTARTER_OPEN_DATE / 1000))
 WAITING_SECONDS=$(($OPEN_DATE_IN_SECS - $NOW_IN_SECS))
 echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
 sleep $WAITING_SECONDS
-SUPPORTER_ID="aldous.testnet"
-SUPPORTER_AMOUNT="1"$YOCTO_UNITS
-SUPPORTER_MSG="0"
-TOTAL_PREPAID_GAS=300000000000000
-NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$CONTRACT_NAME'", "amount": "'$SUPPORTER_AMOUNT'", "msg": "'$SUPPORTER_MSG'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'$GOAL_1_DESIRED_AMOUNT'", "msg": "'$KICKSTARTER_ID'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ FRONTEND: Supporter Dashboard"
+NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID

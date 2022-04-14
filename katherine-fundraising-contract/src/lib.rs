@@ -701,6 +701,8 @@ impl KatherineFundraising {
         from_index: u32,
         limit: u32,
     ) -> Option<Vec<SupporterDetailedJSON>> {
+        // >>>> This FN is not working properly!
+
         let kickstarter_ids = self.get_supported_projects(supporter_id.clone());
         let kickstarters_len = kickstarter_ids.len() as u64;
         let start: u64 = from_index.into();
