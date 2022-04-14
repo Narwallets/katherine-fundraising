@@ -12,6 +12,7 @@ pub struct Kickstarter {
     // TODO: documentation for slug
     pub slug: String,
     pub goals: Vector<Goal>,
+    pub owner_id: AccountId,
     pub winner_goal_id: Option<u8>,
     // Katherine fee is denominated in Kickstarter Tokens.
     pub katherine_fee: Option<Balance>,
@@ -27,7 +28,10 @@ pub struct Kickstarter {
     // the funding period. After the project evaluation, this value will stay CONSTANT to store a 
     // record of the achieved funds, even after all stNear will be withdraw from the kickstarter.
     pub total_deposited: Balance,
-    pub owner_id: AccountId,
+    // Total deposited hard cap. Supporters cannot deposit more than.
+    pub deposits_hard_cap: Balance,
+    pub max_tokens_to_release_per_stnear: Balance,
+    pub enough_reward_tokens: bool,
     // True if the kickstart project is active and waiting for funding.
     pub active: bool,
     // True if the kickstart project met the goals
@@ -114,7 +118,14 @@ impl Kickstarter {
         assert!(
             self.is_within_funding_period(),
             "Not within the funding period."
-        )
+        );
+    }
+
+    pub(crate) fn assert_enough_reward_tokens(&self) {
+        assert!(
+            self.enough_reward_tokens,
+            "Supporters cannot deposit until the Kickstarter covers the required rewards!"
+        );
     }
 }
 

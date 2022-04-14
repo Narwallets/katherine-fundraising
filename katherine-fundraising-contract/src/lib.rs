@@ -364,6 +364,11 @@ impl KatherineFundraising {
             .expect("kickstarter not found");
         kickstarter.assert_kickstarter_owner();
 
+        assert!(
+            kickstarter.close_timestamp < get_current_epoch_millis(),
+            "The excedent is avalable only after the funding period ends"
+        );
+        // TODO: Consider both scenarios: when the kickstarter is successful and unsuccessful.
         let excedent =
             kickstarter.available_reward_tokens - kickstarter.get_winner_goal().tokens_to_release;
 
@@ -426,6 +431,8 @@ impl KatherineFundraising {
         open_timestamp: EpochMillis,
         close_timestamp: EpochMillis,
         token_contract_address: AccountId,
+        deposits_hard_cap: BalanceJSON,
+        max_tokens_to_release_per_stnear: BalanceJSON,
     ) -> KickstarterIdJSON {
         //ONLY ADMINS CAN CREATE KICKSTARTERS? YES
         self.assert_only_admin();
@@ -442,6 +449,9 @@ impl KatherineFundraising {
             deposits: UnorderedMap::new(Keys::Deposits),
             withdraw: UnorderedMap::new(Keys::Withdraws),
             total_deposited: 0,
+            deposits_hard_cap: Balance::from(deposits_hard_cap),
+            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
+            enough_reward_tokens: false,
             owner_id,
             active: true,
             successful: None,
@@ -477,6 +487,8 @@ impl KatherineFundraising {
         open_timestamp: EpochMillis,
         close_timestamp: EpochMillis,
         token_contract_address: AccountId,
+        deposits_hard_cap: BalanceJSON,
+        max_tokens_to_release_per_stnear: BalanceJSON,
     ) {
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
@@ -497,6 +509,9 @@ impl KatherineFundraising {
             deposits: UnorderedMap::new(Keys::Deposits),
             withdraw: UnorderedMap::new(Keys::Withdraws),
             total_deposited: 0,
+            deposits_hard_cap: Balance::from(deposits_hard_cap),
+            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
+            enough_reward_tokens: false,
             owner_id,
             active: true,
             successful: None,

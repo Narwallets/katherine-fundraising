@@ -117,6 +117,8 @@ fn create_kickstarter(
     open_timestamp: u64,
     close_timestamp: u64,
     token_contract_address: String,
+    deposits_hard_cap: String,
+    max_tokens_to_release_per_stnear: String,
 ) -> u32
 ```
 
@@ -141,6 +143,8 @@ fn update_kickstarter(
     open_timestamp: u64,
     close_timestamp: u64,
     token_contract_address: String,
+    deposits_hard_cap: String,
+    max_tokens_to_release_per_stnear: String,
 )
 ```
 

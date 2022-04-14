@@ -60,6 +60,17 @@ impl KatherineFundraising {
             BASIS_POINTS
         )
     }
+
+    pub(crate) fn calculate_max_tokens_to_release(
+        &self,
+        kickstarter: &Kickstarter,
+    ) -> Balance {
+        proportional(
+            kickstarter.deposits_hard_cap,
+            kickstarter.max_tokens_to_release_per_stnear,
+            NEAR
+        ) 
+    }
 }
 
 /**********************/
@@ -89,6 +100,7 @@ impl KatherineFundraising {
     ) {
         // Update Supporter.
         kickstarter.assert_within_funding_period();
+        kickstarter.assert_enough_reward_tokens();
         let mut supporter = self.internal_get_supporter(&supporter_id);
         supporter.total_in_deposits += amount;
         supporter.supported_projects.insert(&kickstarter.id);
@@ -116,7 +128,11 @@ impl KatherineFundraising {
             get_current_epoch_millis() < kickstarter.close_timestamp,
             "Kickstarter Tokens should be provided before the funding period ends."
         );
+        let max_tokens_to_release = self.calculate_max_tokens_to_release(&kickstarter);
         kickstarter.available_reward_tokens += amount;
+        kickstarter.enough_reward_tokens = {
+            kickstarter.available_reward_tokens >= max_tokens_to_release
+        };
         self.kickstarters
             .replace(kickstarter.id as u64, &kickstarter);
     }
