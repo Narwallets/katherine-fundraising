@@ -27,4 +27,20 @@ pub enum Keys {
     Withdraws,
 }
 
+impl Keys {
+	/// Creates unique prefix for collections based on a u32 integer
+	pub fn as_prefix(&self, id: &u32) -> String {
+		match self {
+			Keys::KickstarterId => format!("{}{}", "Kid", id),
+			Keys::Supporters => format!("{}{}", "S", id),
+			Keys::Kickstarters => format!("{}{}", "K", id),
+			Keys::SupporterKickstarters => format!("{}{}", "Sk", id),
+			Keys::Active => format!("{}{}", "A", id),
+			Keys::Goals => format!("{}{}", "G", id),
+			Keys::Deposits => format!("{}{}", "D", id),
+			Keys::Withdraws => format!("{}{}", "W", id),
+		}
+    }
+}
+
 impl BorshIntoStorageKey for Keys {}
