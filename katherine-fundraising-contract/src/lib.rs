@@ -138,7 +138,7 @@ impl KatherineFundraising {
 
     pub fn withdraw_all(&mut self, kickstarter_id: KickstarterIdJSON) {
         let supporter_id = convert_to_valid_account_id(env::predecessor_account_id());
-        let amount = self.get_supporter_total_deposit_in_kickstarter(supporter_id, kickstarter_id);
+        let amount = self.get_supporter_total_deposit_in_kickstarter(supporter_id, kickstarter_id, None);
         self.withdraw(amount, kickstarter_id);
     }
 
@@ -679,6 +679,7 @@ impl KatherineFundraising {
         &self,
         supporter_id: SupporterIdJSON,
         kickstarter_id: KickstarterIdJSON,
+        st_near_price: Option<BalanceJSON>,
     ) -> BalanceJSON {
         let supporter_id = SupporterId::from(supporter_id);
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
@@ -692,7 +693,13 @@ impl KatherineFundraising {
                         .expect("Price at unfreeze is not defined!");
                     proportional(deposit, price_at_freeze, price_at_unfreeze)
                 } else {
-                    panic!("Run get_supporter_estimated_stnear fn, to get an estimation while the funds are freezed!")
+                    let st_near_price = st_near_price
+                        .expect("An exact value is not available, please send the current stNEAR price to calculate an estimation");
+                    return self.get_supporter_estimated_stnear(
+                        convert_to_valid_account_id(supporter_id),
+                        kickstarter_id.into(),
+                        st_near_price
+                    );
                 }
             },
             _ => deposit,
@@ -727,15 +734,14 @@ impl KatherineFundraising {
     pub fn get_supported_detailed_list(
         &self,
         supporter_id: SupporterIdJSON,
+        st_near_price: BalanceJSON,
         from_index: u32,
         limit: u32,
     ) -> Option<Vec<SupporterDetailedJSON>> {
-        // >>>> This FN is not working properly!
-
         let kickstarter_ids = self.get_supported_projects(supporter_id.clone());
         let kickstarters_len = kickstarter_ids.len() as u64;
         let start: u64 = from_index.into();
-        if start > kickstarters_len {
+        if start > kickstarters_len || kickstarters_len == 0 {
             return None;
         }
         let mut result = Vec::new();
@@ -746,7 +752,11 @@ impl KatherineFundraising {
             result.push(
                 SupporterDetailedJSON {
                     kickstarter_id: KickstarterIdJSON::from(kickstarter_id),
-                    supporter_deposit: self.get_supporter_total_deposit_in_kickstarter(supporter_id.clone(), kickstarter_id),
+                    supporter_deposit: self.get_supporter_total_deposit_in_kickstarter(
+                        supporter_id.clone(),
+                        kickstarter_id,
+                        Some(st_near_price)
+                    ),
                     active: kickstarter.active,
                     successful: kickstarter.successful,
                 }

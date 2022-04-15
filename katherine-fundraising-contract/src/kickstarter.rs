@@ -22,6 +22,7 @@ pub struct Kickstarter {
     pub total_tokens_to_release: Option<Balance>,
     // Deposits during the funding period.
     pub deposits: UnorderedMap<SupporterId, Balance>,
+    // pub deposits_register_at_freeze ----              TODO: Implement this field
     pub withdraw: UnorderedMap<SupporterId, Balance>,
 
     // Important Note: the kickstarter.total_deposited variable will only increase or decrease within

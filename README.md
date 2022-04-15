@@ -341,6 +341,7 @@ An **important** function to get the total amount that a supporter has deposited
 fn get_supporter_total_deposit_in_kickstarter(
     supporter_id: String,
     kickstarter_id: u32,
+    st_near_price: Option<String>,  // This argument is optional to calculate an estimation while the stNEAR is freezed.
 ) -> String
 ```
 
@@ -417,6 +418,7 @@ This function is for the Meta Yield Dashboard, in order to get the projects from
 ```rust
 fn get_supported_detailed_list(
     supporter_id: String,
+    st_near_price: String,
     from_index: u32,
     limit: u32,
 ) -> Option<Vec<SupporterDetailedJSON>>
