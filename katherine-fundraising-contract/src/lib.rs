@@ -124,7 +124,7 @@ impl KatherineFundraising {
     }
 
     /// Returns kickstarters ids ready to unfreeze.
-    pub fn get_kickstarters_two_unfreeze(
+    pub fn get_kickstarters_to_unfreeze(
         &self,
         from_index: KickstarterIdJSON,
         limit: KickstarterIdJSON,
@@ -138,8 +138,9 @@ impl KatherineFundraising {
         for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
             let kickstarter = self.internal_get_kickstarter(index as u32);
             if kickstarter.successful == Some(true) && kickstarter.stnear_price_at_unfreeze == None {
-                kickstarter.assert_funds_can_be_unfreezed();
-                result.push(KickstarterIdJSON::from(kickstarter.id));
+                if kickstarter.funds_can_be_unfreezed() {
+                    result.push(KickstarterIdJSON::from(kickstarter.id));
+                }
             }
         }
         Some(result)
