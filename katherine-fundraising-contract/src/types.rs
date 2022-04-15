@@ -55,7 +55,7 @@ pub struct GoalJSON {
     pub name: String,
     pub desired_amount: BalanceJSON,
     pub unfreeze_timestamp: EpochMillis,
-    pub tokens_to_release: BalanceJSON,
+    pub tokens_to_release_per_stnear: BalanceJSON,
     pub cliff_timestamp: EpochMillis,
     pub end_timestamp: EpochMillis,
 }

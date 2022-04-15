@@ -221,17 +221,6 @@ impl Kickstarter {
         self.deposits.insert(&supporter_id, &new_total);
     }
 
-    pub fn get_tokens_to_release(&self) -> Balance {
-        self.get_winner_goal().tokens_to_release
-    }
-
-    pub fn get_total_rewards_for_supporters(&self) -> Balance {
-        self.get_tokens_to_release()
-            - self
-                .katherine_fee
-                .expect("Katherine fee must be denominated at goal evaluation")
-    }
-
     pub fn get_number_of_goals(&self) -> u8 {
         self.goals.len() as u8
     }

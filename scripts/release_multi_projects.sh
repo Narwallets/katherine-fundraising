@@ -34,7 +34,7 @@ GOAL_1_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
 GOAL_1_UNFREEZE_DATE=$GOAL_1_END_DATE
 GOAL_1_TOKENS_TO_RELEASE="0"$YOCTO_UNITS
 echo "------------------ Creating Goal #1"
-NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": 0, "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": 0, "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 
 # KICKSTARTER # 2
 # Create a Kickstarter project
@@ -56,7 +56,7 @@ GOAL_1_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
 GOAL_1_UNFREEZE_DATE=$GOAL_1_END_DATE
 GOAL_1_TOKENS_TO_RELEASE="0"$YOCTO_UNITS
 echo "------------------ Creating Goal #1"
-NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": 0, "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": 0, "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 
 # KICKSTARTER # 3
 # Create a Kickstarter project
@@ -78,6 +78,6 @@ GOAL_1_END_DATE=$(($GOAL_1_CLIFF_DATE + 60000))
 GOAL_1_UNFREEZE_DATE=$GOAL_1_END_DATE
 GOAL_1_TOKENS_TO_RELEASE="0"$YOCTO_UNITS
 echo "------------------ Creating Goal #1"
-NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": 0, "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": 0, "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 
 NEAR_ENV=testnet near view $CONTRACT_NAME get_active_projects '{"from_index": 0, "limit": 0}' --accountId $KATHERINE_OWNER_ID

@@ -202,7 +202,7 @@ fn create_goal(
     name: String,
     desired_amount: String,
     unfreeze_timestamp: u64,
-    tokens_to_release: String,
+    tokens_to_release_per_stnear: String,
     cliff_timestamp: u64,
     end_timestamp: u64,
 ) -> u8
@@ -211,7 +211,7 @@ fn create_goal(
 An example using the terminal:
 
 ```sh
-NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $CONTRACT_NAME create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "'$GOAL_1_NAME'", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_1_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_1_CLIFF_DATE', "end_timestamp": '$GOAL_1_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 ```
 
 The returned value is the **Goal Id**.
@@ -251,7 +251,7 @@ struct GoalJSON {
     pub name: String,
     pub desired_amount: String,
     pub unfreeze_timestamp: u64,
-    pub tokens_to_release: String,
+    pub tokens_to_release_per_stnear: String,
     pub cliff_timestamp: u64,
     pub end_timestamp: u64,
 }

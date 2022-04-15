@@ -41,11 +41,11 @@ impl KatherineFundraising {
     pub(crate) fn calculate_total_tokens_to_release(
         &self,
         kickstarter: &Kickstarter,
-        tokens_to_release: Balance
+        tokens_to_release_per_stnear: Balance
     ) -> Balance {
         proportional(
             kickstarter.total_deposited,
-            tokens_to_release,
+            tokens_to_release_per_stnear,
             NEAR
         )
     }
@@ -191,7 +191,7 @@ impl KatherineFundraising {
             Some(goal) => {
                 let total_tokens_to_release = self.calculate_total_tokens_to_release(
                     &kickstarter,
-                    goal.tokens_to_release
+                    goal.tokens_to_release_per_stnear
                 );
                 let katherine_fee = self.calculate_katherine_fee(total_tokens_to_release);
                 assert!(
@@ -265,7 +265,8 @@ impl KatherineFundraising {
     ) -> Balance {
         let cliff_timestamp = goal.cliff_timestamp;
         let end_timestamp = goal.end_timestamp;
-        let total_rewards = kickstarter.get_total_rewards_for_supporters();
+        let total_rewards = kickstarter.total_tokens_to_release
+            .expect("Total rewards are defined when the Kickstarter is evaluated as successful!");
         let available_rewards =
             get_linear_release_proportion(total_rewards, cliff_timestamp, end_timestamp);
         if available_rewards == 0 {

@@ -11,7 +11,7 @@ pub struct Goal {
     pub desired_amount: Balance,
     pub unfreeze_timestamp: EpochMillis,
     /// How many tokens are for this
-    pub tokens_to_release: Balance,
+    pub tokens_to_release_per_stnear: Balance,
     /// Date for starting the delivery of the Kickstarter Tokens if the goal was matched
     pub cliff_timestamp: EpochMillis,
     /// Date for finish the delivery of the Kickstarter Tokens
@@ -25,7 +25,7 @@ impl Goal {
             name: String::from(&self.name),
             desired_amount: BalanceJSON::from(self.desired_amount),
             unfreeze_timestamp: self.unfreeze_timestamp,
-            tokens_to_release: BalanceJSON::from(self.tokens_to_release),
+            tokens_to_release_per_stnear: BalanceJSON::from(self.tokens_to_release_per_stnear),
             cliff_timestamp: self.cliff_timestamp,
             end_timestamp: self.end_timestamp,
         }
@@ -40,7 +40,7 @@ impl KatherineFundraising {
         name: String,
         desired_amount: BalanceJSON,
         unfreeze_timestamp: EpochMillis,
-        tokens_to_release: BalanceJSON,
+        tokens_to_release_per_stnear: BalanceJSON,
         cliff_timestamp: EpochMillis,
         end_timestamp: EpochMillis,
     ) -> GoalId {
@@ -51,14 +51,14 @@ impl KatherineFundraising {
         kickstarter.assert_number_of_goals(self.max_goals_per_kickstarter);
 
         let desired_amount = Balance::from(desired_amount);
-        let tokens_to_release = Balance::from(tokens_to_release);
+        let tokens_to_release_per_stnear = Balance::from(tokens_to_release_per_stnear);
         let id = kickstarter.get_number_of_goals();
         assert!(
             kickstarter.deposits_hard_cap >= desired_amount,
             "Desired amount must not exceed the deposits hard cap!"
         );
         assert!(
-            kickstarter.max_tokens_to_release_per_stnear >= tokens_to_release,
+            kickstarter.max_tokens_to_release_per_stnear >= tokens_to_release_per_stnear,
             "Tokens to release must not exceed the max tokens to release per stNEAR!"
         );
         if id > 0 {
@@ -72,7 +72,7 @@ impl KatherineFundraising {
                 "Next goal cannot freeze supporter funds any longer than the last goal!"
             );
             assert!(
-                tokens_to_release >= last_goal.tokens_to_release,
+                tokens_to_release_per_stnear >= last_goal.tokens_to_release_per_stnear,
                 "Next goal cannot release less pTOKEN than the last goal!"
             );
         }
@@ -81,7 +81,7 @@ impl KatherineFundraising {
             name,
             desired_amount,
             unfreeze_timestamp,
-            tokens_to_release,
+            tokens_to_release_per_stnear,
             cliff_timestamp,
             end_timestamp,
         };
