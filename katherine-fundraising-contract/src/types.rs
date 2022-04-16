@@ -46,6 +46,7 @@ pub struct KickstarterDetailsJSON {
     pub active: bool,
     pub successful: Option<bool>,
     pub winner_goal_id: Option<u8>,
+    pub enough_reward_tokens: bool,
 }
 
 #[derive(Serialize, Deserialize)]

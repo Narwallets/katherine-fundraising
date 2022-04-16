@@ -20,7 +20,7 @@ pub enum Keys {
     KickstarterId,
     Supporters,
     Kickstarters,
-    SupporterKickstarters,
+    SupportedProjects,
     Active,
     Goals,
     Deposits,
@@ -28,13 +28,13 @@ pub enum Keys {
 }
 
 impl Keys {
-	/// Creates unique prefix for collections based on a u32 integer
-	pub fn as_prefix(&self, id: &u32) -> String {
+	/// Creates unique prefix for collections based on a String id.
+	pub fn as_prefix(&self, id: &str) -> String {
 		match self {
 			Keys::KickstarterId => format!("{}{}", "Kid", id),
 			Keys::Supporters => format!("{}{}", "S", id),
 			Keys::Kickstarters => format!("{}{}", "K", id),
-			Keys::SupporterKickstarters => format!("{}{}", "Sk", id),
+			Keys::SupportedProjects => format!("{}{}", "Sp", id),
 			Keys::Active => format!("{}{}", "A", id),
 			Keys::Goals => format!("{}{}", "G", id),
 			Keys::Deposits => format!("{}{}", "D", id),

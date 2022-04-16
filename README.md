@@ -330,6 +330,7 @@ struct KickstarterDetailsJSON {
     pub active: bool,
     pub successful: Option<bool>,
     pub winner_goal_id: Option<u8>,
+    pub enough_reward_tokens: bool,
 }
 ```
 
@@ -371,6 +372,17 @@ This is a call function for the **robot**. It processes the successful and unsuc
 
 ```rust
 fn process_kickstarter(kickstarter_id: u32)
+```
+
+### **get_kickstarters_to_unfreeze**
+
+This is a view function for the **robot**. It returns a vector of `KickstarterId` that are ready to be unfreeze.
+
+```rust
+fn get_kickstarters_to_unfreeze(
+        from_index: u32,
+        limit: u32,
+    ) -> Option<Vec<u32>>
 ```
 
 ### **unfreeze_kickstarter_funds**

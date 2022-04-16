@@ -81,7 +81,7 @@ impl KatherineFundraising {
 impl KatherineFundraising {
     /// Inner method to get the given supporter or a new default value supporter.
     pub(crate) fn internal_get_supporter(&self, supporter_id: &SupporterId) -> Supporter {
-        self.supporters.get(supporter_id).unwrap_or_default()
+        self.supporters.get(supporter_id).unwrap_or(Supporter::new(supporter_id))
     }
 
     /// Inner method to get the given kickstarter.
@@ -135,9 +135,11 @@ impl KatherineFundraising {
             "Kickstarter Tokens should be provided before the funding period ends."
         );
         let max_tokens_to_release = self.calculate_max_tokens_to_release(&kickstarter);
+        let min_tokens_to_allow_support = max_tokens_to_release
+            + self.calculate_katherine_fee(max_tokens_to_release);
         kickstarter.available_reward_tokens += amount;
         kickstarter.enough_reward_tokens = {
-            kickstarter.available_reward_tokens >= max_tokens_to_release
+            kickstarter.available_reward_tokens >= min_tokens_to_allow_support
         };
         self.kickstarters
             .replace(kickstarter.id as u64, &kickstarter);

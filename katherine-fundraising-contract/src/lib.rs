@@ -404,6 +404,12 @@ impl KatherineFundraising {
         };
 
         if excedent > 0 {
+            log!(
+                "WITHDRAW: {} pTOKEN withdraw from KickstarterId {} to Account {}",
+                excedent,
+                kickstarter_id,
+                kickstarter.owner_id,
+            );
             nep141_token::ft_transfer(
                 convert_to_valid_account_id(env::predecessor_account_id()),
                 excedent.into(),
@@ -421,7 +427,7 @@ impl KatherineFundraising {
                 GAS_FOR_FT_TRANSFER,
             ));
         } else {
-            panic!("No remaining excedent pTOKEN!");
+            panic!("No remaining excedent pTOKEN to withdraw!");
         }
     }
 
@@ -470,15 +476,15 @@ impl KatherineFundraising {
         self.assert_unique_slug(&slug);
         let id = self.kickstarters.len() as KickstarterId;
         let kickstarter = Kickstarter {
-            id: id,
+            id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals.as_prefix(&id).as_bytes()),
+            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
             winner_goal_id: None,
             katherine_fee: None,
             total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id).as_bytes()),
-            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id).as_bytes()),
+            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
+            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id.to_string()).as_bytes()),
             total_deposited: 0,
             deposits_hard_cap: Balance::from(deposits_hard_cap),
             max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
@@ -533,12 +539,12 @@ impl KatherineFundraising {
             id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals.as_prefix(&id).as_bytes()),
+            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
             winner_goal_id: None,
             katherine_fee: None,
             total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id).as_bytes()),
-            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id).as_bytes()),
+            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
+            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id.to_string()).as_bytes()),
             total_deposited: 0,
             deposits_hard_cap: Balance::from(deposits_hard_cap),
             max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),

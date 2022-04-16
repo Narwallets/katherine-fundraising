@@ -263,6 +263,7 @@ impl Kickstarter {
             active: self.active,
             successful: self.successful,
             winner_goal_id: self.winner_goal_id,
+            enough_reward_tokens: self.enough_reward_tokens,
         }
     }
 }
