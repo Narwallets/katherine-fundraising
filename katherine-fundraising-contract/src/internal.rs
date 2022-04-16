@@ -259,26 +259,35 @@ impl KatherineFundraising {
             .replace(kickstarter_id as u64, &kickstarter);
     }
 
-    pub(crate) fn internal_get_supporter_total_rewards(
+    /// This is the amount of rewards that the supporter could claim regardless of the current timestamp.
+    pub(crate) fn internal_get_supporter_rewards(
         &self,
         supporter_id: &SupporterId,
         kickstarter: &Kickstarter,
-        goal: Goal,
+        tokens_to_release_per_stnear: Balance,
     ) -> Balance {
-        let cliff_timestamp = goal.cliff_timestamp;
-        let end_timestamp = goal.end_timestamp;
-        let total_rewards = kickstarter.total_tokens_to_release
-            .expect("Total rewards are defined when the Kickstarter is evaluated as successful!");
-        let available_rewards =
-            get_linear_release_proportion(total_rewards, cliff_timestamp, end_timestamp);
-        if available_rewards == 0 {
-            return 0;
-        }
-        let deposit = kickstarter
-            .deposits
-            .get(&supporter_id)
-            .expect("deposit not found");
-        proportional(deposit, available_rewards, kickstarter.total_deposited)
+        let deposit = kickstarter.get_deposit(&supporter_id);
+        proportional(deposit, tokens_to_release_per_stnear, NEAR)
+            - kickstarter.get_rewards_withdraw(&supporter_id)
+    }
+
+    pub(crate) fn internal_get_supporter_available_rewards(
+        &self,
+        supporter_id: &SupporterId,
+        kickstarter: &Kickstarter,
+    ) -> Balance {
+        let goal = kickstarter.get_winner_goal();
+        let total_supporter_rewards = self.internal_get_supporter_rewards(
+            &supporter_id,
+            &kickstarter,
+            goal.tokens_to_release_per_stnear,
+        );
+        get_linear_release_proportion(
+            total_supporter_rewards,
+            goal.reward_installments,
+            goal.cliff_timestamp,
+            goal.end_timestamp
+        )
     }
 
     pub(crate) fn internal_withdraw_kickstarter_tokens(
@@ -298,25 +307,18 @@ impl KatherineFundraising {
             "tokens have not been released yet"
         );
 
-        let total_supporter_rewards =
-            self.internal_get_supporter_total_rewards(&supporter_id, &kickstarter, goal);
+        let available_rewards =
+            self.internal_get_supporter_available_rewards(&supporter_id, &kickstarter);
         assert!(
-            total_supporter_rewards >= 1,
-            "less than one token to withdraw"
-        );
-        assert!(
-            requested_amount <= total_supporter_rewards,
+            requested_amount <= available_rewards,
             "not enough tokens, available balance is {}",
-            total_supporter_rewards
+            available_rewards
         );
 
-        let mut supporter_withdraw: Balance = match kickstarter.withdraw.get(&supporter_id) {
-            Some(value) => value,
-            None => 0,
-        };
+        let mut supporter_withdraw: Balance = kickstarter.get_rewards_withdraw(&supporter_id);
         supporter_withdraw += requested_amount;
         kickstarter
-            .withdraw
+            .rewards_withdraw
             .insert(&supporter_id, &supporter_withdraw);
         self.kickstarters
             .replace(kickstarter.id as u64, &kickstarter);
@@ -343,15 +345,15 @@ impl KatherineFundraising {
             .kickstarters
             .get(kickstarter_id as u64)
             .expect("kickstarter not found");
-        let mut withdraw = kickstarter.withdraw.get(&supporter_id).unwrap_or_default();
+        let mut withdraw = kickstarter.rewards_withdraw.get(&supporter_id).unwrap_or_default();
 
         assert!(withdraw >= amount, "withdrawn amount too high");
 
         if withdraw == amount {
-            kickstarter.withdraw.remove(&supporter_id);
+            kickstarter.rewards_withdraw.remove(&supporter_id);
         } else {
             withdraw -= amount;
-            kickstarter.withdraw.insert(&supporter_id, &withdraw);
+            kickstarter.rewards_withdraw.insert(&supporter_id, &withdraw);
         }
         self.kickstarters
             .replace(kickstarter_id as u64, &kickstarter);

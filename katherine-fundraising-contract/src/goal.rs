@@ -14,8 +14,10 @@ pub struct Goal {
     pub tokens_to_release_per_stnear: Balance,
     /// Date for starting the delivery of the Kickstarter Tokens if the goal was matched
     pub cliff_timestamp: EpochMillis,
-    /// Date for finish the delivery of the Kickstarter Tokens
+    /// Date to finish the delivery of the Kickstarter Tokens
     pub end_timestamp: EpochMillis,
+    /// Number of installments to deliver the rewards to the Supporters.
+    pub reward_installments: u32,
 }
 
 impl Goal {
@@ -28,6 +30,7 @@ impl Goal {
             tokens_to_release_per_stnear: BalanceJSON::from(self.tokens_to_release_per_stnear),
             cliff_timestamp: self.cliff_timestamp,
             end_timestamp: self.end_timestamp,
+            reward_installments: self.reward_installments,
         }
     }
 }
@@ -43,12 +46,18 @@ impl KatherineFundraising {
         tokens_to_release_per_stnear: BalanceJSON,
         cliff_timestamp: EpochMillis,
         end_timestamp: EpochMillis,
+        reward_installments: u32,
     ) -> GoalId {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.assert_kickstarter_owner();
         kickstarter.assert_goal_status();
         kickstarter.assert_before_funding_period();
         kickstarter.assert_number_of_goals(self.max_goals_per_kickstarter);
+        assert!(
+            reward_installments <= self.max_reward_installments,
+            "Too many installments for the rewards, max number is {}",
+            self.max_reward_installments
+        );
 
         let desired_amount = Balance::from(desired_amount);
         let tokens_to_release_per_stnear = Balance::from(tokens_to_release_per_stnear);
@@ -84,6 +93,7 @@ impl KatherineFundraising {
             tokens_to_release_per_stnear,
             cliff_timestamp,
             end_timestamp,
+            reward_installments,
         };
         kickstarter.goals.push(&goal);
         self.kickstarters

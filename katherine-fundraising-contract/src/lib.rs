@@ -35,6 +35,7 @@ pub struct KatherineFundraising {
     // Percent is denominated in basis points 100% equals 10_000 basis points.
     pub katherine_fee_percent: BasisPoints,
     pub max_goals_per_kickstarter: u8,
+    pub max_reward_installments: u32,
 
     // Active kickstarter projects.
     pub active_projects: UnorderedSet<KickstarterId>,
@@ -60,6 +61,7 @@ impl KatherineFundraising {
             metapool_contract_address,
             katherine_fee_percent,
             max_goals_per_kickstarter: 5,
+            max_reward_installments: 12,
             active_projects: UnorderedSet::new(Keys::Active),
         }
     }
@@ -484,7 +486,7 @@ impl KatherineFundraising {
             katherine_fee: None,
             total_tokens_to_release: None,
             deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
-            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id.to_string()).as_bytes()),
+            rewards_withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id.to_string()).as_bytes()),
             total_deposited: 0,
             deposits_hard_cap: Balance::from(deposits_hard_cap),
             max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
@@ -544,7 +546,7 @@ impl KatherineFundraising {
             katherine_fee: None,
             total_tokens_to_release: None,
             deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
-            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id.to_string()).as_bytes()),
+            rewards_withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id.to_string()).as_bytes()),
             total_deposited: 0,
             deposits_hard_cap: Balance::from(deposits_hard_cap),
             max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
@@ -573,57 +575,53 @@ impl KatherineFundraising {
     /*   View functions   */
     /**********************/
 
+    /// Get the total rewards that the Supporter could claim regardless of the current timestamp.
     pub fn get_supporter_total_rewards(
         &self,
         supporter_id: SupporterIdJSON,
         kickstarter_id: KickstarterIdJSON,
-    ) -> Balance {
+    ) -> Option<BalanceJSON> {
         let supporter_id = SupporterId::from(supporter_id);
         let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         match self.supporters.get(&supporter_id) {
             Some(supporter) => {
-                if supporter.supported_projects.to_vec().contains(&kickstarter.id) {
+                if supporter.is_supporting(kickstarter.id) && kickstarter.winner_goal_id.is_some() {
                     let goal = kickstarter.get_winner_goal();
-                    return self.internal_get_supporter_total_rewards(
+                    let rewards = self.internal_get_supporter_rewards(
                         &supporter_id,
                         &kickstarter,
-                        goal,
+                        goal.tokens_to_release_per_stnear,
                     );
+                    return Some(BalanceJSON::from(rewards));
                 } else {
-                    panic!("Supporter is not part of Kickstarter!");
+                    return None;
                 }
             }
-            None => panic!("Supporter does not have any reward!"),
+            None => return None,
         }
     }
 
+    /// Available rewards that the Supporter could currently claim.
     pub fn get_supporter_available_rewards(
         &self,
         supporter_id: SupporterIdJSON,
         kickstarter_id: KickstarterIdJSON,
-    ) -> Balance {
+    ) -> Option<BalanceJSON> {
         let supporter_id = SupporterId::from(supporter_id);
         let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         match self.supporters.get(&supporter_id) {
             Some(supporter) => {
-                if supporter.supported_projects.to_vec().contains(&kickstarter.id) {
-                    let goal = kickstarter.get_winner_goal();
-                    let total_rewards = self.internal_get_supporter_total_rewards(
+                if supporter.is_supporting(kickstarter.id) && kickstarter.winner_goal_id.is_some() {
+                    let rewards = self.internal_get_supporter_available_rewards(
                         &supporter_id,
                         &kickstarter,
-                        goal,
                     );
-                    let supporter_withdraw: Balance = match kickstarter.withdraw.get(&supporter_id)
-                    {
-                        Some(value) => value,
-                        None => 0,
-                    };
-                    return total_rewards - supporter_withdraw;
+                    return Some(BalanceJSON::from(rewards));
                 } else {
-                    panic!("Supporter is not part of Kickstarter!");
+                    return None;
                 }
             }
-            None => panic!("Supporter does not have any reward!"),
+            None => return None,
         }
     }
 
@@ -775,16 +773,23 @@ impl KatherineFundraising {
         }
         let mut result = Vec::new();
         for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
-            let kickstarter_id = kickstarter_ids.get(index as usize).unwrap();
-            let kickstarter = self.internal_get_kickstarter(*kickstarter_id);
-            let kickstarter_id = kickstarter.id;
+            let kickstarter_id = *kickstarter_ids.get(index as usize).unwrap();
+            let kickstarter = self.internal_get_kickstarter(kickstarter_id);
             result.push(
                 SupporterDetailedJSON {
-                    kickstarter_id: KickstarterIdJSON::from(kickstarter_id),
+                    kickstarter_id,
                     supporter_deposit: self.get_supporter_total_deposit_in_kickstarter(
                         supporter_id.clone(),
-                        kickstarter_id,
+                        kickstarter_id.into(),
                         Some(st_near_price)
+                    ),
+                    rewards: self.get_supporter_total_rewards(
+                        supporter_id.clone(),
+                        kickstarter_id.into()
+                    ),
+                    available_rewards: self.get_supporter_available_rewards(
+                        supporter_id.clone(),
+                        kickstarter_id.into()
                     ),
                     active: kickstarter.active,
                     successful: kickstarter.successful,

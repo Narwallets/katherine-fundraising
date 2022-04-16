@@ -194,7 +194,7 @@ struct KickstarterJSON {
 
 ### **create_goal**
 
-To create one of the multiple goals, the MAX number of goals is 5:
+To create one of the multiple goals. The MAX **number of goals** is `5` and the MAX **number of reward installments** is `12`:
 
 ```rust
 fn create_goal(
@@ -205,6 +205,7 @@ fn create_goal(
     tokens_to_release_per_stnear: String,
     cliff_timestamp: u64,
     end_timestamp: u64,
+    reward_installments: u32,
 ) -> u8
 ```
 
@@ -254,6 +255,7 @@ struct GoalJSON {
     pub tokens_to_release_per_stnear: String,
     pub cliff_timestamp: u64,
     pub end_timestamp: u64,
+    pub reward_installments: u32,
 }
 ```
 
@@ -442,6 +444,8 @@ The result is:
 struct SupporterDetailedJSON {
     pub kickstarter_id: u32,
     pub supporter_deposit: String,
+    pub rewards: Option<BalanceJSON>,
+    pub available_rewards: Option<BalanceJSON>,
     pub active: bool,
     pub successful: Option<bool>,
 }
@@ -477,7 +481,7 @@ View the total rewards available at `end_timestamp` for the Supporter.
 pub fn get_supporter_total_rewards(
     supporter_id: String,
     kickstarter_id: u32,
-) -> String
+) -> Option<String>
 ```
 
 ### **get_supporter_available_rewards**
@@ -488,7 +492,7 @@ View the current available rewards for the Supporter to withdraw.
 fn get_supporter_available_rewards(
     supporter_id: String,
     kickstarter_id: u32,
-) -> String
+) -> Option<String>
 ```
 
 Contract Logic:

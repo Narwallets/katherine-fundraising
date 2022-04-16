@@ -20,10 +20,10 @@ pub struct Kickstarter {
     // To make a Kickstarter successful:
     // katherine_fee + total_tokens_to_release > available_reward_tokens
     pub total_tokens_to_release: Option<Balance>,
-    // Deposits during the funding period.
+    // Deposits during the funding period by Supporters.
     pub deposits: UnorderedMap<SupporterId, Balance>,
     // pub deposits_register_at_freeze ----              TODO: Implement this field
-    pub withdraw: UnorderedMap<SupporterId, Balance>,
+    pub rewards_withdraw: UnorderedMap<SupporterId, Balance>,
 
     // Important Note: the kickstarter.total_deposited variable will only increase or decrease within
     // the funding period. After the project evaluation, this value will stay CONSTANT to store a 
@@ -82,7 +82,10 @@ impl Kickstarter {
 
     #[inline]
     pub(crate) fn assert_number_of_goals(&self, max_number: u8) {
-        assert!(max_number >= self.get_number_of_goals(), "Too many goals!");
+        assert!(
+            max_number >= self.get_number_of_goals(),
+            "Too many goals, max number is {}", max_number
+        );
     }
 
     #[inline]
@@ -150,8 +153,8 @@ impl Kickstarter {
             .expect("Supporter is not part of Kickstarter!")
     }
 
-    pub fn get_withdraw(&self, supporter_id: &SupporterId) -> Balance {
-        match self.withdraw.get(&supporter_id) {
+    pub fn get_rewards_withdraw(&self, supporter_id: &SupporterId) -> Balance {
+        match self.rewards_withdraw.get(&supporter_id) {
             Some(amount) => amount,
             None => 0,
         }

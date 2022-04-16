@@ -59,6 +59,7 @@ pub struct GoalJSON {
     pub tokens_to_release_per_stnear: BalanceJSON,
     pub cliff_timestamp: EpochMillis,
     pub end_timestamp: EpochMillis,
+    pub reward_installments: u32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -88,6 +89,8 @@ pub struct KickstarterSupporterJSON {
 pub struct SupporterDetailedJSON {
     pub kickstarter_id: KickstarterIdJSON,
     pub supporter_deposit: BalanceJSON,
+    pub rewards: Option<BalanceJSON>,
+    pub available_rewards: Option<BalanceJSON>,
     pub active: bool,
     pub successful: Option<bool>,
 }

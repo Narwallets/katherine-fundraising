@@ -16,6 +16,10 @@ impl Supporter {
         }
     }
 
+    pub fn is_supporting(&self, kickstarter_id: KickstarterId) -> bool {
+        return self.supported_projects.contains(&kickstarter_id)
+    }
+
     /// when the supporter.is_empty() it will be removed
     pub fn is_empty(&self) -> bool {
         return self.available == 0
