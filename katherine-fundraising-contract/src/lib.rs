@@ -468,17 +468,17 @@ impl KatherineFundraising {
         //ONLY ADMINS CAN CREATE KICKSTARTERS? YES
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
-
+        let id = self.kickstarters.len() as KickstarterId;
         let kickstarter = Kickstarter {
-            id: self.kickstarters.len() as KickstarterId,
+            id: id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals),
+            goals: Vector::new(Keys::Goals.as_prefix(&id).as_bytes()),
             winner_goal_id: None,
             katherine_fee: None,
             total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits),
-            withdraw: UnorderedMap::new(Keys::Withdraws),
+            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id).as_bytes()),
+            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id).as_bytes()),
             total_deposited: 0,
             deposits_hard_cap: Balance::from(deposits_hard_cap),
             max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
@@ -533,12 +533,12 @@ impl KatherineFundraising {
             id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals),
+            goals: Vector::new(Keys::Goals.as_prefix(&id).as_bytes()),
             winner_goal_id: None,
             katherine_fee: None,
             total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits),
-            withdraw: UnorderedMap::new(Keys::Withdraws),
+            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id).as_bytes()),
+            withdraw: UnorderedMap::new(Keys::Withdraws.as_prefix(&id).as_bytes()),
             total_deposited: 0,
             deposits_hard_cap: Balance::from(deposits_hard_cap),
             max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
