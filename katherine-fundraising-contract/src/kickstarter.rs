@@ -22,8 +22,8 @@ pub struct Kickstarter {
     pub total_tokens_to_release: Option<Balance>,
     // Deposits during the funding period by Supporters.
     pub deposits: UnorderedMap<SupporterId, Balance>,
-    // pub deposits_register_at_freeze ----              TODO: Implement this field
     pub rewards_withdraw: UnorderedMap<SupporterId, Balance>,
+    pub stnear_withdraw: UnorderedMap<WithdrawEntity, Balance>,
 
     // Important Note: the kickstarter.total_deposited variable will only increase or decrease within
     // the funding period. After the project evaluation, this value will stay CONSTANT to store a 
@@ -59,7 +59,7 @@ impl Kickstarter {
     pub fn assert_goal_status(&self) {
         assert!(
             self.winner_goal_id.is_none(),
-            "Kickster already has a winning goal."
+            "Kickstarter already has a winning goal."
         );
     }
 
@@ -68,7 +68,7 @@ impl Kickstarter {
         assert_eq!(
             env::predecessor_account_id(),
             self.owner_id,
-            "only allowed for admin"
+            "Only allowed for admin."
         );
     }
 
@@ -100,7 +100,7 @@ impl Kickstarter {
     pub(crate) fn assert_funds_must_be_unfreezed(&self) {
         self.assert_funds_can_be_unfreezed();
         assert!(
-            self.stnear_price_at_unfreeze.is_some(),
+            self.is_unfreeze(),
             "Price at unfreeze is not defined. Please unfreeze kickstarter funds with fn: unfreeze_kickstarter_funds!"
         );
     }
@@ -143,6 +143,10 @@ impl Kickstarter {
         self.get_winner_goal().unfreeze_timestamp < get_current_epoch_millis()
     }
 
+    pub fn is_unfreeze(&self) -> bool {
+        self.stnear_price_at_unfreeze.is_some()
+    }
+
     pub fn get_total_supporters(&self) -> u32 {
         self.deposits.len() as u32
     }
@@ -153,8 +157,23 @@ impl Kickstarter {
             .expect("Supporter is not part of Kickstarter!")
     }
 
+    pub fn get_after_unfreeze_deposits(&self, supporter_id: &SupporterId) -> Balance {
+        self.assert_funds_must_be_unfreezed();
+        let deposit = self.get_deposit(&supporter_id);
+        let price_at_freeze = self.stnear_price_at_freeze.unwrap();
+        let price_at_unfreeze = self.stnear_price_at_unfreeze.unwrap();
+        proportional(deposit, price_at_freeze, price_at_unfreeze)
+    }
+
     pub fn get_rewards_withdraw(&self, supporter_id: &SupporterId) -> Balance {
         match self.rewards_withdraw.get(&supporter_id) {
+            Some(amount) => amount,
+            None => 0,
+        }
+    }
+
+    pub fn get_stnear_withdraw(&self, entity: &WithdrawEntity) -> Balance {
+        match self.stnear_withdraw.get(&entity) {
             Some(amount) => amount,
             None => 0,
         }
@@ -243,15 +262,13 @@ impl Kickstarter {
         for goal in self.goals.iter() {
             goals.push(goal.to_json());
         }
-        let stnear_price_at_freeze = if self.stnear_price_at_freeze.is_some() {
-            BalanceJSON::from(self.stnear_price_at_freeze.unwrap())
-        } else {
-            BalanceJSON::from(0)
+        let stnear_price_at_freeze = match self.stnear_price_at_freeze {
+            Some(balance) => Some(BalanceJSON::from(balance)),
+            None => None,
         };
-        let stnear_price_at_unfreeze = if self.stnear_price_at_unfreeze.is_some() {
-            BalanceJSON::from(self.stnear_price_at_unfreeze.unwrap())
-        } else {
-            BalanceJSON::from(0)
+        let stnear_price_at_unfreeze = match self.stnear_price_at_unfreeze {
+            Some(balance) => Some(BalanceJSON::from(balance)),
+            None => None,
         };
         KickstarterDetailsJSON {
             id: self.id.into(),

@@ -2,6 +2,8 @@ use near_sdk::Gas;
 use near_sdk::BorshIntoStorageKey;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
+use crate::types::SupporterId;
+
 pub const NEAR: u128 = 1_000_000_000_000_000_000_000_000;
 pub const ONE_MILLI_NEAR: u128 = NEAR / 1_000;
 
@@ -24,7 +26,8 @@ pub enum Keys {
     Active,
     Goals,
     Deposits,
-    Withdraws,
+    RewardWithdraws,
+    StnearWithdraws,
 }
 
 impl Keys {
@@ -38,9 +41,18 @@ impl Keys {
 			Keys::Active => format!("{}{}", "A", id),
 			Keys::Goals => format!("{}{}", "G", id),
 			Keys::Deposits => format!("{}{}", "D", id),
-			Keys::Withdraws => format!("{}{}", "W", id),
+			Keys::RewardWithdraws => format!("{}{}", "RW", id),
+			Keys::StnearWithdraws => format!("{}{}", "SW", id),
 		}
     }
 }
 
 impl BorshIntoStorageKey for Keys {}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+pub enum WithdrawEntity {
+    Kickstarter,
+    Supporter(SupporterId),
+}
+
+impl BorshIntoStorageKey for WithdrawEntity {}

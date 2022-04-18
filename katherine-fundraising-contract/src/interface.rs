@@ -23,9 +23,16 @@ pub trait NEP141Token {
 
 #[ext_contract(ext_self_metapool)]
 pub trait ExtSelfMetapool {
-    fn return_tokens_callback(
+    fn return_tokens_before_freeze_callback(
         &mut self,
-        user: ValidAccountId,
+        supporter_id: ValidAccountId,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128,
+    );
+
+    fn return_tokens_after_unfreeze_callback(
+        &mut self,
+        supporter_id: ValidAccountId,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     );
