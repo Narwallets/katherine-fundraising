@@ -5,7 +5,7 @@
 YOCTO_UNITS=000000000000000000000000
 
 ifndef NEAR_ACCOUNT
-NEAR_ACCOUNT="huxley.testnet"
+NEAR_ACCOUNT="kate_tester3.testnet"
 endif
 
 lint:
