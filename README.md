@@ -189,6 +189,8 @@ struct KickstarterJSON {
     pub total_deposited: String,
     pub open_timestamp: u64,
     pub close_timestamp: u64,
+    pub active: bool,
+    pub successful: Option<bool>,
 }
 ```
 

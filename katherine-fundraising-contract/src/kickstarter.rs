@@ -254,6 +254,8 @@ impl Kickstarter {
             total_deposited: BalanceJSON::from(self.total_deposited),
             open_timestamp: self.open_timestamp,
             close_timestamp: self.close_timestamp,
+            active: self.active,
+            successful: self.successful,
         }
     }
 

@@ -29,6 +29,8 @@ pub struct KickstarterJSON {
     pub total_deposited: BalanceJSON,
     pub open_timestamp: EpochMillis,
     pub close_timestamp: EpochMillis,
+    pub active: bool,
+    pub successful: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize)]
