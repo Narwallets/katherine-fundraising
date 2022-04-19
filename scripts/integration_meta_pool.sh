@@ -43,7 +43,7 @@ NOW_IN_MILLISECS=$(($(date +%s) * 1000))
 KICKSTARTER_NAME="The_Best_Project_Ever"
 KICKSTARTER_SLUG="the-best-project-ever"
 KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 60000))
-KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 30000))
+KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 60000))
 echo "------------------ Creating a Kickstarter"
 NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$PTOKEN_CONTRACT_ADDRESS'", "deposits_hard_cap": "'9$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'2$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID
 
@@ -84,6 +84,23 @@ NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_projects '{
 
 echo "------------------ FRONTEND: Supporter Dashboard"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
+
+echo "------------------ Checking supporter stNear balance"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+
+echo "------------------ Withdraw stNEAR before CLOSE 💰"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw '{"amount": "'1$YOCTO_UNITS'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking supporter stNear balance"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+
+echo "------------------ Withdraw ALL stNEAR 🤑"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_all '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking supporter stNear balance"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+
+exit
 
 # Evaluating project
 NOW_IN_SECS=$(date +%s)
