@@ -100,6 +100,12 @@ NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_all '{"kickstart
 echo "------------------ Checking supporter stNear balance"
 NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
 
+echo "------------------ BUGS: 🪳 🐞"
+NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_projects '{"supporter_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+
+echo "------------------ BUGS: 🪳 🐞 🕷"
+NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
+
 exit
 
 # Evaluating project

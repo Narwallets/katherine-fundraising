@@ -154,6 +154,7 @@ impl KatherineFundraising {
         if kickstarter.successful == Some(true) && kickstarter.stnear_price_at_unfreeze == None {
             kickstarter.assert_funds_can_be_unfreezed();
             self.internal_unfreeze_kickstarter_funds(kickstarter_id);
+            log!("UNFREEZE: funds successfully unfreezed for Kickstarter {}", kickstarter_id);
         }
     }
 
@@ -173,6 +174,7 @@ impl KatherineFundraising {
         assert!(env::prepaid_gas() > min_prepaid_gas, "gas required {}", min_prepaid_gas);
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         let amount = Balance::from(amount);
+        assert!(amount > 0, "The amount to withdraw should be greater than Zero!");
         let supporter_id: SupporterId = env::predecessor_account_id();
         match kickstarter.successful {
             Some(true) => {
