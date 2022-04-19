@@ -24,6 +24,9 @@ use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseOrValue};
 
+mod types;
+use crate::types::GetAccountInfoResult;
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
@@ -96,6 +99,30 @@ impl Contract {
         let timestamp = env::block_timestamp().to_string();
         let result = timestamp.clone() + &"0".repeat(25 as usize - timestamp.len()).to_string();
         U128::from(result.parse::<u128>().unwrap())
+    }
+
+    pub fn get_account_info(&self, account_id: AccountId) -> GetAccountInfoResult {
+        return GetAccountInfoResult {
+            account_id: account_id.clone(),
+            available: 0.into(),
+            st_near: self.ft_balance_of(account_id),
+            valued_st_near: 0.into(),
+            meta: 0.into(),
+            realized_meta: 0.into(),
+            unstaked: 0.into(),
+            unstaked_requested_unlock_epoch: 0.into(),
+            unstake_full_epochs_wait_left: 0u16,
+            can_withdraw: true,
+            total: 0.into(),
+            trip_start: 0.into(),
+            trip_start_stnear: 0.into(),
+            trip_accum_stakes: 0.into(),
+            trip_accum_unstakes: 0.into(),
+            trip_rewards: 0.into(),
+            nslp_shares: 0.into(),
+            nslp_share_value: 0.into(),
+            nslp_share_bp: 0u16,
+        };
     }
 }
 
