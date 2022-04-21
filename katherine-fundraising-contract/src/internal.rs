@@ -316,6 +316,130 @@ impl KatherineFundraising {
     }
 }
 
+/*********************/
+/*  Supporter Claim  */
+/*********************/
+
+#[near_bindgen]
+impl KatherineFundraising {
+    pub(crate) fn internal_claim_kickstarter_tokens(
+        &mut self,
+        requested_amount: BalanceJSON,
+        kickstarter: &mut Kickstarter,
+        supporter_id: SupporterId,
+    ) {
+        let kickstarter_id = kickstarter.id;
+        self.update_supporter_claims(
+            Balance::from(requested_amount),
+            kickstarter,
+            &supporter_id
+        );
+
+        nep141_token::ft_transfer(
+            convert_to_valid_account_id(supporter_id.clone()),
+            requested_amount,
+            None,
+            &kickstarter.token_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER,
+        )
+        // restore user balance on error
+        .then(
+            ext_self_kickstarter::return_tokens_from_kickstarter_callback(
+                convert_to_valid_account_id(supporter_id.clone()),
+                kickstarter_id,
+                requested_amount,
+                &env::current_account_id(),
+                0,
+                GAS_FOR_FT_TRANSFER,
+            ),
+        );
+    }
+
+    pub(crate) fn update_supporter_claims(
+        &mut self,
+        requested_amount: Balance,
+        kickstarter: &mut Kickstarter,
+        supporter_id: &SupporterId,
+    ) {
+        assert!(requested_amount > 0, "Supporter does not have available Kickstarter Tokens");
+        let goal = kickstarter.get_winner_goal();
+        assert_eq!(
+            kickstarter.successful, Some(true),
+            "Kickstarter was unsuccessful."
+        );
+        assert!(
+            goal.cliff_timestamp < get_current_epoch_millis(),
+            "Tokens not released."
+        );
+
+        let rewards = self.internal_get_available_rewards(&supporter_id, &kickstarter);
+        assert!(
+            requested_amount <= rewards,
+            "Not enough tokens, available balance is {}.",
+            rewards
+        );
+
+        let mut withdraw: Balance = kickstarter.get_rewards_withdraw(&supporter_id);
+        withdraw += requested_amount;
+        kickstarter.rewards_withdraw.insert(&supporter_id, &withdraw);
+        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
+    }
+
+    #[private]
+    pub fn return_tokens_from_kickstarter_callback(
+        &mut self,
+        user: AccountId,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128,
+    ) {
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!(
+                    "CLAIM WITHDRAW: {} pTOKEN transfered to Supporter {}",
+                    u128::from(amount), user
+                );
+            }
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering account state",
+                    amount.0
+                );
+                self.internal_restore_supporter_withdraw_from_kickstarter(
+                    amount.into(),
+                    kickstarter_id.into(),
+                    user,
+                )
+            }
+        }
+    }
+
+    pub(crate) fn internal_restore_supporter_withdraw_from_kickstarter(
+        &mut self,
+        amount: Balance,
+        kickstarter_id: KickstarterId,
+        supporter_id: AccountId,
+    ) {
+        let mut kickstarter = self
+            .kickstarters
+            .get(kickstarter_id as u64)
+            .expect("kickstarter not found");
+        let mut withdraw = kickstarter.rewards_withdraw.get(&supporter_id).unwrap_or_default();
+
+        assert!(withdraw >= amount, "withdrawn amount too high");
+
+        if withdraw == amount {
+            kickstarter.rewards_withdraw.remove(&supporter_id);
+        } else {
+            withdraw -= amount;
+            kickstarter.rewards_withdraw.insert(&supporter_id, &withdraw);
+        }
+        self.kickstarters
+            .replace(kickstarter_id as u64, &kickstarter);
+    }
+}
+
 /**********************/
 /*  Internal methods  */
 /**********************/
@@ -514,7 +638,7 @@ impl KatherineFundraising {
             - kickstarter.get_rewards_withdraw(&supporter_id)
     }
 
-    pub(crate) fn internal_get_supporter_available_rewards(
+    pub(crate) fn internal_get_available_rewards(
         &self,
         supporter_id: &SupporterId,
         kickstarter: &Kickstarter,
@@ -531,76 +655,6 @@ impl KatherineFundraising {
             goal.cliff_timestamp,
             goal.end_timestamp
         )
-    }
-
-    pub(crate) fn internal_claim_kickstarter_tokens(
-        &mut self,
-        requested_amount: Balance,
-        kickstarter: &mut Kickstarter,
-        supporter_id: &SupporterId,
-    ) {
-        assert!(requested_amount > 0, "Supporter does not have available Kickstarter Tokens");
-        let goal = kickstarter.get_winner_goal();
-        assert_eq!(
-            kickstarter.successful,
-            Some(true),
-            "kickstarter has not reached any goal"
-        );
-        assert!(
-            goal.cliff_timestamp < get_current_epoch_millis(),
-            "tokens have not been released yet"
-        );
-
-        let available_rewards =
-            self.internal_get_supporter_available_rewards(&supporter_id, &kickstarter);
-        assert!(
-            requested_amount <= available_rewards,
-            "not enough tokens, available balance is {}",
-            available_rewards
-        );
-
-        let mut supporter_withdraw: Balance = kickstarter.get_rewards_withdraw(&supporter_id);
-        supporter_withdraw += requested_amount;
-        kickstarter
-            .rewards_withdraw
-            .insert(&supporter_id, &supporter_withdraw);
-        self.kickstarters
-            .replace(kickstarter.id as u64, &kickstarter);
-    }
-
-    pub(crate) fn internal_restore_kickstarter_excedent_withdraw(
-        &mut self,
-        amount: Balance,
-        kickstarter_id: KickstarterId,
-    ) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        kickstarter.available_reward_tokens += amount;
-        self.kickstarters
-            .replace(kickstarter_id as u64, &kickstarter);
-    }
-
-    pub(crate) fn internal_restore_supporter_withdraw_from_kickstarter(
-        &mut self,
-        amount: Balance,
-        kickstarter_id: KickstarterId,
-        supporter_id: AccountId,
-    ) {
-        let mut kickstarter = self
-            .kickstarters
-            .get(kickstarter_id as u64)
-            .expect("kickstarter not found");
-        let mut withdraw = kickstarter.rewards_withdraw.get(&supporter_id).unwrap_or_default();
-
-        assert!(withdraw >= amount, "withdrawn amount too high");
-
-        if withdraw == amount {
-            kickstarter.rewards_withdraw.remove(&supporter_id);
-        } else {
-            withdraw -= amount;
-            kickstarter.rewards_withdraw.insert(&supporter_id, &withdraw);
-        }
-        self.kickstarters
-            .replace(kickstarter_id as u64, &kickstarter);
     }
 
     pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &mut Kickstarter, st_near_price: Balance, _amount: Balance) {

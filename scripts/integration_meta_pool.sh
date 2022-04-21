@@ -106,7 +106,8 @@ NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_projects '{
 echo "------------------ BUGS: 🪳 🐞 🕷"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
 
-exit
+echo "------------------ Sending stNEAR to the GET FREEZED by the contract"
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'$GOAL_1_DESIRED_AMOUNT'", "msg": "'$KICKSTARTER_ID'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
 
 # Evaluating project
 NOW_IN_SECS=$(date +%s)
@@ -188,6 +189,15 @@ echo "------------------ BUGS: 🪳 🐞"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_projects '{"supporter_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
 
 echo "------------------ FRONTEND: Supporter Dashboard"
+NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
+
+echo "------------------ CLAIM ALL reward tokens 🔮"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS claim_all_kickstarter_tokens '{"kickstarter_id": 0}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter pToken balance"
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+
+echo "------------------ FRONTEND: Supporter Dashboard AFTER REWARD BEING CLAIMED"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
 
 # Evaluating project
