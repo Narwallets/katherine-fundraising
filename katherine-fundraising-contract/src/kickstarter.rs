@@ -51,7 +51,8 @@ pub struct Kickstarter {
     // Total available and locked deposited tokens by the Kickstarter.
     pub available_reward_tokens: Balance,
     pub locked_reward_tokens: Balance,
-    pub kickstarter_withdraw: Balance
+    pub kickstarter_withdraw: Balance,
+    pub withdrawn_fee: bool
 }
 
 impl Kickstarter {

@@ -77,4 +77,11 @@ pub trait ExtSelfKickstarter {
         &mut self,
         kickstarter_id: KickstarterIdJSON
     );
+
+    fn withdraw_kickstarter_fee_callback(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128,
+    )->Result;
+    
 }
