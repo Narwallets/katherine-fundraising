@@ -533,12 +533,13 @@ impl KatherineFundraising {
         )
     }
 
-    pub(crate) fn internal_withdraw_kickstarter_tokens(
+    pub(crate) fn internal_claim_kickstarter_tokens(
         &mut self,
         requested_amount: Balance,
         kickstarter: &mut Kickstarter,
         supporter_id: &SupporterId,
     ) {
+        assert!(requested_amount > 0, "Supporter does not have available Kickstarter Tokens");
         let goal = kickstarter.get_winner_goal();
         assert_eq!(
             kickstarter.successful,

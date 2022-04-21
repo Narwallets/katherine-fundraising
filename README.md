@@ -88,7 +88,8 @@ These are the functions to interact with Katherine.
 ### 8. Allow the Supporter to withdraw project Tokens
 
 **Supporter**:
-- [withdraw_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_kickstarter_tokens)
+- [claim_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/dev#claim_kickstarter_tokens)
+- [claim_all_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/dev#claim_all_kickstarter_tokens)
 
 **Public**:
 - [get_supporter_total_rewards](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_total_rewards)
@@ -464,12 +465,22 @@ fn withdraw_stnear_interest(
 )
 ```
 
-### **withdraw_kickstarter_tokens**
+### **claim_all_kickstarter_tokens**
+
+Function for the Supporter to claim all the Kickstarter **pTokens** rewards.
+
+```rust
+fn claim_all_kickstarter_tokens(
+    kickstarter_id: u32,
+)
+```
+
+### **claim_kickstarter_tokens**
 
 Function for the Supporter to claim the Kickstarter **pTokens** rewards.
 
 ```rust
-fn withdraw_kickstarter_tokens(
+fn claim_kickstarter_tokens(
     amount: String,
     kickstarter_id: u32,
 )

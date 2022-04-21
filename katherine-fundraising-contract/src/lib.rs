@@ -206,18 +206,38 @@ impl KatherineFundraising {
         };
     }
 
+    pub fn claim_all_kickstarter_tokens(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON
+    ) {
+        let account_id = env::predecessor_account_id();
+        let available_rewards = self.get_supporter_available_rewards(
+            convert_to_valid_account_id(account_id),
+            kickstarter_id,
+        );
+        if let Some(amount) = available_rewards {
+            self.claim_kickstarter_tokens(amount, kickstarter_id);
+        } else {
+            panic!("Supporter does not have available Kickstarter Tokens");
+        }
+    }
+
     // lets supporters withdraw the tokens emited by the kickstarter
-    pub fn withdraw_kickstarter_tokens(
+    pub fn claim_kickstarter_tokens(
         &mut self,
         amount: BalanceJSON,
         kickstarter_id: KickstarterIdJSON,
     ) {
-        let account = env::predecessor_account_id();
+        let account_id = env::predecessor_account_id();
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        self.internal_withdraw_kickstarter_tokens(amount.into(), &mut kickstarter, &account);
+        self.internal_claim_kickstarter_tokens(
+            Balance::from(amount),
+            &mut kickstarter,
+            &account_id
+        );
 
         nep141_token::ft_transfer_call(
-            convert_to_valid_account_id(account.clone()),
+            convert_to_valid_account_id(account_id.clone()),
             amount,
             None,
             "withdraw from kickstarter".to_string(),
@@ -229,7 +249,7 @@ impl KatherineFundraising {
         // restore user balance on error
         .then(
             ext_self_kickstarter::return_tokens_from_kickstarter_callback(
-                convert_to_valid_account_id(account.clone()),
+                convert_to_valid_account_id(account_id.clone()),
                 kickstarter_id,
                 amount,
                 &env::current_account_id(),
