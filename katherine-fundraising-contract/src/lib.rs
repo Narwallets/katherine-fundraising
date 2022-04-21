@@ -164,6 +164,10 @@ impl KatherineFundraising {
 
     pub fn withdraw_all(&mut self, kickstarter_id: KickstarterIdJSON) {
         let supporter_id = convert_to_valid_account_id(env::predecessor_account_id());
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        if !kickstarter.is_within_funding_period() {
+            kickstarter.assert_funds_must_be_unfreezed();
+        }
         let amount = self.get_supporter_total_deposit_in_kickstarter(supporter_id, kickstarter_id, None);
         self.withdraw(amount, kickstarter_id);
     }
