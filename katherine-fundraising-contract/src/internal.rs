@@ -638,6 +638,15 @@ impl KatherineFundraising {
             - kickstarter.get_rewards_withdraw(&supporter_id)
     }
 
+    pub(crate) fn internal_get_admin_fee_reward_from_kickstarter(
+        &self,
+        kickstarter: &Kickstarter
+    ) -> Balance{
+        let goal = kickstarter.get_winner_goal();
+        let fee = (goal.tokens_to_release_per_stnear * kickstarter.total_deposited) / (self.katherine_fee_percent as u128 * 10_000);
+        return fee
+    }
+
     pub(crate) fn internal_get_available_rewards(
         &self,
         supporter_id: &SupporterId,
