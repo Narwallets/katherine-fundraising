@@ -389,7 +389,7 @@ impl KatherineFundraising {
     #[private]
     pub fn return_tokens_from_kickstarter_callback(
         &mut self,
-        user: AccountId,
+        account_id: AccountId,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     ) {
@@ -398,18 +398,18 @@ impl KatherineFundraising {
             PromiseResult::Successful(_) => {
                 log!(
                     "CLAIM WITHDRAW: {} pTOKEN transfered to Supporter {}",
-                    u128::from(amount), user
+                    u128::from(amount), account_id
                 );
             }
             PromiseResult::Failed => {
                 log!(
-                    "token transfer failed {}. recovering account state",
+                    "Token transfer failed {}. recovering account state",
                     amount.0
                 );
                 self.internal_restore_supporter_withdraw_from_kickstarter(
                     amount.into(),
                     kickstarter_id.into(),
-                    user,
+                    account_id,
                 )
             }
         }
@@ -419,15 +419,11 @@ impl KatherineFundraising {
         &mut self,
         amount: Balance,
         kickstarter_id: KickstarterId,
-        supporter_id: AccountId,
+        supporter_id: SupporterId,
     ) {
-        let mut kickstarter = self
-            .kickstarters
-            .get(kickstarter_id as u64)
-            .expect("kickstarter not found");
-        let mut withdraw = kickstarter.rewards_withdraw.get(&supporter_id).unwrap_or_default();
-
-        assert!(withdraw >= amount, "withdrawn amount too high");
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let mut withdraw = kickstarter.get_rewards_withdraw(&supporter_id);
+        assert!(withdraw >= amount, "Withdraw amount too high.");
 
         if withdraw == amount {
             kickstarter.rewards_withdraw.remove(&supporter_id);
@@ -435,8 +431,7 @@ impl KatherineFundraising {
             withdraw -= amount;
             kickstarter.rewards_withdraw.insert(&supporter_id, &withdraw);
         }
-        self.kickstarters
-            .replace(kickstarter_id as u64, &kickstarter);
+        self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
     }
 }
 
