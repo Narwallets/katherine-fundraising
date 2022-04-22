@@ -275,3 +275,11 @@ NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_i
 
 echo "------------------ FRONTEND: Supporter Dashboard AFTER REWARD BEING CLAIMED"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
+
+echo "LAST BUT NOT LEAST 🤘"
+echo "------------------ Checking Katherine Owner pToken balance"
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KATHERINE_OWNER_ID'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_katherine_fee '{"kickstarter_id": 0}' --accountId $KATHERINE_OWNER_ID --gas $TOTAL_PREPAID_GAS
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KATHERINE_OWNER_ID'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_katherine_fee '{"kickstarter_id": 1}' --accountId $KATHERINE_OWNER_ID --gas $TOTAL_PREPAID_GAS
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KATHERINE_OWNER_ID'"}' --accountId $KATHERINE_OWNER_ID
