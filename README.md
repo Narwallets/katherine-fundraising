@@ -431,6 +431,8 @@ fn get_supported_projects(supporter_id: String) -> Vec<u32>
 
 This function is for the Meta Yield Dashboard, in order to get the projects from `from_index` to `from_index + limit` which had receive support from the Supporter. The `SupporterDetailedJSON` must have all the required information of the Supporter investment. If the result is `null` then no more kickstarters are available.
 
+The `supporter_deposit` and `deposit_in_near` represent the Supporter's value in **stNEAR** and **Near**, respectively.
+
 ```rust
 fn get_supported_detailed_list(
     supporter_id: String,
@@ -446,6 +448,7 @@ The result is:
 struct SupporterDetailedJSON {
     pub kickstarter_id: u32,
     pub supporter_deposit: String,
+    pub deposit_in_near: Option<BalanceJSON>,
     pub rewards: Option<BalanceJSON>,
     pub available_rewards: Option<BalanceJSON>,
     pub active: bool,

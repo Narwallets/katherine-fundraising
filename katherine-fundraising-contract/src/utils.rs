@@ -25,8 +25,9 @@ pub fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {
     return (U256::from(amount) * U256::from(numerator) / U256::from(denominator)).as_u128();
 }
 
-/// DEPRECATED: fn to calculate the release with steps. But the release will be full linear.
-pub fn proportional_with_steps(
+/// DEPRECATED: fn to calculate the linear release with steps. But the release will be full linear.
+#[allow(dead_code)]
+fn proportional_with_steps(
     amount: Balance,
     numerator: u128,
     denominator: u128,

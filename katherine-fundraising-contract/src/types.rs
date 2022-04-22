@@ -90,6 +90,7 @@ pub struct KickstarterSupporterJSON {
 pub struct SupporterDetailedJSON {
     pub kickstarter_id: KickstarterIdJSON,
     pub supporter_deposit: BalanceJSON,
+    pub deposit_in_near: Option<BalanceJSON>,
     pub rewards: Option<BalanceJSON>,
     pub available_rewards: Option<BalanceJSON>,
     pub active: bool,

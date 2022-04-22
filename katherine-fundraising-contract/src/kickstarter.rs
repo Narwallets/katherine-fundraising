@@ -157,6 +157,15 @@ impl Kickstarter {
             .expect("Supporter is not part of Kickstarter!")
     }
 
+    pub fn get_at_freeze_deposits_in_near(&self, supporter_id: &SupporterId) -> Option<BalanceJSON> {
+        if let Some(st_near_price) = self.stnear_price_at_freeze {
+            let deposit = self.get_deposit(&supporter_id);
+            Some(BalanceJSON::from(proportional(deposit, st_near_price, NEAR)))
+        } else {
+            None
+        }
+    }
+
     pub fn get_after_unfreeze_deposits(&self, supporter_id: &SupporterId) -> Balance {
         self.assert_funds_must_be_unfreezed();
         let deposit = self.get_deposit(&supporter_id);

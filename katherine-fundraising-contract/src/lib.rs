@@ -813,20 +813,33 @@ impl KatherineFundraising {
         for index in start..std::cmp::min(start + limit as u64, kickstarters_len) {
             let kickstarter_id = *kickstarter_ids.get(index as usize).unwrap();
             let kickstarter = self.internal_get_kickstarter(kickstarter_id);
-            result.push(SupporterDetailedJSON {
+            let supporter_deposit = self.get_supporter_total_deposit_in_kickstarter(
+                supporter_id.clone(),
                 kickstarter_id,
-                supporter_deposit: self.get_supporter_total_deposit_in_kickstarter(
-                    supporter_id.clone(),
-                    kickstarter_id.into(),
-                    Some(st_near_price),
-                ),
-                rewards: self
-                    .get_supporter_total_rewards(supporter_id.clone(), kickstarter_id.into()),
-                available_rewards: self
-                    .get_supporter_available_rewards(supporter_id.clone(), kickstarter_id.into()),
-                active: kickstarter.active,
-                successful: kickstarter.successful,
-            });
+                Some(st_near_price)
+            );
+            let deposit_in_near = kickstarter.get_at_freeze_deposits_in_near(
+                &supporter_id.to_string()
+            );
+            let rewards = self.get_supporter_total_rewards(
+                supporter_id.clone(),
+                kickstarter_id.into()
+            );
+            let available_rewards = self.get_supporter_available_rewards(
+                supporter_id.clone(),
+                kickstarter_id.into()
+            );
+            result.push(
+                SupporterDetailedJSON {
+                    kickstarter_id,
+                    supporter_deposit,
+                    deposit_in_near,
+                    rewards,
+                    available_rewards,
+                    active: kickstarter.active,
+                    successful: kickstarter.successful,
+                }
+            );
         }
         Some(result)
     }
