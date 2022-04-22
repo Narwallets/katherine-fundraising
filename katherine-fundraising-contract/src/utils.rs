@@ -25,6 +25,7 @@ pub fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {
     return (U256::from(amount) * U256::from(numerator) / U256::from(denominator)).as_u128();
 }
 
+/// DEPRECATED: fn to calculate the release with steps. But the release will be full linear.
 pub fn proportional_with_steps(
     amount: Balance,
     numerator: u128,
@@ -46,7 +47,6 @@ pub fn proportional_with_steps(
 
 pub fn get_linear_release_proportion(
     amount: Balance,
-    steps: u32,
     cliff_timestamp: EpochMillis,
     end_timestamp: EpochMillis,
 ) -> Balance {
@@ -58,7 +58,7 @@ pub fn get_linear_release_proportion(
     } else {
         let numerator = now as u128 - cliff_timestamp as u128;
         let denominator = end_timestamp as u128 - cliff_timestamp as u128;
-        proportional_with_steps(amount, numerator, denominator, steps as u128)
+        proportional(amount, numerator, denominator)
     }
 }
 

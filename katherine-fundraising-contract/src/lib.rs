@@ -34,7 +34,6 @@ pub struct KatherineFundraising {
     // Percent is denominated in basis points 100% equals 10_000 basis points.
     pub katherine_fee_percent: BasisPoints,
     pub max_goals_per_kickstarter: u8,
-    pub max_reward_installments: u32,
 
     // Active kickstarter projects.
     pub active_projects: UnorderedSet<KickstarterId>,
@@ -60,7 +59,6 @@ impl KatherineFundraising {
             metapool_contract_address,
             katherine_fee_percent,
             max_goals_per_kickstarter: 5,
-            max_reward_installments: 12,
             active_projects: UnorderedSet::new(Keys::Active),
         }
     }

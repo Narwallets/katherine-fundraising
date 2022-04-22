@@ -61,7 +61,6 @@ pub struct GoalJSON {
     pub tokens_to_release_per_stnear: BalanceJSON,
     pub cliff_timestamp: EpochMillis,
     pub end_timestamp: EpochMillis,
-    pub reward_installments: u32,
 }
 
 #[derive(Serialize, Deserialize)]

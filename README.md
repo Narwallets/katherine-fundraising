@@ -197,7 +197,7 @@ struct KickstarterJSON {
 
 ### **create_goal**
 
-To create one of the multiple goals. The MAX **number of goals** is `5` and the MAX **number of reward installments** is `12`:
+To create one of the multiple goals. The MAX **number of goals** is `5`:
 
 ```rust
 fn create_goal(
@@ -208,7 +208,7 @@ fn create_goal(
     tokens_to_release_per_stnear: String,
     cliff_timestamp: u64,
     end_timestamp: u64,
-    reward_installments: u32,
+    reward_installments: u32, // TODO: Deprecated field.
 ) -> u8
 ```
 
@@ -258,7 +258,6 @@ struct GoalJSON {
     pub tokens_to_release_per_stnear: String,
     pub cliff_timestamp: u64,
     pub end_timestamp: u64,
-    pub reward_installments: u32,
 }
 ```
 

@@ -646,7 +646,6 @@ impl KatherineFundraising {
         );
         get_linear_release_proportion(
             total_supporter_rewards,
-            goal.reward_installments,
             goal.cliff_timestamp,
             goal.end_timestamp
         )
