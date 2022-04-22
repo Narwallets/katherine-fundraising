@@ -762,7 +762,7 @@ mod tests {
             SYSTEM_ACCOUNT.into(),
             ntoy(TEST_INITIAL_BALANCE),
             0,
-            STARTING_TIMESTAMP,
+            1_000_000_000,
             false,
         )
     }
@@ -787,7 +787,11 @@ mod tests {
     #[test]
     fn test_create_kickstarter() {
         let (_context, mut contract) = contract_only_setup();
-        _new_kickstarter(&_context, &mut contract, "Test Kickstarter".to_owned(), "test_kickstarter".to_owned());
+        _new_kickstarter(&_context, &mut contract, "Test Kickstarter".to_owned(),
+            "test_kickstarter".to_owned(),
+            get_time_millis(&_context),
+            get_time_millis(&_context) + 1_000 * 60 * 5,
+            );
         assert_eq!(1, contract.kickstarters.len());
     }
 
@@ -800,7 +804,11 @@ mod tests {
     #[test]
     fn test_create_supporter() {
         let (_context, mut contract) = contract_only_setup();
-        _new_kickstarter(&_context, &mut contract, "Test Kickstarter".to_owned(), "test_kickstarter".to_owned());
+        _new_kickstarter(&_context, &mut contract, "Test Kickstarter".to_owned(),
+            "test_kickstarter".to_owned(),
+            get_time_millis(&_context),
+            get_time_millis(&_context) + 1_000 * 60 * 5,
+        );
         let kickstarter_id = contract.kickstarters.len() - 1;
         let mut k = contract.kickstarters.get(kickstarter_id).unwrap();
         k.enough_reward_tokens = true;
@@ -815,14 +823,23 @@ mod tests {
         let (_context, mut contract) = contract_only_setup();
         // TODO: move this to a function
         // First kickstarter
-        _new_kickstarter(&_context, &mut contract, "Fist kickstarter".to_owned(), "first_slig".to_owned());
+        _new_kickstarter(&_context, &mut contract, "Fist kickstarter".to_owned(),
+            "first_slig".to_owned(),
+            get_time_millis(&_context),
+            get_time_millis(&_context) + 1_000 * 60 * 5,
+        );
         let kickstarter_id = contract.kickstarters.len() - 1;
         let mut k = contract.kickstarters.get(kickstarter_id).unwrap();
         k.enough_reward_tokens = true;
         k.deposits_hard_cap = 100000;
         println!("Second kickstarter...");
         // Second kickstarter
-        _new_kickstarter(&_context, &mut contract, "Second kickstarter".to_owned(), "second_slug".to_owned());
+        let start = env::block_timestamp();
+        _new_kickstarter(&_context, &mut contract, "Second kickstarter".to_owned(),
+            "second_slug".to_owned(),
+            get_time_millis(&_context),
+            get_time_millis(&_context) + 1_000 * 60 * 5,
+        );
         let kickstarter_id2 = contract.kickstarters.len() - 1;
         let mut k2 = contract.kickstarters.get(kickstarter_id2).unwrap();
         k2.enough_reward_tokens = true;
@@ -831,29 +848,76 @@ mod tests {
         let s = String::from(SUPPORTER_ACCOUNT);
         contract.internal_supporter_deposit(&s, &DEPOSIT_AMOUNT, &mut k);
         contract.internal_supporter_deposit(&s, &DEPOSIT_AMOUNT, &mut k2);
-        let kickstarters = contract.get_supported_detailed_list(s.try_into().unwrap(), 0, 10);
-        assert_eq(2, kickstarters.len());
+        let kickstarters = contract.get_supported_detailed_list(s.try_into().unwrap(), U128::from(1), 0, 10);
+        assert_eq!(2, kickstarters.unwrap().len());
     }
 
-    /* TODO: update for refactor
+
     #[test]
     fn test_workflow() {
+        use std::convert::TryInto;
         let (_context, mut contract) = contract_only_setup();
-        let START_TIMESTAMP = get_current_epoch_millis() + to_nanos(20); 
-        let END_TIMESTAMP = START_TIMESTAMP + to_nanos(30);        
-        _new_kickstarter(&_context, &mut contract, "Test Kickstarter".to_owned(), "test_kickstarter".to_owned());
+        // TODO: move this to a function
+        // First kickstarter
+        _new_kickstarter(&_context, &mut contract, "Fist kickstarter".to_owned(),
+            "first_slig".to_owned(),
+            get_time_millis(&_context),
+            get_time_millis(&_context) + 1_000 * 60 * 5,
+        );
         let kickstarter_id = contract.kickstarters.len() - 1;
         let mut k = contract.kickstarters.get(kickstarter_id).unwrap();
-        k.update_supporter_deposits(&String::from(SUPPORTER_ACCOUNT), &DEPOSIT_AMOUNT);
-        contract.create_goal(
-            k.id,
-            "test_goal".to_string(),
-            U128::from(100),
-            START_TIMESTAMP, // WIP agregue para que compile
-            U128::from(200),
-            START_TIMESTAMP + to_nanos(5),
-            END_TIMESTAMP,
+        k.enough_reward_tokens = true;
+        k.deposits_hard_cap = 100000;
+        println!("Second kickstarter...");
+        // Second kickstarter
+        let start = get_time_millis(&_context);
+        _new_kickstarter(&_context, &mut contract, "Second kickstarter".to_owned(),
+            "second_slug".to_owned(),
+            start,
+            start + 1_000 * 60 * 5,
         );
-        contract.withdraw(U128::from(50), k.id);
-    } */
+        let kickstarter_id2 = contract.kickstarters.len() - 1;
+        let mut k2 = contract.kickstarters.get(kickstarter_id2).unwrap();
+        k2.enough_reward_tokens = true;
+        k2.deposits_hard_cap = 100000;
+
+
+		contract.create_goal(
+	        k.id,
+	        String::from("Goal 1"),
+	        BalanceJSON::from(100),
+	        start + 1_000 * 60 * 2,
+	        BalanceJSON::from(10000),
+	        start + 1_000 * 60 * 3,
+	        start + 1_000 * 60 * 4,
+	        10,
+		);
+
+		contract.create_goal(
+	        k.id,
+	        String::from("Goal 2"),
+	        BalanceJSON::from(100),
+	        start + 1_000 * 60 * 2,
+	        BalanceJSON::from(10000),
+	        start + 1_000 * 60 * 4,
+	        start + 1_000 * 60 * 5,
+	        10,
+		);
+
+		contract.create_goal(
+	        k2.id,
+	        String::from("Goal 1"),
+	        BalanceJSON::from(100),
+	        start + 1_000 * 60 * 2,
+	        BalanceJSON::from(10000),
+	        start + 1_000 * 60 * 4,
+	        start + 1_000 * 60 * 5,
+	        10,
+		);
+
+
+        let s = String::from(SUPPORTER_ACCOUNT);
+        contract.internal_supporter_deposit(&s, &DEPOSIT_AMOUNT, &mut k);
+        contract.internal_supporter_deposit(&s, &DEPOSIT_AMOUNT, &mut k2);
+    }
 }

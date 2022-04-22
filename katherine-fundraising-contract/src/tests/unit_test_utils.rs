@@ -5,6 +5,7 @@
 use super::*;
 use near_sdk::json_types::Base58PublicKey;
 use near_sdk::{AccountId, MockedBlockchain, PromiseResult, VMContext};
+use near_sdk::test_utils::{accounts, VMContextBuilder};
 
 /// Tests constants
 pub const SYSTEM_ACCOUNT: &'static str = "system";
@@ -15,9 +16,9 @@ pub const SUPPORTER_ID: usize = 0;
 pub const STAKING_GOAL: u128 = 1000;
 pub const TEST_INITIAL_BALANCE: u128 = 100;
 pub const DEPOSIT_AMOUNT: u128 = 200;
-pub const START_TIME_IN_DAYS: u64 = 1777;
-pub const KICKSTARTER_NAME: &'static str = "test_kickstarter";
+pub const KICKSTARTER_NAME: &'static str = "test_kickstarter_name";
 pub const KICKSTARTER_SLUG: &'static str = "test_kickstarter_slug";
+pub const KICKSTARTER_TOKEN_ADDRESS: &'static str = "test_ptoken";
 pub const METAPOOL_CONTRACT_ADDRESS: &'static str = "meta-v2.pool.testnet";
 
 /// Get VMContext for Unit tests
@@ -29,7 +30,7 @@ pub fn get_context(
     is_view: bool,
 ) -> VMContext {
     VMContext {
-        current_account_id: CONTRACT_ACCOUNT.into(),
+        current_account_id: CONTRACT_ACCOUNT.to_owned(),
         signer_account_id: predecessor_account_id.clone(),
         signer_account_pk: vec![0, 1, 2],
         predecessor_account_id,
@@ -64,16 +65,28 @@ pub fn to_nanos(num_days: u64) -> u64 {
     return num_days * 86400_000_000_000;
 }
 
+pub fn get_time_millis(ctx: &VMContext) -> u64 {
+    ctx.block_timestamp / 1_000_000
+}
+
+
 pub fn _new_kickstarter(
-    _context: VMContext,
+    _context: &VMContext,
     contract: &mut KatherineFundraising,
+    name: String,
+    slug: String,
+    start: EpochMillis,
+    end: EpochMillis,
 ) -> KickstarterIdJSON {
+    let START_TIMESTAMP = _context.block_timestamp;
     contract.create_kickstarter(
-        KICKSTARTER_NAME.into(),
-        KICKSTARTER_SLUG.into(),
+        name,
+        slug,
         OWNER_ACCOUNT.into(),
-        to_ts(START_TIME_IN_DAYS),      // open_timestamp
-        to_ts(START_TIME_IN_DAYS * 50), // close_timestamp
-        CONTRACT_ACCOUNT.into(),        // token_contract_address
+        start,
+        end,
+        KICKSTARTER_TOKEN_ADDRESS.to_owned(),
+        U128::from(1000),
+        U128::from(1500)
     )
 }
