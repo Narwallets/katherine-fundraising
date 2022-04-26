@@ -752,9 +752,12 @@ impl KatherineFundraising {
 #[cfg(test)]
 mod tests {
     use near_sdk::{testing_env, MockedBlockchain, VMContext};
+    use near_sdk::json_types::{U128, ValidAccountId};
     mod unit_test_utils;
     use unit_test_utils::*;
     use super::*;
+    use crate::constants::NEAR;
+    use std::convert::TryFrom;
 
     /// Get initial context for tests
     fn basic_context() -> VMContext {
@@ -856,7 +859,7 @@ mod tests {
     #[test]
     fn test_workflow() {
         use std::convert::TryInto;
-        let (_context, mut contract) = contract_only_setup();
+        let (mut _context, mut contract) = contract_only_setup();
         // TODO: move this to a function
         // First kickstarter
         _new_kickstarter(&_context, &mut contract, "Fist kickstarter".to_owned(),
@@ -887,7 +890,7 @@ mod tests {
 	        String::from("Goal 1"),
 	        BalanceJSON::from(100),
 	        start + 1_000 * 60 * 2,
-	        BalanceJSON::from(10000),
+	        BalanceJSON::from(200 * NEAR),
 	        start + 1_000 * 60 * 3,
 	        start + 1_000 * 60 * 4,
 	        10,
@@ -896,9 +899,9 @@ mod tests {
 		contract.create_goal(
 	        k.id,
 	        String::from("Goal 2"),
-	        BalanceJSON::from(100),
+	        BalanceJSON::from(200 * NEAR),
 	        start + 1_000 * 60 * 2,
-	        BalanceJSON::from(10000),
+	        BalanceJSON::from(300 * NEAR),
 	        start + 1_000 * 60 * 4,
 	        start + 1_000 * 60 * 5,
 	        10,
@@ -907,14 +910,28 @@ mod tests {
 		contract.create_goal(
 	        k2.id,
 	        String::from("Goal 1"),
-	        BalanceJSON::from(100),
+	        BalanceJSON::from(400 * NEAR),
 	        start + 1_000 * 60 * 2,
-	        BalanceJSON::from(10000),
+	        BalanceJSON::from(500 * NEAR),
 	        start + 1_000 * 60 * 4,
 	        start + 1_000 * 60 * 5,
 	        10,
 		);
+        // This references might be wrong
+        contract.internal_kickstarter_deposit(&(NEAR * 20), &mut k);
+        _context.predecessor_account_id = SUPPORTER_ACCOUNT.to_owned();
+        contract.withdraw(U128::from(NEAR), k.id.into());
+        contract.withdraw_all(k.id.into());
+        contract.internal_supporter_deposit(&SUPPORTER_ACCOUNT.to_owned(), &(200 * NEAR), &mut k);
 
+        let supported_projects = contract.get_supported_detailed_list(
+            ValidAccountId::try_from(SUPPORTER_ACCOUNT).unwrap(),
+            U128::from(NEAR * 2), 1, 10);
+        let kp = contract.get_kickstarters_to_process(0, 10);
+        contract.process_kickstarter(k.id);
+        contract.kickstarter_withdraw_excedent(k.id);
+
+        let kickstarter_detail = contract.get_project_details(k.id);
 
         let s = String::from(SUPPORTER_ACCOUNT);
         contract.internal_supporter_deposit(&s, &DEPOSIT_AMOUNT, &mut k);
