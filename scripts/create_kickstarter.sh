@@ -24,7 +24,7 @@ KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 3600000))
 KICKSTARTER_TOKEN_ADDRESS="token.pembrock.testnet"
 KICKSTARTER_ID="0"
 DEPOSITS_HARD_CAP="1000${YOCTO_UNITS}"
-MAX_TOKENS_TO_RELEASE="20${YOCTO_UNITS}"
+MAX_TOKENS_TO_RELEASE="1200${YOCTO_UNITS}"
 export NEAR_ENV=testnet
 
 
@@ -40,6 +40,11 @@ fi
 if [[ "$2" != "" ]]; then
     echo "Kickstarter open date from not to $2 milliseconds"
     KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + $2))
+fi
+
+if [[ "$3" != "" ]]; then
+    echo "Create kickstarter on contract: ${3}"
+    CONTRACT_NAME=$3
 fi
 
 # Goals
