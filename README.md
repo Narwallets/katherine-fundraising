@@ -335,6 +335,7 @@ struct KickstarterDetailsJSON {
     pub successful: Option<bool>,
     pub winner_goal_id: Option<u8>,
     pub enough_reward_tokens: bool,
+    pub available_reward_tokens: String,
 }
 ```
 

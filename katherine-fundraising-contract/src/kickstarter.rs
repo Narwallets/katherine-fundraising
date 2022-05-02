@@ -295,6 +295,7 @@ impl Kickstarter {
             successful: self.successful,
             winner_goal_id: self.winner_goal_id,
             enough_reward_tokens: self.enough_reward_tokens,
+            available_reward_tokens: BalanceJSON::from(self.available_reward_tokens),
         }
     }
 }
