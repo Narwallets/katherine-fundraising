@@ -107,16 +107,16 @@ impl KatherineFundraising {
             &self.metapool_contract_address,
             1,
             GAS_FOR_FT_TRANSFER,
-        )
-        // restore user balance on error
-        .then(ext_self_metapool::return_tokens_before_freeze_callback(
-            supporter_id,
-            kickstarter.id.into(),
-            BalanceJSON::from(amount_to_withdraw),
-            &env::current_account_id(),
-            0,
-            GAS_FOR_RESOLVE_TRANSFER
-        ));
+        ).then(
+            ext_self_metapool::return_tokens_before_freeze_callback(
+                supporter_id,
+                kickstarter.id.into(),
+                BalanceJSON::from(amount_to_withdraw),
+                &env::current_account_id(),
+                0,
+                GAS_FOR_RESOLVE_TRANSFER
+            )
+        );
     }
 
     /// This function is for the Supporter withdrawal of stNear tokens. The kickstarter.total_deposited
@@ -153,27 +153,28 @@ impl KatherineFundraising {
         kickstarter_id: KickstarterIdJSON,
         amount: BalanceJSON
     ) {
+        let amount = amount.0;
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
                 // TODO: FREE THE KICKSTARTER FROM THE SUPPORTER IF supporter.is_supporting(kickstarter) == False
-                log!("token transfer {}", u128::from(amount));
+                log!("token transfer {}", amount);
             },
             PromiseResult::Failed => {
                 log!(
                     "token transfer failed {}. recovering account state",
-                    amount.0
+                    amount
                 );
                 self.internal_restore_withdraw_before_freeze(
-                    amount.into(),
-                    kickstarter_id.into(),
+                    amount,
+                    kickstarter_id,
                     supporter_id.to_string()
                 );
             },
         };
     }
 
-    pub(crate) fn internal_restore_withdraw_before_freeze(
+    fn internal_restore_withdraw_before_freeze(
         &mut self,
         amount: Balance,
         kickstarter_id: KickstarterId,
@@ -224,16 +225,16 @@ impl KatherineFundraising {
             &self.metapool_contract_address,
             1,
             GAS_FOR_FT_TRANSFER,
-        )
-        // restore user balance on error
-        .then(ext_self_metapool::return_tokens_after_unfreeze_callback(
-            supporter_id,
-            kickstarter.id.into(),
-            BalanceJSON::from(amount_to_withdraw),
-            &env::current_account_id(),
-            0,
-            GAS_FOR_RESOLVE_TRANSFER
-        ));
+        ).then(
+            ext_self_metapool::return_tokens_after_unfreeze_callback(
+                supporter_id,
+                kickstarter.id.into(),
+                BalanceJSON::from(amount_to_withdraw),
+                &env::current_account_id(),
+                0,
+                GAS_FOR_RESOLVE_TRANSFER
+            )
+        );
     }
 
     /// This function is for the Supporter withdrawal of stNear tokens after the unfreeze.
@@ -272,20 +273,21 @@ impl KatherineFundraising {
         kickstarter_id: KickstarterIdJSON,
         amount: BalanceJSON
     ) {
+        let amount = amount.0;
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
                 // TODO: FREE THE KICKSTARTER FROM THE SUPPORTER IF supporter.is_supporting(kickstarter) == False
-                log!("token transfer {}", u128::from(amount));
+                log!("token transfer {}", amount);
             },
             PromiseResult::Failed => {
                 log!(
                     "token transfer failed {}. recovering account state",
-                    amount.0
+                    amount
                 );
                 self.internal_restore_withdraw_after_unfreeze(
-                    amount.into(),
-                    kickstarter_id.into(),
+                    amount,
+                    kickstarter_id,
                     supporter_id.to_string()
                 );
             },
@@ -342,17 +344,15 @@ impl KatherineFundraising {
             &kickstarter.token_contract_address,
             1,
             GAS_FOR_FT_TRANSFER,
-        )
-        // restore user balance on error
-        .then(
+        ).then(
             ext_self_kickstarter::return_tokens_from_kickstarter_callback(
                 convert_to_valid_account_id(supporter_id.clone()),
                 kickstarter_id,
                 requested_amount,
                 &env::current_account_id(),
                 0,
-                GAS_FOR_FT_TRANSFER,
-            ),
+                GAS_FOR_FT_TRANSFER
+            )
         );
     }
 
@@ -393,22 +393,23 @@ impl KatherineFundraising {
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     ) {
+        let amount = amount.0;
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
                 log!(
                     "CLAIM WITHDRAW: {} pTOKEN transfered to Supporter {}",
-                    u128::from(amount), account_id
+                    amount, account_id
                 );
             }
             PromiseResult::Failed => {
                 log!(
                     "Token transfer failed {}. recovering account state",
-                    amount.0
+                    amount
                 );
                 self.internal_restore_supporter_withdraw_from_kickstarter(
-                    amount.into(),
-                    kickstarter_id.into(),
+                    amount,
+                    kickstarter_id,
                     account_id,
                 )
             }
@@ -517,15 +518,16 @@ impl KatherineFundraising {
             &self.metapool_contract_address,
             0,
             GAS_FOR_GET_STNEAR,
-        )
-        .then(ext_self_kickstarter::activate_successful_kickstarter_after(
-            kickstarter_id,
-            goal_id,
-            //promise params
-            &env::current_account_id(),
-            NO_DEPOSIT,
-            GAS_FOR_GET_STNEAR,
-        ));
+        ).then(
+            ext_self_kickstarter::activate_successful_kickstarter_after(
+                kickstarter_id,
+                goal_id,
+                //promise params
+                &env::current_account_id(),
+                NO_DEPOSIT,
+                GAS_FOR_GET_STNEAR
+            )
+        );
     }
 
     // fn continues here after callback
@@ -580,19 +582,17 @@ impl KatherineFundraising {
         kickstarter_id: KickstarterId
     ) {
         ext_self_metapool::get_st_near_price(
-            //promise params
             &self.metapool_contract_address,
             NO_DEPOSIT,
-            GAS_FOR_GET_STNEAR,
-        )
-        .then(ext_self_kickstarter::set_stnear_price_at_unfreeze(
-            kickstarter_id,
-            //promise params
-            &env::current_account_id(),
-            NO_DEPOSIT,
-            GAS_FOR_GET_STNEAR,
-            // env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
-        ));
+            GAS_FOR_GET_STNEAR
+        ).then(
+            ext_self_kickstarter::set_stnear_price_at_unfreeze(
+                kickstarter_id,
+                &env::current_account_id(),
+                NO_DEPOSIT,
+                GAS_FOR_GET_STNEAR
+            )
+        );
     }
 
     // fn continues here after callback
@@ -649,5 +649,111 @@ impl KatherineFundraising {
             goal.cliff_timestamp,
             goal.end_timestamp
         )
+    }
+
+    pub(crate) fn internal_withdraw_excedent(&mut self, kickstarter: &Kickstarter, excedent: Balance) {
+        nep141_token::ft_transfer(
+            convert_to_valid_account_id(env::predecessor_account_id()),
+            excedent.into(),
+            Some("withdraw excedent from kickstarter".to_string()),
+            &kickstarter.token_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER,
+        ).then(
+            ext_self_kickstarter::kickstarter_withdraw_excedent_callback(
+                kickstarter.id,
+                excedent.into(),
+                &env::current_account_id(),
+                0,
+                GAS_FOR_FT_TRANSFER,
+            ),
+        );
+    }
+
+    #[private]
+    pub fn kickstarter_withdraw_excedent_callback(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128,
+    ) {
+        let amount = amount.0;
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!("token transfer {}", amount);
+            }
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering kickstarter state",
+                    amount
+                );
+                self.internal_restore_kickstarter_excedent_withdraw(
+                    amount,
+                    kickstarter_id,
+                )
+            }
+        }
+    }
+
+    fn internal_restore_kickstarter_excedent_withdraw(
+        &mut self,
+        amount: Balance,
+        kickstarter_id: KickstarterId,
+    ) {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.available_reward_tokens += amount;
+        self.kickstarters
+            .replace(kickstarter_id as u64, &kickstarter);
+    }
+
+    pub(crate) fn internal_withdraw_katherine_fee(&mut self, kickstarter: &mut Kickstarter, katherine_fee: Balance) {
+        kickstarter.katherine_fee = Some(0);
+        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
+        let katherine_fee = U128::from(katherine_fee);
+        nep141_token::ft_transfer(
+            convert_to_valid_account_id(env::predecessor_account_id()),
+            katherine_fee,
+            None,
+            &kickstarter.token_contract_address,
+            1,
+            GAS_FOR_FT_TRANSFER
+        ).then(
+            ext_self_kickstarter::withdraw_kickstarter_fee_callback(
+                kickstarter.id,
+                katherine_fee,
+                &env::current_account_id(),
+                0,
+                GAS_FOR_FT_TRANSFER
+            )
+        );
+    }
+
+    #[private]
+    pub fn withdraw_kickstarter_fee_callback(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128
+    ) {
+        let amount = amount.0;
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!(
+                    "WITHDRAW: {} pTOKEN withdraw from KickstarterId {} to Account {}",
+                    amount,
+                    kickstarter_id,
+                    env::predecessor_account_id(),
+                );
+            }
+            PromiseResult::Failed => {
+                log!(
+                    "token transfer failed {}. recovering kickstarter state",
+                    amount
+                );
+                let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+                kickstarter.katherine_fee = Some(amount);
+                self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
+            }
+        }
     }
 }

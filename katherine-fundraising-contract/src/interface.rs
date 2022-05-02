@@ -64,7 +64,7 @@ pub trait ExtSelfKickstarter {
     fn kickstarter_withdraw_callback(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        receiver_id: ValidAccountId,
     );
 
     fn kickstarter_withdraw_resolve_transfer(

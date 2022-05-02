@@ -40,7 +40,7 @@ impl KatherineFundraising {
             self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
 
             nep141_token::ft_transfer(
-                convert_to_valid_account_id(receiver_id),
+                convert_to_valid_account_id(receiver_id.clone()),
                 interest.into(),
                 None,
                 &self.metapool_contract_address,
@@ -53,7 +53,7 @@ impl KatherineFundraising {
                     convert_to_valid_account_id(receiver_id),
                     &env::current_account_id(),
                     0,
-                    env::prepaid_gas() - env::used_gas() - GAS_FOR_FT_TRANSFER
+                    GAS_FOR_RESOLVE_TRANSFER
                 )
             );
         } else {
@@ -82,7 +82,7 @@ impl KatherineFundraising {
                     "FAILED: {} stNEAR of interest not transfered. Recovering Kickstarter {} state.",
                     amount, kickstarter_id
                 );
-                self.restore_kickstarter_withdraw(amount, kickstarter_id.into())
+                self.restore_kickstarter_withdraw(amount, kickstarter_id)
             }
         }
     }
@@ -102,49 +102,57 @@ impl KatherineFundraising {
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     }
 
-
-
     pub(crate) fn kickstarter_withdraw_before_unfreeze(
         &mut self,
         kickstarter: &mut Kickstarter,
-        price_at_unfreeze: Balance,
         receiver_id: AccountId,
     ) {
         assert!(
             !kickstarter.funds_can_be_unfreezed(),
             "Unfreeze funds before interest withdraw!"
         );
-        // Get stNear price from metapool.
         ext_self_metapool::get_st_near_price(
             &self.metapool_contract_address,
             0,
             GAS_FOR_GET_STNEAR,
-        )
-        .then(ext_self_kickstarter::kickstarter_withdraw_callback(
-            kickstarter_id,
-            amount.into(),
-            &env::current_account_id(),
-            0,
-            env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
-        ));
+        ).then(
+            ext_self_kickstarter::kickstarter_withdraw_callback(
+                kickstarter.id.into(),
+                convert_to_valid_account_id(receiver_id),
+                &env::current_account_id(),
+                0,
+                GAS_FOR_INTEREST_WITHDRAW,
+            )
+        );
     }
 
     #[private]
     pub fn kickstarter_withdraw_callback(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
-        #[callback] st_near_price: U128,
+        receiver_id: ValidAccountId
     ) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        self.kickstarter_withdraw(&mut kickstarter, st_near_price.into(), amount.into());
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "This is a callback method"
+        );
+
+        let st_near_price = match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Failed => panic!("Meta Pool is not available!"),
+            PromiseResult::Successful(result) => {
+                let price = near_sdk::serde_json::from_slice::<U128>(&result).unwrap();
+                Balance::from(price)
+            },
+        };
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        self.kickstarter_withdraw(
+            &mut kickstarter,
+            st_near_price,
+            receiver_id.to_string()
+        );
     }
-
-
-
-    
-
-
 }
 
 impl Kickstarter {

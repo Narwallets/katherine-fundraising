@@ -16,6 +16,7 @@ pub const FIVE_TGAS: Gas = 5 * TGAS;
 pub const GAS_FOR_FT_TRANSFER: Gas = 47 * TGAS;
 pub const GAS_FOR_RESOLVE_TRANSFER: Gas = 11 * TGAS;
 pub const GAS_FOR_GET_STNEAR : Gas = 10 * TGAS;
+pub const GAS_FOR_INTEREST_WITHDRAW : Gas = 200 * TGAS;
 
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum Keys {
