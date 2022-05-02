@@ -82,16 +82,33 @@ impl KatherineFundraising {
                     "FAILED: {} stNEAR of interest not transfered. Recovering Kickstarter {} state.",
                     amount, kickstarter_id
                 );
-                self.internal_restore_kickstarter_withdraw(amount, kickstarter_id.into())
+                self.restore_kickstarter_withdraw(amount, kickstarter_id.into())
             }
         }
+    }
+
+    fn restore_kickstarter_withdraw(
+        &mut self,
+        amount: Balance,
+        kickstarter_id: KickstarterId
+    ) {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let entity = WithdrawEntity::Kickstarter;
+        let current_withdraw = kickstarter.get_stnear_withdraw(&entity);
+        assert!(current_withdraw >= amount, "Withdrawn amount is higher than expected");
+
+        let new_withdraw = current_withdraw - amount;
+        kickstarter.stnear_withdraw.insert(&entity, &new_withdraw);
+        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     }
 
 
 
     pub(crate) fn kickstarter_withdraw_before_unfreeze(
         &mut self,
-        kickstarter_id: KickstarterIdJSON,
+        kickstarter: &mut Kickstarter,
+        price_at_unfreeze: Balance,
+        receiver_id: AccountId,
     ) {
         assert!(
             !kickstarter.funds_can_be_unfreezed(),
@@ -127,20 +144,7 @@ impl KatherineFundraising {
 
     
 
-    pub(crate) fn internal_restore_kickstarter_withdraw(
-        &mut self,
-        amount: Balance,
-        kickstarter_id: KickstarterId
-    ){
-        let mut kickstarter = self
-        .kickstarters
-        .get(kickstarter_id.into())
-        .expect("kickstarter not found");
-        // WARNING: next 2 line
-        assert!(kickstarter.kickstarter_withdraw <= amount, "withdrawn amount is higher than expected");
-        kickstarter.kickstarter_withdraw -= amount;
-        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
-    }
+
 }
 
 impl Kickstarter {

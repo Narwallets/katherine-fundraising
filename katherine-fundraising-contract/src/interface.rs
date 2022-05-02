@@ -71,6 +71,7 @@ pub trait ExtSelfKickstarter {
         &mut self,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
+        receiver_id: ValidAccountId,
     );
 
     fn set_stnear_price_at_unfreeze(
