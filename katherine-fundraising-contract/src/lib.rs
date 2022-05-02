@@ -259,9 +259,10 @@ impl KatherineFundraising {
             "Kickstarter is unsuccessful!"
         );
 
+        let receiver_id = env::predecessor_account_id();
         if let Some(st_near_price) = kickstarter.stnear_price_at_unfreeze {
             // No need to get stnear price from metapool.
-            self.kickstarter_withdraw(&mut kickstarter, st_near_price);
+            self.kickstarter_withdraw(&mut kickstarter, st_near_price, receiver_id);
         } else {
             self.kickstarter_withdraw_before_unfreeze(&mut kickstarter);
         }
@@ -474,7 +475,6 @@ impl KatherineFundraising {
             token_contract_address,
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
-            kickstarter_withdraw: 0
         };
         kickstarter.assert_timestamps();
         self.kickstarters.push(&kickstarter);
@@ -539,7 +539,6 @@ impl KatherineFundraising {
             token_contract_address,
             available_reward_tokens: 0,
             locked_reward_tokens: 0,
-            kickstarter_withdraw: 0
         };
         kickstarter.assert_timestamps();
         self.kickstarters.replace(id as u64, &kickstarter);

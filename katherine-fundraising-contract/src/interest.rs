@@ -1,51 +1,90 @@
 use crate::*;
-use near_sdk::json_types::U128;
+use near_sdk::json_types::{U128, ValidAccountId};
 use near_sdk::{near_bindgen, AccountId};
 
 use crate::interface::*;
+
+/// Katherine Math:
+/// The following 5 functions describe the math to calculate the **Total stNear for Kickstarter**.
+/// 
+/// TSn - Total Near for Supporters
+/// TSst - Total stNear for Supporters
+/// TKn - Total Near for Kickstarter
+/// TKst - Total stNear for Kickstarter
+/// TDst - Total Deposited in stNear
+/// freeze - Price at freeze (near / stnear)
+/// unfreeze - Price at unfreeze
+/// 
+/// (1) TSn  =  TDst * freeze;
+/// (2) TSst =  TSn  / unfreeze;
+/// (3) TSst =  TDst * (freeze / unfreeze);
+/// (4) TKst =  TDst - TSst;
+/// (5) TKst =  TDst * [1 - (freeze / unfreeze)];
 
 #[near_bindgen]
 impl KatherineFundraising {
     pub(crate) fn kickstarter_withdraw(
         &mut self,
         kickstarter: &mut Kickstarter,
-        price_at_unfreeze: Balance
+        price_at_unfreeze: Balance,
+        receiver_id: AccountId,
     ) {
-        let price_at_freeze = kickstarter.stnear_price_at_freeze.expect("stnear price at freeze not defined");
-        assert!(price_at_unfreeze > price_at_freeze, "stNear price has not been updated, please wait!");
-        available_interest = kickstarter.calculate_interest(price_at_freeze, price_at_unfreeze);
+        let price_at_freeze = kickstarter.stnear_price_at_freeze.unwrap();
+        let entity = WithdrawEntity::Kickstarter;
+        let current_withdraw = kickstarter.get_stnear_withdraw(&entity);
+        let interest = kickstarter.calculate_interest(price_at_freeze, price_at_unfreeze, current_withdraw);
 
+        if interest > 0 {
+            let new_withdraw = current_withdraw + interest;
+            kickstarter.stnear_withdraw.insert(&entity, &new_withdraw);
+            self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
 
-
-
-
-
-        let price_increment = price_at_unfreeze - price_at_freeze;
-
-        let max_withdraw = (U256::from(price_increment) * U256::from(kickstarter.total_deposited)).as_u128() - kickstarter.kickstarter_withdraw;        
-        assert!(max_withdraw >= amount, "amount to withdraw exceeds balance");
-
-        if is_close(amount, max_withdraw) {
-            amount = max_withdraw;
+            nep141_token::ft_transfer(
+                convert_to_valid_account_id(receiver_id),
+                interest.into(),
+                None,
+                &self.metapool_contract_address,
+                0,
+                GAS_FOR_FT_TRANSFER
+            ).then(
+                ext_self_kickstarter::kickstarter_withdraw_resolve_transfer(
+                    kickstarter.id.into(), 
+                    interest.into(),
+                    convert_to_valid_account_id(receiver_id),
+                    &env::current_account_id(),
+                    0,
+                    env::prepaid_gas() - env::used_gas() - GAS_FOR_FT_TRANSFER
+                )
+            );
+        } else {
+            panic!("No more available interests for Kickstarter {}", kickstarter.id);
         }
-        kickstarter.kickstarter_withdraw += amount;
-        self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
-        nep141_token::ft_transfer_call(
-            convert_to_valid_account_id(env::predecessor_account_id()),
-            amount.into(),
-            None,
-            "kickstarter stnear withdraw".to_owned(),
-            &self.metapool_contract_address,
-            0,
-            GAS_FOR_FT_TRANSFER
-        )
-        .then(ext_self_kickstarter::kickstarter_withdraw_resolve_transfer(
-            kickstarter.id.into(), 
-            amount.into(),
-            &env::current_account_id(),
-            0,
-            env::prepaid_gas() - env::used_gas() - GAS_FOR_FT_TRANSFER
-        ));
+    }
+
+    #[private]
+    pub fn kickstarter_withdraw_resolve_transfer(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        amount: U128,
+        receiver_id: ValidAccountId,
+    ) {
+        let amount = amount.0;
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Successful(_) => {
+                log!(
+                    "INTEREST WITHDRAW: {} stNEAR transfer to {}",
+                    amount, receiver_id.to_string()
+                );
+            }
+            PromiseResult::Failed => {
+                log!(
+                    "FAILED: {} stNEAR of interest not transfered. Recovering Kickstarter {} state.",
+                    amount, kickstarter_id
+                );
+                self.internal_restore_kickstarter_withdraw(amount, kickstarter_id.into())
+            }
+        }
     }
 
 
@@ -84,26 +123,7 @@ impl KatherineFundraising {
         self.kickstarter_withdraw(&mut kickstarter, st_near_price.into(), amount.into());
     }
 
-    #[private]
-    pub fn kickstarter_withdraw_resolve_transfer(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON,
-        amount: U128,
-    ) {
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!("token transfer {}", u128::from(amount));
-            }
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering kickstarter state",
-                    amount.0
-                );
-                self.internal_restore_kickstarter_withdraw(amount.into(), kickstarter_id.into())
-            }
-        }
-    }
+
 
     
 
@@ -116,6 +136,7 @@ impl KatherineFundraising {
         .kickstarters
         .get(kickstarter_id.into())
         .expect("kickstarter not found");
+        // WARNING: next 2 line
         assert!(kickstarter.kickstarter_withdraw <= amount, "withdrawn amount is higher than expected");
         kickstarter.kickstarter_withdraw -= amount;
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
@@ -123,7 +144,20 @@ impl KatherineFundraising {
 }
 
 impl Kickstarter {
-    fn calculate_interest(&self, price_at_freeze: Balance, price_at_freeze: Balance) -> Balance {
-
+    /// Function (5) from the Katherine math.
+    fn calculate_interest(
+        &self,
+        price_at_freeze: Balance,
+        price_at_unfreeze: Balance,
+        current_withdraw: Balance
+    ) -> Balance {
+        assert!(price_at_unfreeze > price_at_freeze, "stNear price has not been updated, please wait!");
+        let interest = self.total_deposited
+            - proportional(
+                self.total_deposited,
+                price_at_freeze,
+                price_at_unfreeze
+            );
+        interest - current_withdraw
     }
 }
