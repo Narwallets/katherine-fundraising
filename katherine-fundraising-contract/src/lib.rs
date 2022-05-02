@@ -5,6 +5,7 @@ use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, Promi
 
 mod constants;
 mod internal;
+mod interest;
 mod metapool;
 mod types;
 
@@ -249,7 +250,6 @@ impl KatherineFundraising {
     pub fn withdraw_stnear_interest(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        amount: BalanceJSON,
     ) {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
         kickstarter.assert_kickstarter_owner();
@@ -259,61 +259,11 @@ impl KatherineFundraising {
             "Kickstarter is unsuccessful!"
         );
 
-        let amount: Balance = amount.into();
-
         if let Some(st_near_price) = kickstarter.stnear_price_at_unfreeze {
             // No need to get stnear price from metapool.
-            self.internal_kickstarter_withdraw(&mut kickstarter, st_near_price, amount);
+            self.kickstarter_withdraw(&mut kickstarter, st_near_price);
         } else {
-            assert!(
-                !kickstarter.funds_can_be_unfreezed(),
-                "Unfreeze funds before interest withdraw!"
-            );
-            // Get stNear price from metapool.
-            ext_self_metapool::get_st_near_price(
-                &self.metapool_contract_address,
-                0,
-                GAS_FOR_GET_STNEAR,
-            )
-            .then(ext_self_kickstarter::kickstarter_withdraw_callback(
-                kickstarter_id,
-                amount.into(),
-                &env::current_account_id(),
-                0,
-                env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
-            ));
-        }
-    }
-
-    #[private]
-    pub fn kickstarter_withdraw_callback(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON,
-        amount: U128,
-        #[callback] st_near_price: U128,
-    ) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        self.internal_kickstarter_withdraw(&mut kickstarter, st_near_price.into(), amount.into());
-    }
-
-    #[private]
-    pub fn kickstarter_withdraw_resolve_transfer(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON,
-        amount: U128,
-    ) {
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!("token transfer {}", u128::from(amount));
-            }
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering kickstarter state",
-                    amount.0
-                );
-                self.internal_restore_kickstarter_withdraw(amount.into(), kickstarter_id.into())
-            }
+            self.kickstarter_withdraw_before_unfreeze(&mut kickstarter);
         }
     }
 
