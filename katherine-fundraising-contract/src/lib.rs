@@ -1,12 +1,11 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet, Vector};
-use near_sdk::json_types::U128;
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult};
 
 mod constants;
 mod internal;
 mod interest;
-mod metapool;
+mod deposit;
 mod types;
 
 pub mod goal;
@@ -16,7 +15,7 @@ pub mod supporter;
 pub mod utils;
 pub use crate::utils::*;
 
-use crate::{constants::*, goal::*, interface::*, kickstarter::*, supporter::*, types::*};
+use crate::{constants::*, goal::*, kickstarter::*, supporter::*, types::*};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -25,7 +24,6 @@ pub struct KatherineFundraising {
     pub supporters: UnorderedMap<SupporterId, Supporter>,
     pub kickstarters: Vector<Kickstarter>,
     pub kickstarter_id_by_slug: UnorderedMap<String, KickstarterId>,
-    pub total_available: Balance,
 
     /// Min amount accepted for supporters
     pub min_deposit_amount: Balance,
@@ -55,7 +53,6 @@ impl KatherineFundraising {
             supporters: UnorderedMap::new(Keys::Supporters),
             kickstarters: Vector::new(Keys::Kickstarters),
             kickstarter_id_by_slug: UnorderedMap::new(Keys::KickstarterId),
-            total_available: 0,
             min_deposit_amount: Balance::from(min_deposit_amount),
             metapool_contract_address,
             katherine_fee_percent,
@@ -313,8 +310,8 @@ impl KatherineFundraising {
         self.assert_only_admin();
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         assert!(
-            kickstarter.get_winner_goal().end_timestamp < get_current_epoch_millis(),
-            "In order to withdraw the Katherine Fee all the pTOKENS need to be realeased."
+            kickstarter.close_timestamp < get_current_epoch_millis(),
+            "To withdraw the Katherine Fee the Kickstarter must be closed."
         );
         let katherine_fee: Balance = if kickstarter.successful == Some(true) {
             kickstarter.katherine_fee.unwrap().into()

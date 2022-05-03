@@ -44,7 +44,7 @@ impl KatherineFundraising {
                 interest.into(),
                 None,
                 &self.metapool_contract_address,
-                0,
+                1,
                 GAS_FOR_FT_TRANSFER
             ).then(
                 ext_self_kickstarter::kickstarter_withdraw_resolve_transfer(
