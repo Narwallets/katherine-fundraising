@@ -1,5 +1,3 @@
-use core::panic;
-
 use crate::*;
 use near_sdk::json_types::{ValidAccountId, U128};
 use near_sdk::{env, log, near_bindgen, PromiseOrValue};
@@ -19,7 +17,7 @@ impl FungibleTokenReceiver for KatherineFundraising {
             Err(_) => panic!("Invalid KickstarterId."),
         };
         let mut kickstarter: Kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        let amount = Balance::from(amount);
+        let amount = amount.0;
         if env::predecessor_account_id() == self.metapool_contract_address {
             // Deposit is in stNEAR.
             self.assert_min_deposit_amount(amount);

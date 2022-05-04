@@ -48,12 +48,11 @@ impl Keys {
     }
 }
 
-impl BorshIntoStorageKey for Keys {}
-
 #[derive(BorshSerialize, BorshDeserialize)]
 pub enum WithdrawEntity {
     Kickstarter,
     Supporter(SupporterId),
 }
 
+impl BorshIntoStorageKey for Keys {}
 impl BorshIntoStorageKey for WithdrawEntity {}

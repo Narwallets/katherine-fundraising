@@ -342,48 +342,21 @@ impl KatherineFundraising {
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
         let id = self.kickstarters.len() as KickstarterId;
-        let kickstarter = Kickstarter {
+        self.internal_create_kickstarter(
             id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
-            winner_goal_id: None,
-            katherine_fee: None,
-            total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
-            rewards_withdraw: UnorderedMap::new(
-                Keys::RewardWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            stnear_withdraw: UnorderedMap::new(
-                Keys::StnearWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            total_deposited: 0,
-            deposits_hard_cap: Balance::from(deposits_hard_cap),
-            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
-            enough_reward_tokens: false,
             owner_id,
-            active: true,
-            successful: None,
-            stnear_price_at_freeze: None,
-            stnear_price_at_unfreeze: None,
-            creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,
             token_contract_address,
-            available_reward_tokens: 0,
-            locked_reward_tokens: 0,
-        };
-        kickstarter.assert_timestamps();
-        self.kickstarters.push(&kickstarter);
-        self.kickstarter_id_by_slug
-            .insert(&kickstarter.slug, &kickstarter.id);
-        self.active_projects.insert(&kickstarter.id);
-        kickstarter.id.into()
+            deposits_hard_cap,
+            max_tokens_to_release_per_stnear
+        )
     }
 
-    #[allow(unused)]
     pub fn delete_kickstarter(&mut self, id: KickstarterId) {
-        panic!("Kickstarter must not be deleted!");
+        panic!("Kickstarter {} must not be deleted!", id);
     }
 
     pub fn update_kickstarter(
@@ -400,48 +373,45 @@ impl KatherineFundraising {
     ) {
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
-        let old_kickstarter = self.internal_get_kickstarter(id);
-        assert!(
-            old_kickstarter.open_timestamp >= get_current_epoch_millis(),
-            "Changes are not allow after the funding period started!"
-        );
-
-        let kickstarter = Kickstarter {
+        self.internal_update_kickstarter(
             id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
-            winner_goal_id: None,
-            katherine_fee: None,
-            total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
-            rewards_withdraw: UnorderedMap::new(
-                Keys::RewardWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            stnear_withdraw: UnorderedMap::new(
-                Keys::StnearWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            total_deposited: 0,
-            deposits_hard_cap: Balance::from(deposits_hard_cap),
-            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
-            enough_reward_tokens: false,
             owner_id,
-            active: true,
-            successful: None,
-            stnear_price_at_freeze: None,
-            stnear_price_at_unfreeze: None,
-            creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,
             token_contract_address,
-            available_reward_tokens: 0,
-            locked_reward_tokens: 0,
-        };
-        kickstarter.assert_timestamps();
-        self.kickstarters.replace(id as u64, &kickstarter);
-        self.kickstarter_id_by_slug.remove(&old_kickstarter.slug);
-        self.kickstarter_id_by_slug
-            .insert(&kickstarter.slug, &kickstarter.id);
+            deposits_hard_cap,
+            max_tokens_to_release_per_stnear
+        );
+    }
+
+    pub fn create_goal(
+        &mut self,
+        kickstarter_id: KickstarterId,
+        name: String,
+        desired_amount: BalanceJSON,
+        unfreeze_timestamp: EpochMillis,
+        tokens_to_release_per_stnear: BalanceJSON,
+        cliff_timestamp: EpochMillis,
+        end_timestamp: EpochMillis,
+    ) -> GoalId {
+        self.internal_create_goal(
+            kickstarter_id,
+            name,
+            desired_amount,
+            unfreeze_timestamp,
+            tokens_to_release_per_stnear,
+            cliff_timestamp,
+            end_timestamp,
+        )
+    }
+
+    pub fn delete_last_goal(
+        &mut self,
+        kickstarter_id: KickstarterId
+    ) {
+        self.internal_delete_last_goal(kickstarter_id);
     }
 
     /**********************/

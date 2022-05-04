@@ -9,13 +9,6 @@ use crate::interface::*;
 /*************/
 
 impl KatherineFundraising {
-    pub(crate) fn assert_unique_slug(&self, slug: &String) {
-        assert!(
-            self.kickstarter_id_by_slug.get(slug).is_none(),
-            "Slug already exists. Choose a different one!"
-        );
-    }
-
     #[inline]
     pub(crate) fn assert_only_admin(&self) {
         assert!(

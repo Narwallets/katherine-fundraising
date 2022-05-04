@@ -208,7 +208,6 @@ fn create_goal(
     tokens_to_release_per_stnear: String,
     cliff_timestamp: u64,
     end_timestamp: u64,
-    reward_installments: u32, // TODO: Deprecated field.
 ) -> u8
 ```
 

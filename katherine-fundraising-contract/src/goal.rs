@@ -34,7 +34,7 @@ impl Goal {
 
 #[near_bindgen]
 impl KatherineFundraising {
-    pub fn create_goal(
+    pub(crate) fn internal_create_goal(
         &mut self,
         kickstarter_id: KickstarterId,
         name: String,
@@ -43,7 +43,6 @@ impl KatherineFundraising {
         tokens_to_release_per_stnear: BalanceJSON,
         cliff_timestamp: EpochMillis,
         end_timestamp: EpochMillis,
-        reward_installments: u32, // TODO: Deprecated field.
     ) -> GoalId {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.assert_kickstarter_owner();
@@ -92,7 +91,7 @@ impl KatherineFundraising {
         goal.id
     }
 
-    pub fn delete_last_goal(&mut self, kickstarter_id: KickstarterId) {
+    pub(crate) fn internal_delete_last_goal(&mut self, kickstarter_id: KickstarterId) {
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.assert_kickstarter_owner();
         kickstarter.assert_goal_status();
