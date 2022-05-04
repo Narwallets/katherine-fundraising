@@ -76,7 +76,6 @@ impl KatherineFundraising {
 
         // Update Supporter.
         let mut supporter = self.internal_get_supporter(&supporter_id);
-        supporter.total_in_deposits += amount;
         supporter.supported_projects.insert(&kickstarter.id);
         self.supporters.insert(&supporter_id, &supporter);
     }

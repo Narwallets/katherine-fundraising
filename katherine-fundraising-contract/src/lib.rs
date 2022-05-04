@@ -2,11 +2,13 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet, Vector};
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult};
 
+mod claim;
 mod constants;
-mod internal;
-mod interest;
 mod deposit;
+mod interest;
+mod internal;
 mod types;
+mod withdraw;
 
 pub mod goal;
 pub mod interface;
