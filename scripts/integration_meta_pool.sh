@@ -141,6 +141,15 @@ NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_projects '{
 echo "------------------ BUGS: 🪳 🐞 🕷"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
 
+echo "------------------ Checking kickstarter stNear balance 🥚"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
+echo "------------------ Withdraw stNear interest before unfreeze 🐣"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_stnear_interest '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KICKSTARTER_OWNER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter stNear balance 🐥"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Second Kickstarter"
 
 # Create a Kickstarter project
@@ -257,6 +266,15 @@ NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_i
 echo "------------------ FRONTEND: Supporter Dashboard AFTER REWARD BEING CLAIMED"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
 
+echo "------------------ Checking kickstarter stNear balance 🥚"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
+echo "------------------ Withdraw stNear interest before unfreeze 🐣"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_stnear_interest '{"kickstarter_id": 0}' --accountId $KICKSTARTER_OWNER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter stNear balance 🐥"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
 echo " >>>>>>>>>>>>>>>>>>> Kickstarter #2"
 echo "------------------ CLAIM ALL reward tokens 🔮"
 NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS claim_all_kickstarter_tokens '{"kickstarter_id": 1}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
@@ -275,6 +293,15 @@ NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_i
 
 echo "------------------ FRONTEND: Supporter Dashboard AFTER REWARD BEING CLAIMED"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
+
+echo "------------------ Checking kickstarter stNear balance 🥚"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
+echo "------------------ Withdraw stNear interest before unfreeze 🐣"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_stnear_interest '{"kickstarter_id": 1}' --accountId $KICKSTARTER_OWNER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter stNear balance 🐥"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
 
 echo "LAST BUT NOT LEAST 🤘"
 echo "------------------ Checking Katherine Owner pToken balance"
