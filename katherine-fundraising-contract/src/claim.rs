@@ -90,6 +90,7 @@ impl KatherineFundraising {
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     }
 
+    /// The contrapart in the withdraw for this function is **remove_from_supported_withdraw**.
     fn remove_from_supported_claim(
         &mut self,
         amount_to_withdraw: Balance,
@@ -117,11 +118,12 @@ impl KatherineFundraising {
     #[private]
     pub fn return_tokens_from_kickstarter_callback(
         &mut self,
-        supporter_id: SupporterId,
+        supporter_id: SupporterIdJSON,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     ) {
         let amount = amount.0;
+        let supporter_id = supporter_id.to_string();
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
@@ -167,7 +169,7 @@ impl KatherineFundraising {
         }
         self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
 
-        // If the withdraw fail, add the Kickstarter back to the supported projects.
+        // If the claim fails, add the Kickstarter back to the supported projects.
         let mut supporter = self.internal_get_supporter(&supporter_id);
         if !supporter.supported_projects.contains(&kickstarter.id) {
             supporter.supported_projects.insert(&kickstarter.id);
@@ -211,12 +213,15 @@ impl KatherineFundraising {
         match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
-                log!("token transfer {}", amount);
+                log!(
+                    "CLAIM: {} pTOKEN transfered to Kickstarter {}",
+                    amount, kickstarter_id
+                );
             }
             PromiseResult::Failed => {
                 log!(
-                    "token transfer failed {}. recovering kickstarter state",
-                    amount
+                    "FAILED: {} pToken not transfered. Recovering Kickstarter {} state.",
+                    amount, kickstarter_id
                 );
                 self.internal_restore_kickstarter_excedent_withdraw(
                     amount,
@@ -278,7 +283,7 @@ impl KatherineFundraising {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(_) => {
                 log!(
-                    "WITHDRAW: {} pTOKEN withdraw from KickstarterId {} to Account {}",
+                    "WITHDRAW: {} pToken withdraw from KickstarterId {} to Account {}",
                     amount,
                     kickstarter_id,
                     env::predecessor_account_id(),
@@ -286,8 +291,8 @@ impl KatherineFundraising {
             }
             PromiseResult::Failed => {
                 log!(
-                    "token transfer failed {}. recovering kickstarter state",
-                    amount
+                    "FAILED: {} pToken not transfered. Recovering Kickstarter {} state.",
+                    amount, kickstarter_id
                 );
                 let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
                 kickstarter.katherine_fee = Some(amount);

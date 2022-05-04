@@ -203,6 +203,7 @@ impl KatherineFundraising {
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     }
 
+    /// The contrapart in the claim for this function is **remove_from_supported_claim**.
     fn remove_from_supported_withdraw(
         &mut self,
         kickstarter: &mut Kickstarter,
@@ -268,7 +269,7 @@ impl KatherineFundraising {
         kickstarter.stnear_withdraw.insert(&entity, &new_withdraw);
         self.kickstarters.replace(kickstarter_id as u64, &kickstarter);
 
-        // If the withdraw fail, add the Kickstarter back to the supported projects.
+        // If the withdraw fails, add the Kickstarter back to the supported projects.
         if supporter_withdraw == deposit {
             let mut supporter = self.internal_get_supporter(&supporter_id);
             supporter.supported_projects.insert(&kickstarter.id);

@@ -56,7 +56,7 @@ pub trait ExtSelfKickstarter {
 
     fn return_tokens_from_kickstarter_callback(
         &mut self,
-        account_id: ValidAccountId,
+        supporter_id: ValidAccountId,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     );

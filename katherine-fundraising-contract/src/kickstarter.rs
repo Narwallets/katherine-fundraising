@@ -9,7 +9,7 @@ pub struct Kickstarter {
     pub id: KickstarterId,
     // Name of the kickstarter project
     pub name: String,
-    // TODO: documentation for slug
+    // The slug is a unique string for the kickstarter to recover the id.
     pub slug: String,
     pub goals: Vector<Goal>,
     pub owner_id: AccountId,
@@ -27,7 +27,7 @@ pub struct Kickstarter {
 
     // Important Note: the kickstarter.total_deposited variable will only increase or decrease within
     // the funding period. After the project evaluation, this value will stay CONSTANT to store a 
-    // record of the achieved funds, even after all stNear will be withdraw from the kickstarter.
+    // record of the achieved funds, even after all stNear have been withdraw from the kickstarter.
     pub total_deposited: Balance,
     // Total deposited hard cap. Supporters cannot deposit more than.
     pub deposits_hard_cap: Balance,
@@ -50,7 +50,6 @@ pub struct Kickstarter {
     pub token_contract_address: AccountId,
     // Total available and locked deposited tokens by the Kickstarter.
     pub available_reward_tokens: Balance,
-    pub locked_reward_tokens: Balance,
 }
 
 impl Kickstarter {
@@ -326,7 +325,6 @@ impl KatherineFundraising {
             close_timestamp,
             token_contract_address,
             available_reward_tokens: 0,
-            locked_reward_tokens: 0,
         };
         kickstarter.assert_timestamps();
         self.kickstarters.push(&kickstarter);
@@ -383,7 +381,6 @@ impl KatherineFundraising {
             close_timestamp,
             token_contract_address,
             available_reward_tokens: 0,
-            locked_reward_tokens: 0,
         };
         kickstarter.assert_timestamps();
         self.kickstarters.replace(id as u64, &kickstarter);
