@@ -66,7 +66,7 @@ impl Kickstarter {
         assert_eq!(
             env::predecessor_account_id(),
             self.owner_id,
-            "Only allowed for admin."
+            "Only allowed for Kickstarter owner."
         );
     }
 
@@ -336,7 +336,7 @@ impl KatherineFundraising {
 
     pub(crate) fn internal_update_kickstarter(
         &mut self,
-        id: KickstarterId,
+        old_kickstarter: Kickstarter,
         name: String,
         slug: String,
         owner_id: AccountId,
@@ -346,12 +346,12 @@ impl KatherineFundraising {
         deposits_hard_cap: BalanceJSON,
         max_tokens_to_release_per_stnear: BalanceJSON
     ) {
-        let old_kickstarter = self.internal_get_kickstarter(id);
         assert!(
             old_kickstarter.open_timestamp >= get_current_epoch_millis(),
             "Changes are not allow after the funding period started!"
         );
 
+        let id = old_kickstarter.id;
         let kickstarter = Kickstarter {
             id,
             name,

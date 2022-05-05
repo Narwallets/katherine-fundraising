@@ -36,7 +36,7 @@ impl Goal {
 impl KatherineFundraising {
     pub(crate) fn internal_create_goal(
         &mut self,
-        kickstarter_id: KickstarterId,
+        kickstarter: &mut Kickstarter,
         name: String,
         desired_amount: BalanceJSON,
         unfreeze_timestamp: EpochMillis,
@@ -44,8 +44,6 @@ impl KatherineFundraising {
         cliff_timestamp: EpochMillis,
         end_timestamp: EpochMillis,
     ) -> GoalId {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        kickstarter.assert_kickstarter_owner();
         kickstarter.assert_goal_status();
         kickstarter.assert_before_funding_period();
         kickstarter.assert_number_of_goals(self.max_goals_per_kickstarter);
@@ -87,17 +85,15 @@ impl KatherineFundraising {
         };
         kickstarter.goals.push(&goal);
         self.kickstarters
-            .replace(kickstarter_id as u64, &kickstarter);
+            .replace(kickstarter.id as u64, &kickstarter);
         goal.id
     }
 
-    pub(crate) fn internal_delete_last_goal(&mut self, kickstarter_id: KickstarterId) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        kickstarter.assert_kickstarter_owner();
+    pub(crate) fn internal_delete_last_goal(&mut self, kickstarter: &mut Kickstarter) {
         kickstarter.assert_goal_status();
         kickstarter.assert_before_funding_period();
         kickstarter.goals.pop();
         self.kickstarters
-            .replace(kickstarter_id as u64, &kickstarter);
+            .replace(kickstarter.id as u64, &kickstarter);
     }
 }

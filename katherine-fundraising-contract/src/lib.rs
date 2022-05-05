@@ -1,5 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet, Vector};
+use near_sdk::json_types::ValidAccountId;
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult};
 
 mod claim;
@@ -351,13 +352,13 @@ impl KatherineFundraising {
         )
     }
 
-    pub fn delete_kickstarter(&mut self, id: KickstarterId) {
+    pub fn delete_kickstarter(&mut self, id: KickstarterIdJSON) {
         panic!("Kickstarter {} must not be deleted!", id);
     }
 
     pub fn update_kickstarter(
         &mut self,
-        id: KickstarterId,
+        id: KickstarterIdJSON,
         name: String,
         slug: String,
         owner_id: AccountId,
@@ -367,10 +368,15 @@ impl KatherineFundraising {
         deposits_hard_cap: BalanceJSON,
         max_tokens_to_release_per_stnear: BalanceJSON,
     ) {
-        self.assert_only_admin();
+        let old_kickstarter = self.internal_get_kickstarter(id);
+        let goal_creator_id = env::predecessor_account_id();
+        assert!(
+            self.owner_id == goal_creator_id || old_kickstarter.owner_id == goal_creator_id,
+            "A Kickstarter could only be updated by admin, or the Kickstarter owner."
+        );
         self.assert_unique_slug(&slug);
         self.internal_update_kickstarter(
-            id,
+            old_kickstarter,
             name,
             slug,
             owner_id,
@@ -382,9 +388,21 @@ impl KatherineFundraising {
         );
     }
 
+    pub fn change_kickstarter_owner(
+        &mut self,
+        kickstarter_id: KickstarterIdJSON,
+        new_owner_id: ValidAccountId
+    ) {
+        self.assert_only_admin();
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        kickstarter.owner_id = new_owner_id.to_string();
+        self.kickstarters
+            .replace(kickstarter.id as u64, &kickstarter);
+    }
+
     pub fn create_goal(
         &mut self,
-        kickstarter_id: KickstarterId,
+        kickstarter_id: KickstarterIdJSON,
         name: String,
         desired_amount: BalanceJSON,
         unfreeze_timestamp: EpochMillis,
@@ -392,8 +410,14 @@ impl KatherineFundraising {
         cliff_timestamp: EpochMillis,
         end_timestamp: EpochMillis,
     ) -> GoalId {
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let goal_creator_id = env::predecessor_account_id();
+        assert!(
+            self.owner_id == goal_creator_id || kickstarter.owner_id == goal_creator_id,
+            "A goal could only be created by admin, or the Kickstarter owner."
+        );
         self.internal_create_goal(
-            kickstarter_id,
+            &mut kickstarter,
             name,
             desired_amount,
             unfreeze_timestamp,
@@ -405,9 +429,15 @@ impl KatherineFundraising {
 
     pub fn delete_last_goal(
         &mut self,
-        kickstarter_id: KickstarterId
+        kickstarter_id: KickstarterIdJSON
     ) {
-        self.internal_delete_last_goal(kickstarter_id);
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let goal_creator_id = env::predecessor_account_id();
+        assert!(
+            self.owner_id == goal_creator_id || kickstarter.owner_id == goal_creator_id,
+            "A goal could only be created by admin, or the Kickstarter owner."
+        );
+        self.internal_delete_last_goal(&mut kickstarter);
     }
 
     /**********************/
