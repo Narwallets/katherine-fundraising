@@ -639,16 +639,18 @@ impl KatherineFundraising {
         kickstarter: &Kickstarter,
     ) -> Balance {
         let goal = kickstarter.get_winner_goal();
-        let total_supporter_rewards = self.internal_get_supporter_rewards(
-            &supporter_id,
-            &kickstarter,
+        let deposit = kickstarter.get_deposit(&supporter_id);
+
+        let total_supporter_rewards = proportional(
+            deposit,
             goal.tokens_to_release_per_stnear,
+            NEAR
         );
         get_linear_release_proportion(
             total_supporter_rewards,
             goal.cliff_timestamp,
             goal.end_timestamp
-        )
+        ) - kickstarter.get_rewards_withdraw(&supporter_id)
     }
 
     pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &mut Kickstarter, st_near_price: Balance, _amount: Balance) {
