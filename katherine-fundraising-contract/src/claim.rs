@@ -184,10 +184,19 @@ impl KatherineFundraising {
 
 #[near_bindgen]
 impl KatherineFundraising {
-    pub(crate) fn internal_withdraw_excedent(&mut self, kickstarter: &Kickstarter, excedent: Balance) {
+    pub(crate) fn internal_withdraw_excedent(
+        &mut self,
+        kickstarter: &mut Kickstarter,
+        excedent: Balance
+    ) {
+        kickstarter.available_reward_tokens -= excedent;
+        self.kickstarters
+            .replace(kickstarter.id as u64, &kickstarter);
+
+        let excedent = BalanceJSON::from(excedent);
         nep141_token::ft_transfer(
             convert_to_valid_account_id(env::predecessor_account_id()),
-            excedent.into(),
+            excedent,
             Some("withdraw excedent from kickstarter".to_string()),
             &kickstarter.token_contract_address,
             1,
@@ -195,7 +204,7 @@ impl KatherineFundraising {
         ).then(
             ext_self_kickstarter::kickstarter_withdraw_excedent_callback(
                 kickstarter.id,
-                excedent.into(),
+                excedent,
                 &env::current_account_id(),
                 0,
                 GAS_FOR_FT_TRANSFER,

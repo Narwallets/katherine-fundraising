@@ -268,7 +268,7 @@ impl KatherineFundraising {
     }
 
     pub fn kickstarter_withdraw_excedent(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.assert_kickstarter_owner();
         assert!(
             kickstarter.close_timestamp < get_current_epoch_millis(),
@@ -291,13 +291,7 @@ impl KatherineFundraising {
         };
 
         if excedent > 0 {
-            log!(
-                "WITHDRAW: {} pTOKEN withdraw from KickstarterId {} to Account {}",
-                excedent,
-                kickstarter_id,
-                kickstarter.owner_id,
-            );
-            self.internal_withdraw_excedent(&kickstarter, excedent);
+            self.internal_withdraw_excedent(&mut kickstarter, excedent);
         } else {
             panic!("No remaining excedent pTOKEN to withdraw!");
         }
