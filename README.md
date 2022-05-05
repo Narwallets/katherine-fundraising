@@ -21,6 +21,7 @@ These are the functions to interact with Katherine.
 **Katherine admin**:
 - [create_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#create_kickstarter)
 - [update_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#update_kickstarter)
+- [change_kickstarter_owner](https://github.com/Narwallets/katherine-fundraising/tree/dev#change_kickstarter_owner)
 
 **Public**:
 - [get_kickstarter_id_from_slug](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_id_from_slug)
@@ -95,6 +96,12 @@ These are the functions to interact with Katherine.
 - [get_supporter_total_rewards](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_total_rewards)
 - [get_supporter_available_rewards](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_available_rewards)
 
+**Katherine admin**:
+
+- [withdraw_katherine_fee](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_katherine_fee)
+
+
+
 ### 9. Allow the Supporter to withdraw stNear
 
 **Robot**:
@@ -147,6 +154,17 @@ fn update_kickstarter(
     deposits_hard_cap: String,
     max_tokens_to_release_per_stnear: String,
 )
+```
+
+### **change_kickstarter_owner**
+
+Update the Kickstarter owner at any time.
+
+```rust
+pub fn change_kickstarter_owner(
+        kickstarter_id: u32,
+        new_owner_id: String
+    )
 ```
 
 ### **get_kickstarter_id_from_slug**
@@ -508,6 +526,16 @@ fn get_supporter_available_rewards(
     supporter_id: String,
     kickstarter_id: u32,
 ) -> Option<String>
+```
+
+### **withdraw_katherine_fee**
+
+After the evaluation, the Katherine admin is capable or returning the Katherine Fee, denominated in the project token.
+
+```rust
+fn withdraw_katherine_fee(
+    kickstarter_id: u32,
+)
 ```
 
 Contract Logic:
