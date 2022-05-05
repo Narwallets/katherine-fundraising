@@ -100,8 +100,6 @@ These are the functions to interact with Katherine.
 
 - [withdraw_katherine_fee](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw_katherine_fee)
 
-
-
 ### 9. Allow the Supporter to withdraw stNear
 
 **Robot**:
@@ -158,7 +156,7 @@ fn update_kickstarter(
 
 ### **change_kickstarter_owner**
 
-Update the Kickstarter owner at any time.
+Update the Kickstarter owner at any time. Only for the Katherine owner.
 
 ```rust
 pub fn change_kickstarter_owner(
