@@ -1,12 +1,14 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet, Vector};
-use near_sdk::json_types::U128;
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult};
 
+mod claim;
 mod constants;
+mod deposit;
+mod interest;
 mod internal;
-mod metapool;
 mod types;
+mod withdraw;
 
 pub mod goal;
 pub mod interface;
@@ -15,7 +17,7 @@ pub mod supporter;
 pub mod utils;
 pub use crate::utils::*;
 
-use crate::{constants::*, goal::*, interface::*, kickstarter::*, supporter::*, types::*};
+use crate::{constants::*, goal::*, kickstarter::*, supporter::*, types::*};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -24,7 +26,6 @@ pub struct KatherineFundraising {
     pub supporters: UnorderedMap<SupporterId, Supporter>,
     pub kickstarters: Vector<Kickstarter>,
     pub kickstarter_id_by_slug: UnorderedMap<String, KickstarterId>,
-    pub total_available: Balance,
 
     /// Min amount accepted for supporters
     pub min_deposit_amount: Balance,
@@ -54,7 +55,6 @@ impl KatherineFundraising {
             supporters: UnorderedMap::new(Keys::Supporters),
             kickstarters: Vector::new(Keys::Kickstarters),
             kickstarter_id_by_slug: UnorderedMap::new(Keys::KickstarterId),
-            total_available: 0,
             min_deposit_amount: Balance::from(min_deposit_amount),
             metapool_contract_address,
             katherine_fee_percent,
@@ -165,7 +165,7 @@ impl KatherineFundraising {
 
     pub fn withdraw_all(&mut self, kickstarter_id: KickstarterIdJSON) {
         let supporter_id = convert_to_valid_account_id(env::predecessor_account_id());
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if !kickstarter.is_within_funding_period() {
             kickstarter.assert_funds_must_be_unfreezed();
         }
@@ -181,7 +181,7 @@ impl KatherineFundraising {
             "gas required {}",
             min_prepaid_gas
         );
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         let amount = Balance::from(amount);
         assert!(
             amount > 0,
@@ -238,7 +238,7 @@ impl KatherineFundraising {
         kickstarter_id: KickstarterIdJSON,
     ) {
         let account_id = env::predecessor_account_id();
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         self.internal_claim_kickstarter_tokens(amount, &mut kickstarter, account_id);
     }
 
@@ -249,9 +249,8 @@ impl KatherineFundraising {
     pub fn withdraw_stnear_interest(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        amount: BalanceJSON,
     ) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.assert_kickstarter_owner();
         assert_eq!(
             kickstarter.successful,
@@ -259,66 +258,17 @@ impl KatherineFundraising {
             "Kickstarter is unsuccessful!"
         );
 
-        let amount: Balance = amount.into();
-
+        let receiver_id = env::predecessor_account_id();
         if let Some(st_near_price) = kickstarter.stnear_price_at_unfreeze {
             // No need to get stnear price from metapool.
-            self.internal_kickstarter_withdraw(&mut kickstarter, st_near_price, amount);
+            self.kickstarter_withdraw(&mut kickstarter, st_near_price, receiver_id);
         } else {
-            assert!(
-                !kickstarter.funds_can_be_unfreezed(),
-                "Unfreeze funds before interest withdraw!"
-            );
-            // Get stNear price from metapool.
-            ext_self_metapool::get_st_near_price(
-                &self.metapool_contract_address,
-                0,
-                GAS_FOR_GET_STNEAR,
-            )
-            .then(ext_self_kickstarter::kickstarter_withdraw_callback(
-                kickstarter_id,
-                amount.into(),
-                &env::current_account_id(),
-                0,
-                env::prepaid_gas() - env::used_gas() - GAS_FOR_GET_STNEAR,
-            ));
-        }
-    }
-
-    #[private]
-    pub fn kickstarter_withdraw_callback(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON,
-        amount: U128,
-        #[callback] st_near_price: U128,
-    ) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
-        self.internal_kickstarter_withdraw(&mut kickstarter, st_near_price.into(), amount.into());
-    }
-
-    #[private]
-    pub fn kickstarter_withdraw_resolve_transfer(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON,
-        amount: U128,
-    ) {
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!("token transfer {}", u128::from(amount));
-            }
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering kickstarter state",
-                    amount.0
-                );
-                self.internal_restore_kickstarter_withdraw(amount.into(), kickstarter_id.into())
-            }
+            self.kickstarter_withdraw_before_unfreeze(&mut kickstarter, receiver_id);
         }
     }
 
     pub fn kickstarter_withdraw_excedent(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         kickstarter.assert_kickstarter_owner();
         assert!(
             kickstarter.close_timestamp < get_current_epoch_millis(),
@@ -341,68 +291,10 @@ impl KatherineFundraising {
         };
 
         if excedent > 0 {
-            log!(
-                "WITHDRAW: {} pTOKEN withdraw from KickstarterId {} to Account {}",
-                excedent,
-                kickstarter_id,
-                kickstarter.owner_id,
-            );
-            nep141_token::ft_transfer(
-                convert_to_valid_account_id(env::predecessor_account_id()),
-                excedent.into(),
-                Some("withdraw excedent from kickstarter".to_string()),
-                &kickstarter.token_contract_address,
-                1,
-                GAS_FOR_FT_TRANSFER,
-            )
-            // restore user balance on error
-            .then(
-                ext_self_kickstarter::kickstarter_withdraw_excedent_callback(
-                    kickstarter_id,
-                    excedent.into(),
-                    &env::current_account_id(),
-                    0,
-                    GAS_FOR_FT_TRANSFER,
-                ),
-            );
+            self.internal_withdraw_excedent(&mut kickstarter, excedent);
         } else {
             panic!("No remaining excedent pTOKEN to withdraw!");
         }
-    }
-
-    #[private]
-    pub fn kickstarter_withdraw_excedent_callback(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON,
-        amount: U128,
-    ) {
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!("token transfer {}", u128::from(amount));
-            }
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering kickstarter state",
-                    amount.0
-                );
-                self.internal_restore_kickstarter_excedent_withdraw(
-                    amount.into(),
-                    kickstarter_id.into(),
-                )
-            }
-        }
-    }
-
-    pub(crate) fn internal_restore_kickstarter_excedent_withdraw(
-        &mut self,
-        amount: Balance,
-        kickstarter_id: KickstarterId,
-    ) {
-        let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-        kickstarter.available_reward_tokens += amount;
-        self.kickstarters
-            .replace(kickstarter_id as u64, &kickstarter);
     }
 
     /***********************/
@@ -414,8 +306,8 @@ impl KatherineFundraising {
         self.assert_only_admin();
         let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
         assert!(
-            kickstarter.get_winner_goal().end_timestamp < get_current_epoch_millis(),
-            "In order to withdraw the Katherine Fee all the pTOKENS need to be realeased."
+            kickstarter.close_timestamp < get_current_epoch_millis(),
+            "To withdraw the Katherine Fee the Kickstarter must be closed."
         );
         let katherine_fee: Balance = if kickstarter.successful == Some(true) {
             kickstarter.katherine_fee.unwrap().into()
@@ -424,57 +316,9 @@ impl KatherineFundraising {
         };
 
         if katherine_fee > 0 {
-            kickstarter.katherine_fee = Some(0);
-            self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
-            let katherine_fee = U128::from(katherine_fee);
-            nep141_token::ft_transfer(
-                convert_to_valid_account_id(env::predecessor_account_id()),
-                katherine_fee,
-                None,
-                &kickstarter.token_contract_address,
-                1,
-                GAS_FOR_FT_TRANSFER,
-            )
-            // restore user balance on error
-            .then(
-                ext_self_kickstarter::withdraw_kickstarter_fee_callback(
-                    kickstarter_id,
-                    katherine_fee,
-                    &env::current_account_id(),
-                    0,
-                    GAS_FOR_FT_TRANSFER,
-                )
-            );
+            self.internal_withdraw_katherine_fee(&mut kickstarter, katherine_fee);
         } else {
             panic!("Katherine fee is 0.");
-        }
-    }
-
-    #[private]
-    pub fn withdraw_kickstarter_fee_callback(
-        &mut self,
-        kickstarter_id: KickstarterIdJSON,
-        amount: U128
-    ){
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(_) => {
-                log!(
-                    "WITHDRAW: {} pTOKEN withdraw from KickstarterId {} to Account {}",
-                    amount.0,
-                    kickstarter_id,
-                    env::predecessor_account_id(),
-                );
-            }
-            PromiseResult::Failed => {
-                log!(
-                    "token transfer failed {}. recovering kickstarter state",
-                    amount.0
-                );
-                let mut kickstarter = self.internal_get_kickstarter(kickstarter_id);
-                kickstarter.katherine_fee = Some(u128::from(amount));
-                self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
-            }
         }
     }
 
@@ -494,49 +338,21 @@ impl KatherineFundraising {
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
         let id = self.kickstarters.len() as KickstarterId;
-        let kickstarter = Kickstarter {
+        self.internal_create_kickstarter(
             id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
-            winner_goal_id: None,
-            katherine_fee: None,
-            total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
-            rewards_withdraw: UnorderedMap::new(
-                Keys::RewardWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            stnear_withdraw: UnorderedMap::new(
-                Keys::StnearWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            total_deposited: 0,
-            deposits_hard_cap: Balance::from(deposits_hard_cap),
-            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
-            enough_reward_tokens: false,
             owner_id,
-            active: true,
-            successful: None,
-            stnear_price_at_freeze: None,
-            stnear_price_at_unfreeze: None,
-            creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,
             token_contract_address,
-            available_reward_tokens: 0,
-            locked_reward_tokens: 0,
-            kickstarter_withdraw: 0
-        };
-        kickstarter.assert_timestamps();
-        self.kickstarters.push(&kickstarter);
-        self.kickstarter_id_by_slug
-            .insert(&kickstarter.slug, &kickstarter.id);
-        self.active_projects.insert(&kickstarter.id);
-        kickstarter.id.into()
+            deposits_hard_cap,
+            max_tokens_to_release_per_stnear
+        )
     }
 
-    #[allow(unused)]
     pub fn delete_kickstarter(&mut self, id: KickstarterId) {
-        panic!("Kickstarter must not be deleted!");
+        panic!("Kickstarter {} must not be deleted!", id);
     }
 
     pub fn update_kickstarter(
@@ -553,49 +369,45 @@ impl KatherineFundraising {
     ) {
         self.assert_only_admin();
         self.assert_unique_slug(&slug);
-        let old_kickstarter = self.internal_get_kickstarter(id);
-        assert!(
-            old_kickstarter.open_timestamp >= get_current_epoch_millis(),
-            "Changes are not allow after the funding period started!"
-        );
-
-        let kickstarter = Kickstarter {
+        self.internal_update_kickstarter(
             id,
             name,
             slug,
-            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
-            winner_goal_id: None,
-            katherine_fee: None,
-            total_tokens_to_release: None,
-            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
-            rewards_withdraw: UnorderedMap::new(
-                Keys::RewardWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            stnear_withdraw: UnorderedMap::new(
-                Keys::StnearWithdraws.as_prefix(&id.to_string()).as_bytes(),
-            ),
-            total_deposited: 0,
-            deposits_hard_cap: Balance::from(deposits_hard_cap),
-            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
-            enough_reward_tokens: false,
             owner_id,
-            active: true,
-            successful: None,
-            stnear_price_at_freeze: None,
-            stnear_price_at_unfreeze: None,
-            creation_timestamp: get_current_epoch_millis(),
             open_timestamp,
             close_timestamp,
             token_contract_address,
-            available_reward_tokens: 0,
-            locked_reward_tokens: 0,
-            kickstarter_withdraw: 0
-        };
-        kickstarter.assert_timestamps();
-        self.kickstarters.replace(id as u64, &kickstarter);
-        self.kickstarter_id_by_slug.remove(&old_kickstarter.slug);
-        self.kickstarter_id_by_slug
-            .insert(&kickstarter.slug, &kickstarter.id);
+            deposits_hard_cap,
+            max_tokens_to_release_per_stnear
+        );
+    }
+
+    pub fn create_goal(
+        &mut self,
+        kickstarter_id: KickstarterId,
+        name: String,
+        desired_amount: BalanceJSON,
+        unfreeze_timestamp: EpochMillis,
+        tokens_to_release_per_stnear: BalanceJSON,
+        cliff_timestamp: EpochMillis,
+        end_timestamp: EpochMillis,
+    ) -> GoalId {
+        self.internal_create_goal(
+            kickstarter_id,
+            name,
+            desired_amount,
+            unfreeze_timestamp,
+            tokens_to_release_per_stnear,
+            cliff_timestamp,
+            end_timestamp,
+        )
+    }
+
+    pub fn delete_last_goal(
+        &mut self,
+        kickstarter_id: KickstarterId
+    ) {
+        self.internal_delete_last_goal(kickstarter_id);
     }
 
     /**********************/
@@ -609,7 +421,7 @@ impl KatherineFundraising {
         kickstarter_id: KickstarterIdJSON,
     ) -> Option<BalanceJSON> {
         let supporter_id = SupporterId::from(supporter_id);
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         match self.supporters.get(&supporter_id) {
             Some(supporter) => {
                 if supporter.is_supporting(kickstarter.id) && kickstarter.winner_goal_id.is_some() {
@@ -635,7 +447,7 @@ impl KatherineFundraising {
         kickstarter_id: KickstarterIdJSON,
     ) -> Option<BalanceJSON> {
         let supporter_id = SupporterId::from(supporter_id);
-        let kickstarter = self.internal_get_kickstarter(kickstarter_id.into());
+        let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         match self.supporters.get(&supporter_id) {
             Some(supporter) => {
                 if supporter.is_supporting(kickstarter.id) && kickstarter.winner_goal_id.is_some() {
@@ -758,7 +570,7 @@ impl KatherineFundraising {
                         .expect("An exact value is not available. Please send the current stNEAR price to calculate an estimation");
                     return self.get_supporter_estimated_stnear(
                         convert_to_valid_account_id(supporter_id),
-                        kickstarter_id.into(),
+                        kickstarter_id,
                         st_near_price,
                     );
                 }
@@ -823,11 +635,11 @@ impl KatherineFundraising {
             );
             let rewards = self.get_supporter_total_rewards(
                 supporter_id.clone(),
-                kickstarter_id.into()
+                kickstarter_id
             );
             let available_rewards = self.get_supporter_available_rewards(
                 supporter_id.clone(),
-                kickstarter_id.into()
+                kickstarter_id
             );
             result.push(
                 SupporterDetailedJSON {

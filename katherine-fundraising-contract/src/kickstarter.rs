@@ -9,7 +9,7 @@ pub struct Kickstarter {
     pub id: KickstarterId,
     // Name of the kickstarter project
     pub name: String,
-    // TODO: documentation for slug
+    // The slug is a unique string for the kickstarter to recover the id.
     pub slug: String,
     pub goals: Vector<Goal>,
     pub owner_id: AccountId,
@@ -27,7 +27,7 @@ pub struct Kickstarter {
 
     // Important Note: the kickstarter.total_deposited variable will only increase or decrease within
     // the funding period. After the project evaluation, this value will stay CONSTANT to store a 
-    // record of the achieved funds, even after all stNear will be withdraw from the kickstarter.
+    // record of the achieved funds, even after all stNear have been withdraw from the kickstarter.
     pub total_deposited: Balance,
     // Total deposited hard cap. Supporters cannot deposit more than.
     pub deposits_hard_cap: Balance,
@@ -50,8 +50,6 @@ pub struct Kickstarter {
     pub token_contract_address: AccountId,
     // Total available and locked deposited tokens by the Kickstarter.
     pub available_reward_tokens: Balance,
-    pub locked_reward_tokens: Balance,
-    pub kickstarter_withdraw: Balance
 }
 
 impl Kickstarter {
@@ -188,29 +186,6 @@ impl Kickstarter {
         }
     }
 
-    // pub fn get_achieved_goal(&mut self) -> Option<Goal> {
-    //     let mut iter = self.goals.iter();
-    //     let result = iter.next();
-    //     if result == None {
-    //         return None;
-    //     } else {
-    //         let mut winner_goal = result.unwrap();
-    //         for goal in iter {
-    //             if goal.desired_amount > winner_goal.desired_amount && goal.desired_amount >= self.total_deposited {
-    //                 winner_goal = goal;
-    //             }
-    //         }
-            
-    //         if winner_goal.desired_amount >= self.total_deposited {
-    //             return Some(winner_goal)
-    //         }
-    //         else{
-    //             return None
-    //         }
-    //     }
-    // }
-
-    // TODO: The code above is not working, we were trying to make more efficient the code bellow.
     pub fn get_achieved_goal(&mut self) -> Option<Goal> {
         let mut achieved_goals: Vec<Goal> = self
             .goals
@@ -297,5 +272,120 @@ impl Kickstarter {
             enough_reward_tokens: self.enough_reward_tokens,
             available_reward_tokens: BalanceJSON::from(self.available_reward_tokens),
         }
+    }
+}
+
+#[near_bindgen]
+impl KatherineFundraising {
+    pub(crate) fn assert_unique_slug(&self, slug: &String) {
+        assert!(
+            self.kickstarter_id_by_slug.get(slug).is_none(),
+            "Slug already exists. Choose a different one!"
+        );
+    }
+
+    pub(crate) fn internal_create_kickstarter(
+        &mut self,
+        id: KickstarterId,
+        name: String,
+        slug: String,
+        owner_id: AccountId,
+        open_timestamp: EpochMillis,
+        close_timestamp: EpochMillis,
+        token_contract_address: AccountId,
+        deposits_hard_cap: BalanceJSON,
+        max_tokens_to_release_per_stnear: BalanceJSON,
+    ) -> KickstarterId {
+        let kickstarter = Kickstarter {
+            id,
+            name,
+            slug,
+            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
+            winner_goal_id: None,
+            katherine_fee: None,
+            total_tokens_to_release: None,
+            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
+            rewards_withdraw: UnorderedMap::new(
+                Keys::RewardWithdraws.as_prefix(&id.to_string()).as_bytes(),
+            ),
+            stnear_withdraw: UnorderedMap::new(
+                Keys::StnearWithdraws.as_prefix(&id.to_string()).as_bytes(),
+            ),
+            total_deposited: 0,
+            deposits_hard_cap: Balance::from(deposits_hard_cap),
+            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
+            enough_reward_tokens: false,
+            owner_id,
+            active: true,
+            successful: None,
+            stnear_price_at_freeze: None,
+            stnear_price_at_unfreeze: None,
+            creation_timestamp: get_current_epoch_millis(),
+            open_timestamp,
+            close_timestamp,
+            token_contract_address,
+            available_reward_tokens: 0,
+        };
+        kickstarter.assert_timestamps();
+        self.kickstarters.push(&kickstarter);
+        self.kickstarter_id_by_slug
+            .insert(&kickstarter.slug, &kickstarter.id);
+        self.active_projects.insert(&kickstarter.id);
+        kickstarter.id.into()
+    }
+
+    pub(crate) fn internal_update_kickstarter(
+        &mut self,
+        id: KickstarterId,
+        name: String,
+        slug: String,
+        owner_id: AccountId,
+        open_timestamp: EpochMillis,
+        close_timestamp: EpochMillis,
+        token_contract_address: AccountId,
+        deposits_hard_cap: BalanceJSON,
+        max_tokens_to_release_per_stnear: BalanceJSON
+    ) {
+        let old_kickstarter = self.internal_get_kickstarter(id);
+        assert!(
+            old_kickstarter.open_timestamp >= get_current_epoch_millis(),
+            "Changes are not allow after the funding period started!"
+        );
+
+        let kickstarter = Kickstarter {
+            id,
+            name,
+            slug,
+            goals: Vector::new(Keys::Goals.as_prefix(&id.to_string()).as_bytes()),
+            winner_goal_id: None,
+            katherine_fee: None,
+            total_tokens_to_release: None,
+            deposits: UnorderedMap::new(Keys::Deposits.as_prefix(&id.to_string()).as_bytes()),
+            rewards_withdraw: UnorderedMap::new(
+                Keys::RewardWithdraws.as_prefix(&id.to_string()).as_bytes(),
+            ),
+            stnear_withdraw: UnorderedMap::new(
+                Keys::StnearWithdraws.as_prefix(&id.to_string()).as_bytes(),
+            ),
+            total_deposited: 0,
+            deposits_hard_cap: Balance::from(deposits_hard_cap),
+            max_tokens_to_release_per_stnear: Balance::from(max_tokens_to_release_per_stnear),
+            enough_reward_tokens: false,
+            owner_id,
+            active: true,
+            successful: None,
+            stnear_price_at_freeze: None,
+            stnear_price_at_unfreeze: None,
+            creation_timestamp: get_current_epoch_millis(),
+            open_timestamp,
+            close_timestamp,
+            token_contract_address,
+            available_reward_tokens: 0,
+        };
+        kickstarter.assert_timestamps();
+        self.kickstarters.replace(id as u64, &kickstarter);
+        self.kickstarter_id_by_slug.remove(&old_kickstarter.slug);
+        self.kickstarter_id_by_slug
+            .insert(&kickstarter.slug, &kickstarter.id);
     }
 }

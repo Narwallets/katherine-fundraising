@@ -55,12 +55,12 @@ GOAL_UNFREEZE_DATE=$GOAL_END_DATE
 GOAL_1_DESIRED_AMOUNT="5"$YOCTO_UNITS
 GOAL_1_TOKENS_TO_RELEASE="1"$YOCTO_UNITS
 echo "------------------ Creating Goal #1"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Silver", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE', "reward_installments": 5}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Silver", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 
 GOAL_2_DESIRED_AMOUNT="8"$YOCTO_UNITS
 GOAL_2_TOKENS_TO_RELEASE="2"$YOCTO_UNITS
 echo "------------------ Creating Goal #2"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Gold", "desired_amount": "'$GOAL_2_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_2_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE', "reward_installments": 5}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Gold", "desired_amount": "'$GOAL_2_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_2_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 
 # FRONTEND CALL: get_active_projects
 echo "------------------ FRONTEND: Get Active Projects"
@@ -132,6 +132,9 @@ NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id"
 echo "------------------ Withdraw Kickstarter Excedent"
 NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS kickstarter_withdraw_excedent '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KICKSTARTER_OWNER_ID --gas 300000000000000
 
+echo "------------------ Get project details REVIEW EXCEDENT WITHDRAW 🦈"
+NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_project_details '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID
+
 echo "------------------ Checking kickstarter pToken balance"
 NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
 
@@ -140,6 +143,15 @@ NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_projects '{
 
 echo "------------------ BUGS: 🪳 🐞 🕷"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $SUPPORTER_ID
+
+echo "------------------ Checking kickstarter stNear balance 🥚"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
+echo "------------------ Withdraw stNear interest before unfreeze 🐣"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_stnear_interest '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $KICKSTARTER_OWNER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter stNear balance 🐥"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
 
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Second Kickstarter"
 
@@ -161,12 +173,12 @@ GOAL_UNFREEZE_DATE=$GOAL_END_DATE
 GOAL_1_DESIRED_AMOUNT="2"$YOCTO_UNITS
 GOAL_1_TOKENS_TO_RELEASE="1"$YOCTO_UNITS
 echo "------------------ Creating Goal #1"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Silver", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE', "reward_installments": 8}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Silver", "desired_amount": "'$GOAL_1_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_1_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 
 GOAL_2_DESIRED_AMOUNT="4"$YOCTO_UNITS
 GOAL_2_TOKENS_TO_RELEASE="1"$YOCTO_UNITS
 echo "------------------ Creating Goal #2"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Gold", "desired_amount": "'$GOAL_2_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_2_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE', "reward_installments": 8}' --accountId $KICKSTARTER_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_goal '{"kickstarter_id": '$KICKSTARTER_ID', "name": "Gold", "desired_amount": "'$GOAL_2_DESIRED_AMOUNT'", "unfreeze_timestamp": '$GOAL_UNFREEZE_DATE', "tokens_to_release_per_stnear": "'$GOAL_2_TOKENS_TO_RELEASE'", "cliff_timestamp": '$GOAL_CLIFF_DATE', "end_timestamp": '$GOAL_END_DATE'}' --accountId $KICKSTARTER_OWNER_ID
 
 # FRONTEND CALL: get_active_projects
 echo "------------------ FRONTEND: Get Active Projects"
@@ -257,13 +269,16 @@ NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_i
 echo "------------------ FRONTEND: Supporter Dashboard AFTER REWARD BEING CLAIMED"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
 
+echo "------------------ Checking kickstarter stNear balance 🥚"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
+echo "------------------ Withdraw stNear interest before unfreeze 🐣"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_stnear_interest '{"kickstarter_id": 0}' --accountId $KICKSTARTER_OWNER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter stNear balance 🐥"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
 echo " >>>>>>>>>>>>>>>>>>> Kickstarter #2"
-echo "------------------ CLAIM ALL reward tokens 🔮"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS claim_all_kickstarter_tokens '{"kickstarter_id": 1}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
-
-echo "------------------ Checking kickstarter pToken balance"
-NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
-
 echo "------------------ UNFREEZE 🥶"
 NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS unfreeze_kickstarter_funds '{"kickstarter_id": 1}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
 
@@ -273,8 +288,23 @@ NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_all '{"kickstart
 echo "------------------ Checking kickstarter pToken balance"
 NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
 
+echo "------------------ CLAIM ALL reward tokens 🔮"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS claim_all_kickstarter_tokens '{"kickstarter_id": 1}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter pToken balance"
+NEAR_ENV=testnet near view $PTOKEN_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
+
 echo "------------------ FRONTEND: Supporter Dashboard AFTER REWARD BEING CLAIMED"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_detailed_list '{"supporter_id": "'$SUPPORTER_ID'", "st_near_price": "'$(date +%s)000000000000000'", "from_index": 0, "limit": 10}' --accountId $KATHERINE_OWNER_ID
+
+echo "------------------ Checking kickstarter stNear balance 🥚"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
+
+echo "------------------ Withdraw stNear interest before unfreeze 🐣"
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_stnear_interest '{"kickstarter_id": 1}' --accountId $KICKSTARTER_OWNER_ID --gas $TOTAL_PREPAID_GAS
+
+echo "------------------ Checking kickstarter stNear balance 🐥"
+NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$KICKSTARTER_OWNER_ID'"}' --accountId $KICKSTARTER_OWNER_ID
 
 echo "LAST BUT NOT LEAST 🤘"
 echo "------------------ Checking Katherine Owner pToken balance"

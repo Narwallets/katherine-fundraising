@@ -56,7 +56,7 @@ pub trait ExtSelfKickstarter {
 
     fn return_tokens_from_kickstarter_callback(
         &mut self,
-        account_id: ValidAccountId,
+        supporter_id: ValidAccountId,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
     );
@@ -64,13 +64,14 @@ pub trait ExtSelfKickstarter {
     fn kickstarter_withdraw_callback(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
-        amount: U128,
+        receiver_id: ValidAccountId,
     );
 
     fn kickstarter_withdraw_resolve_transfer(
         &mut self,
         kickstarter_id: KickstarterIdJSON,
         amount: U128,
+        receiver_id: ValidAccountId,
     );
 
     fn set_stnear_price_at_unfreeze(
