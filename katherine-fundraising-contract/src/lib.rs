@@ -49,7 +49,7 @@ impl KatherineFundraising {
         metapool_contract_address: AccountId,
         katherine_fee_percent: BasisPoints,
     ) -> Self {
-        // assert!(!env::state_exists(), "The contract is already initialized");
+        assert!(!env::state_exists(), "The contract is already initialized");
         Self {
             owner_id,
             supporters: UnorderedMap::new(Keys::Supporters),
