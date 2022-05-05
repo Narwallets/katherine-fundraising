@@ -19,7 +19,10 @@ impl KatherineFundraising {
     ) {
         let deposit = kickstarter.get_deposit(&supporter_id);
         assert!(requested_amount <= deposit, "Not available amount!");
-        let amount_to_withdraw = if is_close(requested_amount, deposit) {
+        
+        // Ensure that the min_deposit_amount remains after a withdraw.
+        let amount_to_withdraw = if is_close(requested_amount, deposit) 
+                || (deposit - requested_amount) < self.min_deposit_amount {
             deposit
         } else {
             requested_amount

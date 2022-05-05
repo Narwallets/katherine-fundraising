@@ -77,7 +77,7 @@ WAITING_SECONDS=$(($OPEN_DATE_IN_SECS - $NOW_IN_SECS))
 echo "------------------ Waiting for "$WAITING_SECONDS" seconds!"
 sleep $WAITING_SECONDS
 echo "------------------ Sending stNEAR to the contract"
-NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'$GOAL_1_DESIRED_AMOUNT'", "msg": "'$KICKSTARTER_ID'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+NEAR_ENV=testnet near call $METAPOOL_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "1500000000000000000000000", "msg": "'$KICKSTARTER_ID'"}' --accountId $SUPPORTER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
 
 echo "------------------ BUGS: 🪳 🐞"
 NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_supported_projects '{"supporter_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
@@ -90,12 +90,6 @@ NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_i
 
 echo "------------------ Withdraw stNEAR before CLOSE 💰"
 NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw '{"amount": "'1$YOCTO_UNITS'", "kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
-
-echo "------------------ Checking supporter stNear balance"
-NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
-
-echo "------------------ Withdraw ALL stNEAR 🤑"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS withdraw_all '{"kickstarter_id": '$KICKSTARTER_ID'}' --accountId $SUPPORTER_ID --gas $TOTAL_PREPAID_GAS
 
 echo "------------------ Checking supporter stNear balance"
 NEAR_ENV=testnet near view $METAPOOL_CONTRACT_ADDRESS ft_balance_of '{"account_id": "'$SUPPORTER_ID'"}' --accountId $SUPPORTER_ID
