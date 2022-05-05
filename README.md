@@ -19,97 +19,97 @@ These are the functions to interact with Katherine.
 ### 1. Create a Kickstarter
 
 **Katherine admin**:
-- [create_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#create_kickstarter)
-- [update_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#update_kickstarter)
-- [change_kickstarter_owner](https://github.com/Narwallets/katherine-fundraising/tree/dev#change_kickstarter_owner)
+- [create_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/main#create_kickstarter)
+- [update_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/main#update_kickstarter)
+- [change_kickstarter_owner](https://github.com/Narwallets/katherine-fundraising/tree/main#change_kickstarter_owner)
 
 **Public**:
-- [get_kickstarter_id_from_slug](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_id_from_slug)
-- [get_total_kickstarters](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_total_kickstarters)
-- [get_kickstarters](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarters)
-- [get_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter)
+- [get_kickstarter_id_from_slug](https://github.com/Narwallets/katherine-fundraising/tree/main#get_kickstarter_id_from_slug)
+- [get_total_kickstarters](https://github.com/Narwallets/katherine-fundraising/tree/main#get_total_kickstarters)
+- [get_kickstarters](https://github.com/Narwallets/katherine-fundraising/tree/main#get_kickstarters)
+- [get_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/main#get_kickstarter)
 
 ### 2. Create the Kickstarter Goals
 
 **Katherine admin and Kickstarter**:
-- [create_goal](https://github.com/Narwallets/katherine-fundraising/tree/dev#create_goal)
-- [delete_last_goal](https://github.com/Narwallets/katherine-fundraising/tree/dev#delete_last_goal)
+- [create_goal](https://github.com/Narwallets/katherine-fundraising/tree/main#create_goal)
+- [delete_last_goal](https://github.com/Narwallets/katherine-fundraising/tree/main#delete_last_goal)
 
 **Public**:
-- [get_kickstarter_total_goals](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_total_goals)
-- [get_kickstarter_goal](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter_goal)
+- [get_kickstarter_total_goals](https://github.com/Narwallets/katherine-fundraising/tree/main#get_kickstarter_total_goals)
+- [get_kickstarter_goal](https://github.com/Narwallets/katherine-fundraising/tree/main#get_kickstarter_goal)
 
 **Kickstarter**:
-- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#ft_transfer_call) (Called on Project/Token Contract)
+- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/main#ft_transfer_call) (Called on Project/Token Contract)
 
 ### 3. Funding period begins
 
 **Supporter**:
-- [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw)
-- [withdraw_all](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_all)
-- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/dev#ft_transfer_call) (Called on Meta Pool)
+- [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw)
+- [withdraw_all](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw_all)
+- [ft_transfer_call](https://github.com/Narwallets/katherine-fundraising/tree/main#ft_transfer_call) (Called on Meta Pool)
 
 **Public**:
-- [get_active_projects](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_active_projects)
-- [get_project_details](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_project_details)
-- [get_supporter_total_deposit_in_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_total_deposit_in_kickstarter)
+- [get_active_projects](https://github.com/Narwallets/katherine-fundraising/tree/main#get_active_projects)
+- [get_project_details](https://github.com/Narwallets/katherine-fundraising/tree/main#get_project_details)
+- [get_supporter_total_deposit_in_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/main#get_supporter_total_deposit_in_kickstarter)
 
 ### 4. Evaluate Goal
 
 **Robot**:
-- [get_kickstarters_to_process](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarters_to_process)
-- [process_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#process_kickstarter)
+- [get_kickstarters_to_process](https://github.com/Narwallets/katherine-fundraising/tree/main#get_kickstarters_to_process)
+- [process_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/main#process_kickstarter)
 
 ### 5. Close unsuccessful Kickstarter
 
 **Kickstarter**:
-- [kickstarter_withdraw_excedent](https://github.com/Narwallets/katherine-fundraising/tree/dev#kickstarter_withdraw_excedent)
+- [kickstarter_withdraw_excedent](https://github.com/Narwallets/katherine-fundraising/tree/main#kickstarter_withdraw_excedent)
 
 **Supporter**:
-- [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw)
-- [withdraw_all](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_all)
+- [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw)
+- [withdraw_all](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw_all)
 
 ### 6. Freeze Supporter funds
 
 **Kickstarter**:
-- [kickstarter_withdraw_excedent](https://github.com/Narwallets/katherine-fundraising/tree/dev#kickstarter_withdraw_excedent)
+- [kickstarter_withdraw_excedent](https://github.com/Narwallets/katherine-fundraising/tree/main#kickstarter_withdraw_excedent)
 
 **Supporter**:
-- [get_supporter_estimated_stnear](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_estimated_stnear) - When the supporter funds are freezed by the Kickstarter, use this function to calculate an estimation of the current amount of stNear that Katherine has for the supporter.
+- [get_supporter_estimated_stnear](https://github.com/Narwallets/katherine-fundraising/tree/main#get_supporter_estimated_stnear) - When the supporter funds are freezed by the Kickstarter, use this function to calculate an estimation of the current amount of stNear that Katherine has for the supporter.
 
 **Supporter Dashboard**:
-- [get_supported_projects](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supported_projects)
-- [get_supported_detailed_list](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supported_detailed_list)
+- [get_supported_projects](https://github.com/Narwallets/katherine-fundraising/tree/main#get_supported_projects)
+- [get_supported_detailed_list](https://github.com/Narwallets/katherine-fundraising/tree/main#get_supported_detailed_list)
 
 ### 7. Allow the Kickstarter to withdraw stNear
 
 **Kickstarter**:
-- [withdraw_stnear_interest](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_stnear_interest)
+- [withdraw_stnear_interest](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw_stnear_interest)
 
 ### 8. Allow the Supporter to withdraw project Tokens
 
 **Supporter**:
-- [claim_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/dev#claim_kickstarter_tokens)
-- [claim_all_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/dev#claim_all_kickstarter_tokens)
+- [claim_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/main#claim_kickstarter_tokens)
+- [claim_all_kickstarter_tokens](https://github.com/Narwallets/katherine-fundraising/tree/main#claim_all_kickstarter_tokens)
 
 **Public**:
-- [get_supporter_total_rewards](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_total_rewards)
-- [get_supporter_available_rewards](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_available_rewards)
+- [get_supporter_total_rewards](https://github.com/Narwallets/katherine-fundraising/tree/main#get_supporter_total_rewards)
+- [get_supporter_available_rewards](https://github.com/Narwallets/katherine-fundraising/tree/main#get_supporter_available_rewards)
 
 **Katherine admin**:
 
-- [withdraw_katherine_fee](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_katherine_fee)
+- [withdraw_katherine_fee](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw_katherine_fee)
 
 
 
 ### 9. Allow the Supporter to withdraw stNear
 
 **Robot**:
-- [unfreeze_kickstarter_funds](https://github.com/Narwallets/katherine-fundraising/tree/dev#unfreeze_kickstarter_funds)
+- [unfreeze_kickstarter_funds](https://github.com/Narwallets/katherine-fundraising/tree/main#unfreeze_kickstarter_funds)
 
 **Supporter**:
-- [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw)
-- [withdraw_all](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw_all)
+- [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw)
+- [withdraw_all](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw_all)
 
 ## Function list
 
@@ -185,7 +185,7 @@ fn get_total_kickstarters() -> u32
 
 ### **get_kickstarters**
 
-Get a list of Kickstarters starting from index `from_index`. See [get_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_kickstarter) to get the details of the `KickstarterJSON` response.
+Get a list of Kickstarters starting from index `from_index`. See [get_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/main#get_kickstarter) to get the details of the `KickstarterJSON` response.
 
 ```rust
 fn get_kickstarters(from_index: usize, limit: usize) -> Vec<KickstarterJSON>
@@ -193,7 +193,7 @@ fn get_kickstarters(from_index: usize, limit: usize) -> Vec<KickstarterJSON>
 
 ### **get_kickstarter**
 
-Get the simple information about the Kickstarter with the `KickstarterJSON` object. To get a more detailed view of the Kickstarter use [get_project_details](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_project_details).
+Get the simple information about the Kickstarter with the `KickstarterJSON` object. To get a more detailed view of the Kickstarter use [get_project_details](https://github.com/Narwallets/katherine-fundraising/tree/main#get_project_details).
 
 ```rust
 fn get_kickstarter(kickstarter_id: u32) -> KickstarterJSON
@@ -306,7 +306,7 @@ fn withdraw(amount: String, kickstarter_id: u32)
 
 ### **withdraw_all**
 
-Same as [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/dev#withdraw), but automatically calculate all the available tokens for the user.
+Same as [withdraw](https://github.com/Narwallets/katherine-fundraising/tree/main#withdraw), but automatically calculate all the available tokens for the user.
 
 ```rust
 fn withdraw_all(kickstarter_id: u32)
@@ -425,7 +425,7 @@ fn kickstarter_withdraw_excedent(kickstarter_id: u32)
 
 ### **get_supporter_estimated_stnear**
 
-Get an estimation of the current amount of stnear that Katherine owns to the supporter. This is only available during the freezed period, after the funds are unfreezed the exact value could be calculated using the [get_supporter_total_deposit_in_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/dev#get_supporter_total_deposit_in_kickstarter) function.
+Get an estimation of the current amount of stnear that Katherine owns to the supporter. This is only available during the freezed period, after the funds are unfreezed the exact value could be calculated using the [get_supporter_total_deposit_in_kickstarter](https://github.com/Narwallets/katherine-fundraising/tree/main#get_supporter_total_deposit_in_kickstarter) function.
 
 The returned value is a decreasing value, due to the appreciation of the stNear.
 
