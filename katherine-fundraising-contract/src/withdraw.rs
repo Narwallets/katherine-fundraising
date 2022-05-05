@@ -149,7 +149,10 @@ impl KatherineFundraising {
                 && requested_amount <= available_to_withdraw,
             "Not available amount!"
         );
-        let amount_to_withdraw = if is_close(requested_amount, available_to_withdraw) {
+
+        // Ensure that the min_deposit_amount remains after a withdraw.
+        let amount_to_withdraw = if is_close(requested_amount, available_to_withdraw)
+                || (available_to_withdraw - requested_amount) < self.min_deposit_amount {
             available_to_withdraw
         } else {
             requested_amount
