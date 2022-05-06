@@ -214,6 +214,6 @@ impl KatherineFundraising {
             total_supporter_rewards,
             goal.cliff_timestamp,
             goal.end_timestamp
-        ) - kickstarter.get_rewards_withdraw(&supporter_id)
+        ).saturating_sub(kickstarter.get_rewards_withdraw(&supporter_id))
     }
 }
