@@ -650,7 +650,7 @@ impl KatherineFundraising {
             total_supporter_rewards,
             goal.cliff_timestamp,
             goal.end_timestamp
-        ) - kickstarter.get_rewards_withdraw(&supporter_id)
+        ).saturating_sub(kickstarter.get_rewards_withdraw(&supporter_id))
     }
 
     pub(crate) fn internal_kickstarter_withdraw(&mut self, kickstarter: &mut Kickstarter, st_near_price: Balance, _amount: Balance) {
