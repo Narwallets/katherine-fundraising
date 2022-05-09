@@ -4,6 +4,7 @@ set -e
 
 if [[ "${1}" != "" ]]; then
     NETWORK=$1
+    NEAR_ENV=$NETWORK
     EXPLORER_URL="https://explorer.testnet.near.org/transactions/"
 
     if [[ "${NETWORK}" == "mainnet" ]]; then
@@ -27,6 +28,9 @@ source $NETWORK/$CONFIGURATION_FILE
 echo "Using $NETWORK/$CONFIGURATION_FILE project file"
 
 PROJECT_ID=$(NEAR_ENV=$NETWORK near call $KATHERINE_CONTRACT_ADDRESS get_kickstarter_id_from_slug '{"slug": "'$PROJECT_SLUG'"}' --accountId $KATHERINE_OWNER_ID | grep $EXPLORER_URL -A 1 | grep -v $EXPLORER_URL)
+
+echo "Registering ${KATHERINE_CONTRACT_ADDRESS} on the project token contract: ${PROJECT_TOKEN_ADDRESS}"
+near call $PROJECT_TOKEN_ADDRESS storage_deposit '' --accountId $KATHERINE_CONTRACT_ADDRESS --amount 0.00125 
 
 # Sending Project Tokens to Project
 echo "Sending project tokens: ${PROJECT_TOKEN_ADDRESS}  to the project ${PROJECT_ID}"
