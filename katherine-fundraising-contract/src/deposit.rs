@@ -36,7 +36,7 @@ impl FungibleTokenReceiver for KatherineFundraising {
                 sender_id.as_ref(),
                 msg
             );
-            self.process_kickstarter_deposit(&amount, &mut kickstarter);
+            self.process_kickstarter_deposit(amount, &mut kickstarter);
         }
         // Return unused amount
         PromiseOrValue::Value(U128::from(0))
@@ -83,7 +83,7 @@ impl KatherineFundraising {
     /// Process a reward token deposit to Katherine Contract.
     fn process_kickstarter_deposit(
         &mut self,
-        amount: &Balance,
+        amount: Balance,
         kickstarter: &mut Kickstarter,
     ) {
         assert_eq!(
@@ -95,6 +95,7 @@ impl KatherineFundraising {
             get_current_epoch_millis() < kickstarter.close_timestamp,
             "Kickstarter Tokens should be provided before the funding period ends."
         );
+        let amount = kickstarter.less_to_24_decimals(amount);
         let max_tokens_to_release = self.calculate_max_tokens_to_release(&kickstarter);
         let min_tokens_to_allow_support = max_tokens_to_release
             + self.calculate_katherine_fee(max_tokens_to_release);

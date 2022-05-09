@@ -2,6 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, UnorderedSet, Vector};
 use near_sdk::json_types::ValidAccountId;
 use near_sdk::{env, log, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseResult};
+use std::convert::TryInto;
 
 mod claim;
 mod constants;
@@ -165,7 +166,7 @@ impl KatherineFundraising {
     /*****************************/
 
     pub fn withdraw_all(&mut self, kickstarter_id: KickstarterIdJSON) {
-        let supporter_id = convert_to_valid_account_id(env::predecessor_account_id());
+        let supporter_id = env::predecessor_account_id().clone().try_into().unwrap();
         let kickstarter = self.internal_get_kickstarter(kickstarter_id);
         if !kickstarter.is_within_funding_period() {
             kickstarter.assert_funds_must_be_unfreezed();
@@ -222,7 +223,7 @@ impl KatherineFundraising {
     pub fn claim_all_kickstarter_tokens(&mut self, kickstarter_id: KickstarterIdJSON) {
         let account_id = env::predecessor_account_id();
         let available_rewards = self.get_supporter_available_rewards(
-            convert_to_valid_account_id(account_id),
+            account_id.clone().try_into().unwrap(),
             kickstarter_id,
         );
         if let Some(amount) = available_rewards {
@@ -334,6 +335,7 @@ impl KatherineFundraising {
         token_contract_address: AccountId,
         deposits_hard_cap: BalanceJSON,
         max_tokens_to_release_per_stnear: BalanceJSON,
+        token_contract_decimals: u8,
     ) -> KickstarterIdJSON {
         //ONLY ADMINS CAN CREATE KICKSTARTERS? YES
         self.assert_only_admin();
@@ -348,7 +350,8 @@ impl KatherineFundraising {
             close_timestamp,
             token_contract_address,
             deposits_hard_cap,
-            max_tokens_to_release_per_stnear
+            max_tokens_to_release_per_stnear,
+            token_contract_decimals
         )
     }
 
@@ -367,6 +370,7 @@ impl KatherineFundraising {
         token_contract_address: AccountId,
         deposits_hard_cap: BalanceJSON,
         max_tokens_to_release_per_stnear: BalanceJSON,
+        token_contract_decimals: u8,
     ) {
         let old_kickstarter = self.internal_get_kickstarter(id);
         let goal_creator_id = env::predecessor_account_id();
@@ -384,7 +388,8 @@ impl KatherineFundraising {
             close_timestamp,
             token_contract_address,
             deposits_hard_cap,
-            max_tokens_to_release_per_stnear
+            max_tokens_to_release_per_stnear,
+            token_contract_decimals
         );
     }
 
@@ -599,7 +604,7 @@ impl KatherineFundraising {
                     let st_near_price = st_near_price
                         .expect("An exact value is not available. Please send the current stNEAR price to calculate an estimation");
                     return self.get_supporter_estimated_stnear(
-                        convert_to_valid_account_id(supporter_id),
+                        supporter_id.clone().try_into().unwrap(),
                         kickstarter_id,
                         st_near_price,
                     );

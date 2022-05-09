@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::*;
 use near_sdk::json_types::U128;
 use near_sdk::{near_bindgen};
@@ -19,24 +21,26 @@ impl KatherineFundraising {
         supporter_id: SupporterId,
     ) {
         let kickstarter_id = kickstarter.id;
+        let amount_tokens = kickstarter.yocto_to_less_decimals(requested_amount.0);
+        assert!(amount_tokens > 0, "Requested amount is too small.");
+        let amount_truncated = kickstarter.less_to_24_decimals(amount_tokens);
         self.update_supporter_claims(
-            Balance::from(requested_amount),
+            amount_truncated,
             kickstarter,
             &supporter_id
         );
-
         nep141_token::ft_transfer(
-            convert_to_valid_account_id(supporter_id.clone()),
-            requested_amount,
+            supporter_id.clone().try_into().unwrap(),
+            amount_tokens.into(),
             None,
             &kickstarter.token_contract_address,
             1,
             GAS_FOR_FT_TRANSFER,
         ).then(
             ext_self_kickstarter::return_tokens_from_kickstarter_callback(
-                convert_to_valid_account_id(supporter_id.clone()),
+                supporter_id.clone().try_into().unwrap(),
                 kickstarter_id,
-                requested_amount,
+                amount_truncated.into(),
                 &env::current_account_id(),
                 0,
                 GAS_FOR_FT_TRANSFER
@@ -67,17 +71,12 @@ impl KatherineFundraising {
             "Not enough tokens, available balance is {}.",
             rewards
         );
-        let amount_to_withdraw = if is_close(requested_amount, rewards) {
-            rewards
-        } else {
-            requested_amount
-        };
 
         // For supporters, Kath must track claims and withdraw in order to remove the supporter
         // when both are zero.
         if kickstarter.is_unfreeze() {
             self.remove_from_supported_claim(
-                amount_to_withdraw,
+                requested_amount,
                 kickstarter,
                 supporter_id,
                 goal,
@@ -85,7 +84,7 @@ impl KatherineFundraising {
         }
 
         let current_withdraw = kickstarter.get_rewards_withdraw(&supporter_id);
-        let new_withdraw = current_withdraw + amount_to_withdraw;
+        let new_withdraw = current_withdraw + requested_amount;
         kickstarter.rewards_withdraw.insert(&supporter_id, &new_withdraw);
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
     }
@@ -193,10 +192,11 @@ impl KatherineFundraising {
         self.kickstarters
             .replace(kickstarter.id as u64, &kickstarter);
 
+        let excedent_tokens = kickstarter.yocto_to_less_decimals(excedent);
         let excedent = BalanceJSON::from(excedent);
         nep141_token::ft_transfer(
-            convert_to_valid_account_id(env::predecessor_account_id()),
-            excedent,
+            env::predecessor_account_id().clone().try_into().unwrap(),
+            BalanceJSON::from(excedent_tokens),
             Some("withdraw excedent from kickstarter".to_string()),
             &kickstarter.token_contract_address,
             1,
@@ -258,14 +258,13 @@ impl KatherineFundraising {
 
 #[near_bindgen]
 impl KatherineFundraising {
-
     pub(crate) fn internal_withdraw_katherine_fee(&mut self, kickstarter: &mut Kickstarter, katherine_fee: Balance) {
         kickstarter.katherine_fee = Some(0);
         self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
-        let katherine_fee = U128::from(katherine_fee);
+
         nep141_token::ft_transfer(
-            convert_to_valid_account_id(env::predecessor_account_id()),
-            katherine_fee,
+            env::predecessor_account_id().clone().try_into().unwrap(),
+            kickstarter.yocto_to_less_decimals(katherine_fee).into(),
             None,
             &kickstarter.token_contract_address,
             1,
@@ -273,7 +272,7 @@ impl KatherineFundraising {
         ).then(
             ext_self_kickstarter::withdraw_kickstarter_fee_callback(
                 kickstarter.id,
-                katherine_fee,
+                katherine_fee.into(),
                 &env::current_account_id(),
                 0,
                 GAS_FOR_FT_TRANSFER

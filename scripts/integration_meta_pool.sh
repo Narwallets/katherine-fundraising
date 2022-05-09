@@ -11,6 +11,9 @@ echo "Meta Pool: "$METAPOOL_CONTRACT_ADDRESS
 echo "Katherine: "$KATHERINE_CONTRACT_ADDRESS
 echo "pTOKEN: "$PTOKEN_CONTRACT_ADDRESS
 
+DECIMALS=6
+DECIMALS_UNITS=$(printf -- '0%.0s' {1..6})
+echo "pTOKEN Decimals: " $DECIMALS_UNITS
 KATHERINE_OWNER_ID="kate_tester3.testnet" # This account is owner of all the 3 contracts.
 KICKSTARTER_OWNER_ID="kate_kickstarter_owner.testnet"
 SUPPORTER_ID="kate_supporter.testnet"
@@ -45,7 +48,7 @@ KICKSTARTER_SLUG="the-best-project-ever"
 KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 60000))
 KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 60000))
 echo "------------------ Creating a Kickstarter"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$PTOKEN_CONTRACT_ADDRESS'", "deposits_hard_cap": "'9$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'2$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$PTOKEN_CONTRACT_ADDRESS'", "deposits_hard_cap": "'9$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'2$YOCTO_UNITS'", "token_contract_decimals": '$DECIMALS'}' --accountId $KATHERINE_OWNER_ID
 
 # Create 2 goals
 GOAL_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))
@@ -68,7 +71,7 @@ NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_active_projects '{"fr
 
 # Sending pTokens to Kickstarter
 echo "------------------ Sending pTokens to the contract"
-NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'20$YOCTO_UNITS'", "msg": "'$KICKSTARTER_ID'"}' --accountId $KICKSTARTER_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'20$DECIMALS_UNITS'", "msg": "'$KICKSTARTER_ID'"}' --accountId $KICKSTARTER_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
 
 # Sending stnear tokens to Kickstarter
 NOW_IN_SECS=$(date +%s)
@@ -157,7 +160,7 @@ KICKSTARTER_SLUG="the-second-best-project-ever"
 KICKSTARTER_OPEN_DATE=$(($NOW_IN_MILLISECS + 40000))
 KICKSTARTER_CLOSE_DATE=$(($KICKSTARTER_OPEN_DATE + 30000))
 echo "------------------ Creating a Kickstarter"
-NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$PTOKEN_CONTRACT_ADDRESS'", "deposits_hard_cap": "'5$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'1$YOCTO_UNITS'"}' --accountId $KATHERINE_OWNER_ID
+NEAR_ENV=testnet near call $KATHERINE_CONTRACT_ADDRESS create_kickstarter '{"name": "'$KICKSTARTER_NAME'", "slug": "'$KICKSTARTER_SLUG'", "owner_id": "'$KICKSTARTER_OWNER_ID'", "open_timestamp": '$KICKSTARTER_OPEN_DATE', "close_timestamp": '$KICKSTARTER_CLOSE_DATE', "token_contract_address": "'$PTOKEN_CONTRACT_ADDRESS'", "deposits_hard_cap": "'5$YOCTO_UNITS'", "max_tokens_to_release_per_stnear": "'1$YOCTO_UNITS'", "token_contract_decimals": '$DECIMALS'}' --accountId $KATHERINE_OWNER_ID
 
 # Create 2 goals
 GOAL_CLIFF_DATE=$(($KICKSTARTER_CLOSE_DATE + 60000))
@@ -180,7 +183,7 @@ NEAR_ENV=testnet near view $KATHERINE_CONTRACT_ADDRESS get_active_projects '{"fr
 
 # Sending pTokens to Kickstarter
 echo "------------------ Sending pTokens to the contract"
-NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'6$YOCTO_UNITS'", "msg": "'$KICKSTARTER_ID'"}' --accountId $KICKSTARTER_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
+NEAR_ENV=testnet near call $PTOKEN_CONTRACT_ADDRESS ft_transfer_call '{"receiver_id": "'$KATHERINE_CONTRACT_ADDRESS'", "amount": "'6$DECIMALS_UNITS'", "msg": "'$KICKSTARTER_ID'"}' --accountId $KICKSTARTER_OWNER_ID --depositYocto 1 --gas $TOTAL_PREPAID_GAS
 
 # Sending stnear tokens to Kickstarter
 NOW_IN_SECS=$(date +%s)
