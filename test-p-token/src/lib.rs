@@ -38,18 +38,18 @@ impl Contract {
     /// Initializes the contract with the given total supply owned by the given `owner_id` with
     /// default metadata (for example purposes only).
     #[init]
-    pub fn new_default_meta(owner_id: AccountId, total_supply: U128) -> Self {
+    pub fn new_default_meta(owner_id: AccountId, total_supply: U128, symbol: String, decimals: u8) -> Self {
         Self::new(
             owner_id,
             total_supply,
             FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
                 name: "Kickstarter pToken".to_string(),
-                symbol: "pTOKEN".to_string(),
+                symbol,
                 icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
                 reference: None,
                 reference_hash: None,
-                decimals: 24,
+                decimals,
             },
         )
     }
