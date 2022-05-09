@@ -1,6 +1,7 @@
 use crate::*;
 use near_sdk::json_types::{U128, ValidAccountId};
 use near_sdk::{near_bindgen, AccountId};
+use std::convert::TryInto;
 
 use crate::interface::*;
 
@@ -40,7 +41,7 @@ impl KatherineFundraising {
             self.kickstarters.replace(kickstarter.id as u64, &kickstarter);
 
             nep141_token::ft_transfer(
-                convert_to_valid_account_id(receiver_id.clone()),
+                receiver_id.clone().try_into().unwrap(),
                 interest.into(),
                 None,
                 &self.metapool_contract_address,
@@ -50,7 +51,7 @@ impl KatherineFundraising {
                 ext_self_kickstarter::kickstarter_withdraw_resolve_transfer(
                     kickstarter.id.into(), 
                     interest.into(),
-                    convert_to_valid_account_id(receiver_id),
+                    receiver_id.clone().try_into().unwrap(),
                     &env::current_account_id(),
                     0,
                     GAS_FOR_RESOLVE_TRANSFER
@@ -118,7 +119,7 @@ impl KatherineFundraising {
         ).then(
             ext_self_kickstarter::kickstarter_withdraw_callback(
                 kickstarter.id.into(),
-                convert_to_valid_account_id(receiver_id),
+                receiver_id.clone().try_into().unwrap(),
                 &env::current_account_id(),
                 0,
                 GAS_FOR_INTEREST_WITHDRAW,

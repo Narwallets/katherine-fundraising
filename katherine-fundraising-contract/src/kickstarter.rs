@@ -50,6 +50,8 @@ pub struct Kickstarter {
     pub token_contract_address: AccountId,
     // Total available and locked deposited tokens by the Kickstarter.
     pub available_reward_tokens: Balance,
+
+    pub token_contract_decimals: u8,
 }
 
 impl Kickstarter {
@@ -273,6 +275,28 @@ impl Kickstarter {
             available_reward_tokens: BalanceJSON::from(self.available_reward_tokens),
         }
     }
+
+    pub(crate) fn less_to_24_decimals(&self, amount: Balance) -> Balance {
+        let token_decimals = self.token_contract_decimals;
+        assert!(token_decimals <= 24, "Tokens decimals are above 24.");
+        if token_decimals < 24 {
+            // Internally the decimals with be taken as 24.
+            amount * 10u128.pow(24 - token_decimals as u32)
+        } else {
+            amount
+        }
+    }
+
+    pub(crate) fn yocto_to_less_decimals(&self, amount: Balance) -> Balance {
+        let token_decimals = self.token_contract_decimals;
+        assert!(token_decimals <= 24, "Tokens decimals are above 24.");
+        if token_decimals < 24 {
+            // Internally the decimals with be taken as 24.
+            amount / 10u128.pow(24 - token_decimals as u32)
+        } else {
+            amount
+        }
+    }
 }
 
 #[near_bindgen]
@@ -295,6 +319,7 @@ impl KatherineFundraising {
         token_contract_address: AccountId,
         deposits_hard_cap: BalanceJSON,
         max_tokens_to_release_per_stnear: BalanceJSON,
+        token_contract_decimals: u8
     ) -> KickstarterId {
         let kickstarter = Kickstarter {
             id,
@@ -324,6 +349,7 @@ impl KatherineFundraising {
             open_timestamp,
             close_timestamp,
             token_contract_address,
+            token_contract_decimals,
             available_reward_tokens: 0,
         };
         kickstarter.assert_timestamps();
@@ -344,7 +370,8 @@ impl KatherineFundraising {
         close_timestamp: EpochMillis,
         token_contract_address: AccountId,
         deposits_hard_cap: BalanceJSON,
-        max_tokens_to_release_per_stnear: BalanceJSON
+        max_tokens_to_release_per_stnear: BalanceJSON,
+        token_contract_decimals: u8
     ) {
         assert!(
             old_kickstarter.open_timestamp >= get_current_epoch_millis(),
@@ -380,6 +407,7 @@ impl KatherineFundraising {
             open_timestamp,
             close_timestamp,
             token_contract_address,
+            token_contract_decimals,
             available_reward_tokens: 0,
         };
         kickstarter.assert_timestamps();

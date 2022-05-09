@@ -34,7 +34,7 @@ impl KatherineFundraising {
             kickstarter,
             &supporter_id
         );
-        let supporter_id = convert_to_valid_account_id(supporter_id);
+        let supporter_id: ValidAccountId = supporter_id.try_into().unwrap();
         nep141_token::ft_transfer(
             supporter_id.clone(),
             BalanceJSON::from(amount_to_withdraw),
@@ -164,7 +164,7 @@ impl KatherineFundraising {
             kickstarter,
             &supporter_id
         );
-        let supporter_id = convert_to_valid_account_id(supporter_id);
+        let supporter_id: ValidAccountId = supporter_id.try_into().unwrap();
         nep141_token::ft_transfer(
             supporter_id.clone(),
             BalanceJSON::from(amount_to_withdraw),
