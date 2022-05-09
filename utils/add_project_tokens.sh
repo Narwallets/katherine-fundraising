@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+
 if [[ "${1}" != "" ]]; then
     NETWORK=$1
     EXPLORER_URL="https://explorer.testnet.near.org/transactions/"
@@ -13,12 +14,17 @@ else
 	echo "add_project_tokens.sh testnet project_pembrock.conf"
 fi
 
+source $NETWORK/meta_yield.conf
+
 if [[ "${2}" != "" ]]; then
     CONFIGURATION_FILE=$2
+else
+    echo "Usage: add_project_tokens.sh <mainnet|testnet> <configuration file>"
 fi
 
-source $NETWORK/meta_yield.conf
-source $NETWORK/$PROJECT
+source $NETWORK/$CONFIGURATION_FILE
+
+echo "Using $NETWORK/$CONFIGURATION_FILE project file"
 
 PROJECT_ID=$(NEAR_ENV=$NETWORK near call $KATHERINE_CONTRACT_ADDRESS get_kickstarter_id_from_slug '{"slug": "'$PROJECT_SLUG'"}' --accountId $KATHERINE_OWNER_ID | grep $EXPLORER_URL -A 1 | grep -v $EXPLORER_URL)
 
