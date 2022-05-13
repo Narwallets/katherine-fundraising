@@ -700,17 +700,16 @@ impl KatherineFundraising {
 #[cfg(test)]
 mod tests {
     use near_sdk::{testing_env, MockedBlockchain, VMContext};
-    mod unit_test_utils;
+    mod utils;
     use super::*;
-    use unit_test_utils::*;
 
     /// Get initial context for tests
     fn basic_context() -> VMContext {
-        get_context(
-            SYSTEM_ACCOUNT.into(),
-            ntoy(TEST_INITIAL_BALANCE),
+        utils::get_context(
+            "katherine_contract".to_string(),
+            "katherine_owner".to_string(),
+            utils::ntoy(100),
             0,
-            to_ts(START_TIME_IN_DAYS),
             false,
         )
     }
@@ -718,10 +717,10 @@ mod tests {
     /// Creates a new contract
     fn new_contract() -> KatherineFundraising {
         KatherineFundraising::new(
-            OWNER_ACCOUNT.into(),
-            2,
-            METAPOOL_CONTRACT_ADDRESS.to_string(),
-            2,
+            "katherine_owner".to_string(),
+            BalanceJSON::from(utils::ntoy(1)),
+            "katherine_contract".to_string(),
+            200,
         )
     }
 
@@ -733,9 +732,18 @@ mod tests {
     }
 
     #[test]
-    fn test_create_kickstarter() {
-        let (_context, mut contract) = contract_only_setup();
-        _new_kickstarter(_context, &mut contract);
+    fn test_create_kickstarter_with_goals() {
+        let context = utils::get_context(
+            "katherine_contract".to_string(),
+            "katherine_owner".to_string(),
+            utils::ntoy(100),
+            0,
+            false,
+        );
+        testing_env!(context);
+
+        let contract = new_contract();
+        let kickstarter_id = utils::create_test_kickstarter(&mut contract);
         assert_eq!(1, contract.kickstarters.len());
     }
 
