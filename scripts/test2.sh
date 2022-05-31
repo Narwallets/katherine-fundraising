@@ -50,3 +50,10 @@ SUPPORTER_ID="kate_supporter.testnet"
 # NEAR_ENV=testnet near view v0_1_6.katherine_fundraising.testnet get_project_details '{"kickstarter_id": 0}' --accountId $SUPPORTER_ID
 NEAR_ENV=testnet near call v0_1_6.katherine_fundraising.testnet process_kickstarter '{"kickstarter_id": 1}' --accountId $SUPPORTER_ID --gas 300000000000000
 NEAR_ENV=testnet near view v0_1_6.katherine_fundraising.testnet get_project_details '{"kickstarter_id": 1}' --accountId $SUPPORTER_ID
+
+### EVALUATE PROJECT
+
+NEAR_ENV=mainnet near view v1.metayield.near get_project_details '{"kickstarter_id": 0}' --accountId jomsox.near
+NEAR_ENV=mainnet near view v1.metayield.near get_kickstarters_to_process '{"from_index": 0, "limit": 10}' --accountId jomsox.near
+
+NEAR_ENV=mainnet near call v1.metayield.near get_project_details '{"kickstarter_id": 0}' --accountId jomsox.near
