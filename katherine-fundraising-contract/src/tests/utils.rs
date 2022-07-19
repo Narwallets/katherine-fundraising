@@ -23,6 +23,13 @@ pub const KICKSTARTER_NAME: &'static str = "test_kickstarter";
 pub const KICKSTARTER_SLUG: &'static str = "test_kickstarter_slug";
 pub const METAPOOL_CONTRACT_ADDRESS: &'static str = "meta-v2.pool.testnet";
 
+pub const YOCTO_UNITS: u128 = 1_000_000_000_000_000_000_000_000;
+
+/// Init Katherine Consts
+pub fn get_min_deposit_amount() -> BalanceJSON { U128::from(1 * YOCTO_UNITS) }
+pub fn get_deposits_hard_cap() -> BalanceJSON { U128::from(100 * YOCTO_UNITS) }
+pub fn get_max_tokens_to_release_per_stnear() -> BalanceJSON { U128::from(27 * YOCTO_UNITS) }
+pub const KATHERINE_FEE_PERCENT: BasisPoints = 200;
 
 pub struct KickstarterGoalTimes {
     pub open_timestamp: EpochMillis,
@@ -80,6 +87,8 @@ impl Now {
     }
 }
 
+impl Copy for Now {}
+
 impl Clone for Now {
     fn clone(&self) -> Self {
         *self
@@ -131,24 +140,53 @@ pub fn to_nanos(num_days: u64) -> u64 {
     return num_days * 86400_000_000_000;
 }
 
-pub fn create_test_kickstarter(
-    contract: &mut KatherineFundraising,
-    name: String,
-    owner_id: AccountId,
-    timestamps: Option<KickstarterGoalTimes>,
-) -> KickstarterIdJSON {
-    let now = Now::new();
-    let timestamps = timestamps.unwrap_or(KickstarterGoalTimes::new(now));
-    let token_contract_address = format!("token_{}", owner_id);
-    contract.create_kickstarter(
-        name,
-        slug::slugify(&name),
-        owner_id,
-        timestamps.open_timestamp,
-        timestamps.close_timestamp,
-        token_contract_address,
-        deposits_hard_cap,
-        max_tokens_to_release_per_stnear,
-        token_contract_decimals,
-    )
+pub fn get_katherine_owner() -> AccountId {
+    "katherine.owner.near".to_string()
+}
+
+pub fn get_metapool_address() -> AccountId {
+    "meta-v2.pool.testnet".to_string()
+}
+
+pub fn get_kickstarter_owner(id: u32) -> AccountId {
+    format!("kickstarter_{}.near", id)
+}
+
+pub fn get_kickstarter_token(id: u32) -> AccountId {
+    format!("kickstarter_{}.near", id)
+}
+
+pub struct TestKickstarter {
+    pub name: String,
+    pub slug: String,
+    pub owner_id: AccountId,
+    pub open_timestamp: EpochMillis,
+    pub close_timestamp: EpochMillis,
+    pub token_contract_address: AccountId,
+    pub deposits_hard_cap: BalanceJSON,
+    pub max_tokens_to_release_per_stnear: BalanceJSON,
+    pub token_contract_decimals: u8,
+}
+
+impl TestKickstarter {
+    pub fn new(
+        id: u32,
+        now_open_delta_mins: u128,
+        open_close_delta_mins: u128
+    ) -> Self {
+        let name = format!("kickstarter_{}", id);
+        let open = Now::new().increment_min(now_open_delta_mins);
+        let close = open.increment_min(open_close_delta_mins);
+        Self {
+            name: name.clone(),
+            slug: slug::slugify(&name),
+            owner_id: get_kickstarter_owner(id),
+            open_timestamp: open.to_epoch_milis(),
+            close_timestamp: close.to_epoch_milis(),
+            token_contract_address: get_kickstarter_token(1),
+            deposits_hard_cap: get_deposits_hard_cap(),
+            max_tokens_to_release_per_stnear: get_max_tokens_to_release_per_stnear(),
+            token_contract_decimals: 24,
+        }
+    }
 }
