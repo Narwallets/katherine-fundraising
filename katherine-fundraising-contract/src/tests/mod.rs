@@ -4,7 +4,8 @@ use near_sdk::json_types::U128;
 mod utils;
 use utils::*;
 
-use near_sdk::{testing_env, MockedBlockchain, VMContext};
+use near_sdk::{testing_env, MockedBlockchain, VMContext, PromiseOrValue};
+use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 
 fn new_contract() -> KatherineFundraising {
     KatherineFundraising::new(
@@ -21,18 +22,10 @@ fn get_contract_setup(context: VMContext) -> KatherineFundraising {
     contract
 }
 
-#[test]
-fn test_create_kickstarter_with_goals() {
-    let context = get_context(
-        get_katherine_owner(),
-        get_katherine_owner(),
-        utils::ntoy(100),
-        0,
-        false,
-    );
+fn create_kickstarter_with_2_goals(contract: &mut KatherineFundraising, now: Now) -> KickstarterId {
+    let next_kickstarter_id = contract.get_total_kickstarters();
 
-    let mut contract = get_contract_setup(context);
-    let kickstarter = TestKickstarter::new(0, 0, 10);
+    let kickstarter = TestKickstarter::new(next_kickstarter_id, 1, 10, now);
     let kickstarter_id = contract.create_kickstarter(
         kickstarter.name.clone(),
         kickstarter.slug.clone(),
@@ -44,9 +37,6 @@ fn test_create_kickstarter_with_goals() {
         kickstarter.max_tokens_to_release_per_stnear,
         kickstarter.token_contract_decimals
     );
-
-    assert_eq!(1, contract.get_total_kickstarters());
-    assert_eq!(0, kickstarter_id, "Id of the first Kickstarter should be 0.");
 
     let goal_1 = TestGoal::new(kickstarter.clone(), 1, 10, 5);
     let goal_2 = TestGoal::new(kickstarter.clone(), 2, 10, 5);
@@ -76,22 +66,156 @@ fn test_create_kickstarter_with_goals() {
 
     assert_eq!(2, contract.get_kickstarter_total_goals(kickstarter_id));
     assert_eq!(1, id, "Id of the second Goal should be 1.");
+
+    kickstarter_id
+}
+
+#[test]
+fn test_create_kickstarter_with_goals() {
+    let now = Now::new();
+    let context = get_context(
+        get_katherine_owner(),
+        get_katherine_owner(),
+        utils::ntoy(100),
+        0,
+        false,
+    );
+
+    let mut contract = get_contract_setup(context);
+    let kickstarter_id = create_kickstarter_with_2_goals(&mut contract, now);
+    assert_eq!(1, contract.get_total_kickstarters());
+    assert_eq!(0, kickstarter_id, "Id of the first Kickstarter should be 0.");
+
+    let kickstarter_id = create_kickstarter_with_2_goals(&mut contract, now);
+    assert_eq!(2, contract.get_total_kickstarters());
+    assert_eq!(1, kickstarter_id, "Id of the first Kickstarter should be 0.");
+
+    let kickstarters = contract.get_kickstarters(0, 10);
+    assert_eq!(2, kickstarters.len());
+}
+
+fn get_ready_to_funded_kickstarter_contract(now: Now) -> KatherineFundraising {
+    let context = get_timestamp_context(
+        get_katherine_owner(),
+        get_katherine_owner(),
+        utils::ntoy(100),
+        0,
+        now,
+    );
+
+    let mut contract = get_contract_setup(context);
+    let _ = create_kickstarter_with_2_goals(&mut contract, now);
+
+    let context = get_timestamp_context(
+        get_supporter_account(),
+        get_metapool_address(),
+        utils::ntoy(100),
+        0,
+        now.increment_min(5),
+    );
+    testing_env!(context.clone());
+    contract
+}
+
+fn deposit_kickstarter_tokens(
+    contract: KatherineFundraising,
+    id: KickstarterId,
+    now: Now
+) -> KatherineFundraising {
+    let context = get_timestamp_context(
+        get_kickstarter_owner(id),
+        get_kickstarter_token(id),
+        utils::ntoy(100),
+        0,
+        now.increment_min(5),
+    );
+    testing_env!(context.clone());
+    let amount = contract.get_kickstarter(id).deposits_hard_cap;
+    let contract = contract.ft_on_transfer(get_kickstarter_owner(id), amount, msg)
+
+    let amount = kickstarter.less_to_24_decimals(amount);
+    let max_tokens_to_release = self.calculate_max_tokens_to_release(&kickstarter);
+    let min_tokens_to_allow_support = max_tokens_to_release
+        + self.calculate_katherine_fee(max_tokens_to_release);
+}
+
+#[test]
+#[should_panic(expected="Supporters cannot deposit until the Kickstarter covers the required rewards!")]
+fn test_fail_deposit_no_kickstarter_tokens() {
+    let now = Now::new();
+    let mut contract = get_ready_to_funded_kickstarter_contract(now.clone());
+    let kickstarter_id = "0".to_string();
+
+    let _ = contract.ft_on_transfer(
+        get_supporter_account().try_into().unwrap(),
+        get_supporter_deposit(),
+        kickstarter_id
+    );
+}
+
+#[test]
+fn test_fail_deposit_after_close() {
+    let now = Now::new();
+    let mut contract = get_ready_to_funded_kickstarter_contract(now.clone());
+    let kickstarter_id = "0".to_string();
+
+    let context = get_timestamp_context(
+        get_kickstarter_owner(),
+        get_metapool_address(),
+        utils::ntoy(100),
+        0,
+        now.increment_min(5),
+    );
+    testing_env!(context.clone());
+
+    let returned_amount = contract.ft_on_transfer(
+        get_supporter_account().try_into().unwrap(),
+        get_supporter_deposit(),
+        format!("{}", kickstarter_id)
+    );
+    if let PromiseOrValue::Value(result) = returned_amount {
+        assert_eq!(result, U128::from(0));
+    } else {
+        panic!("Error");
+    }
 }
 
 // #[test]
-// fn test_get_kickstarters() {
-//     let (_context, mut contract) = contract_only_setup();
-//     contract.get_kickstarters(0, 49);
-// }
-
-// #[test]
 // fn test_create_supporter() {
-//     let (_context, mut contract) = contract_only_setup();
-//     _new_kickstarter(_context, &mut contract);
-//     let kickstarter_id = contract.kickstarters.len() - 1;
-//     let mut k = contract.kickstarters.get(kickstarter_id).unwrap();
-//     k.update_supporter_deposits(&String::from(SUPPORTER_ACCOUNT), &DEPOSIT_AMOUNT);
-//     assert_eq!(1, k.get_total_supporters());
+//     let now = Now::new();
+//     let context = get_timestamp_context(
+//         get_katherine_owner(),
+//         get_katherine_owner(),
+//         utils::ntoy(100),
+//         0,
+//         now,
+//     );
+
+//     let mut contract = get_contract_setup(context);
+//     let kickstarter_id = create_kickstarter_with_2_goals(&mut contract, now);
+
+//     println!("BEFORE: {}", env::block_timestamp());
+
+//     let context = get_timestamp_context(
+//         get_supporter_account(),
+//         get_metapool_address(),
+//         utils::ntoy(100),
+//         0,
+//         now.increment_min(5),
+//     );
+//     testing_env!(context.clone());
+//     println!("AFTER: {}", env::block_timestamp());
+
+//     let returned_amount = contract.ft_on_transfer(
+//         get_supporter_account().try_into().unwrap(),
+//         get_supporter_deposit(),
+//         format!("{}", kickstarter_id)
+//     );
+//     if let PromiseOrValue::Value(result) = returned_amount {
+//         assert_eq!(result, U128::from(0));
+//     } else {
+//         panic!("Error");
+//     }
 // }
 
 // #[test]

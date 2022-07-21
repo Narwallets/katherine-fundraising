@@ -30,6 +30,7 @@ pub fn get_min_deposit_amount() -> BalanceJSON { U128::from(1 * YOCTO_UNITS) }
 pub fn get_deposits_hard_cap() -> BalanceJSON { U128::from(100 * YOCTO_UNITS) }
 pub fn get_desired_amount_from_goal_id(id: u32) -> BalanceJSON { U128::from((id * 10u32) as u128 * YOCTO_UNITS) }
 pub fn get_max_tokens_to_release_per_stnear() -> BalanceJSON { U128::from(27 * YOCTO_UNITS) }
+pub fn get_supporter_deposit() -> BalanceJSON { U128::from(2 * YOCTO_UNITS) }
 pub const KATHERINE_FEE_PERCENT: BasisPoints = 200;
 
 pub struct KickstarterGoalTimes {
@@ -62,7 +63,7 @@ impl KickstarterGoalTimes {
 
 
 pub struct Now {
-    nanosecs: u128
+    nanosecs: u64
 }
 
 impl Now {
@@ -71,25 +72,25 @@ impl Now {
             nanosecs: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards")
-                .as_nanos()
+                .as_nanos() as u64
         }
     }
 
     pub fn new_from_epoch_milis(epoch_milis: EpochMillis) -> Self {
         Self {
-            nanosecs: (epoch_milis * 1000) as u128
+            nanosecs: (epoch_milis * 1_000_000) as u64
         }
     }
 
     pub fn to_epoch_milis(&self) -> EpochMillis {
-        (self.nanosecs / 1000) as EpochMillis
+        (self.nanosecs / 1_000_000) as EpochMillis
     }
 
-    pub fn to_nanos(&self) -> u128 {
+    pub fn to_nanos(&self) -> u64 {
         self.nanosecs
     }
 
-    pub fn increment_min(&self, min: u128) -> Now {
+    pub fn increment_min(&self, min: u64) -> Now {
         Now { nanosecs: self.nanosecs + (min * 60 * 1_000_000_000) }
     }
 }
@@ -131,6 +132,33 @@ pub fn get_context(
     }
 }
 
+pub fn get_timestamp_context(
+    current_account_id: AccountId,
+    predecessor_account_id: AccountId,
+    account_balance: u128,
+    account_locked_balance: u128,
+    block_timestamp: Now,
+) -> VMContext {
+    VMContext {
+        current_account_id,
+        signer_account_id: predecessor_account_id.clone(),
+        signer_account_pk: vec![0, 1, 2],
+        predecessor_account_id,
+        input: vec![],
+        block_index: 1,
+        block_timestamp: block_timestamp.to_nanos(),
+        epoch_height: 1,
+        account_balance,
+        account_locked_balance,
+        storage_usage: 10u64.pow(6),
+        attached_deposit: 0,
+        prepaid_gas: 10u64.pow(15),
+        random_seed: vec![0, 1, 2],
+        is_view: false,
+        output_data_receivers: vec![],
+    }
+}
+
 /// Convert near to yocto
 pub fn ntoy(near_amount: u128) -> u128 {
     return near_amount * 10u128.pow(24);
@@ -163,6 +191,10 @@ pub fn get_kickstarter_token(id: u32) -> AccountId {
     format!("kickstarter_{}.near", id)
 }
 
+pub fn get_supporter_account() -> AccountId {
+    "supporter_account.near".to_string()
+}
+
 #[derive(Clone)]
 pub struct TestKickstarter {
     pub id: u32,
@@ -180,11 +212,12 @@ pub struct TestKickstarter {
 impl TestKickstarter {
     pub fn new(
         id: u32,
-        now_open_delta_mins: u128,
-        open_close_delta_mins: u128
+        now_open_delta_mins: u64,
+        open_close_delta_mins: u64,
+        now: Now
     ) -> Self {
         let name = format!("kickstarter_{}", id);
-        let open = Now::new().increment_min(now_open_delta_mins);
+        let open = now.increment_min(now_open_delta_mins);
         let close = open.increment_min(open_close_delta_mins);
         Self {
             id,
@@ -215,8 +248,8 @@ impl TestGoal {
     pub fn new(
         test_kickstarter: TestKickstarter,
         goal_id: u32,
-        close_unfreeze_end_delta_mins: u128,
-        close_cliff_delta_mins: u128
+        close_unfreeze_end_delta_mins: u64,
+        close_cliff_delta_mins: u64
     ) -> Self {
         assert!(goal_id <= 10, "Goal id: {}, cannot be greater than 10.", goal_id);
         let name = format!("goal_{}", goal_id);
