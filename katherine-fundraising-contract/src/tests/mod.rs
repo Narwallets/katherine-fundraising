@@ -32,20 +32,50 @@ fn test_create_kickstarter_with_goals() {
     );
 
     let mut contract = get_contract_setup(context);
-    let kickstarter = TestKickstarter::new(1, 0, 10);
-    contract.create_kickstarter(
-        kickstarter.name,
-        kickstarter.slug,
-        kickstarter.owner_id,
+    let kickstarter = TestKickstarter::new(0, 0, 10);
+    let kickstarter_id = contract.create_kickstarter(
+        kickstarter.name.clone(),
+        kickstarter.slug.clone(),
+        kickstarter.owner_id.clone(),
         kickstarter.open_timestamp,
         kickstarter.close_timestamp,
-        kickstarter.token_contract_address,
+        kickstarter.token_contract_address.clone(),
         kickstarter.deposits_hard_cap,
         kickstarter.max_tokens_to_release_per_stnear,
         kickstarter.token_contract_decimals
     );
 
-    assert_eq!(1, contract.kickstarters.len());
+    assert_eq!(1, contract.get_total_kickstarters());
+    assert_eq!(0, kickstarter_id, "Id of the first Kickstarter should be 0.");
+
+    let goal_1 = TestGoal::new(kickstarter.clone(), 1, 10, 5);
+    let goal_2 = TestGoal::new(kickstarter.clone(), 2, 10, 5);
+
+    let id = contract.create_goal(
+        goal_1.kickstarter_id,
+        goal_1.name,
+        goal_1.desired_amount,
+        goal_1.unfreeze_timestamp,
+        goal_1.tokens_to_release_per_stnear,
+        goal_1.cliff_timestamp,
+        goal_1.end_timestamp
+    );
+
+    assert_eq!(1, contract.get_kickstarter_total_goals(kickstarter_id));
+    assert_eq!(0, id, "Id of the first Goal should be 0.");
+
+    let id = contract.create_goal(
+        goal_2.kickstarter_id,
+        goal_2.name,
+        goal_2.desired_amount,
+        goal_2.unfreeze_timestamp,
+        goal_2.tokens_to_release_per_stnear,
+        goal_2.cliff_timestamp,
+        goal_2.end_timestamp
+    );
+
+    assert_eq!(2, contract.get_kickstarter_total_goals(kickstarter_id));
+    assert_eq!(1, id, "Id of the second Goal should be 1.");
 }
 
 // #[test]

@@ -28,6 +28,7 @@ pub const YOCTO_UNITS: u128 = 1_000_000_000_000_000_000_000_000;
 /// Init Katherine Consts
 pub fn get_min_deposit_amount() -> BalanceJSON { U128::from(1 * YOCTO_UNITS) }
 pub fn get_deposits_hard_cap() -> BalanceJSON { U128::from(100 * YOCTO_UNITS) }
+pub fn get_desired_amount_from_goal_id(id: u32) -> BalanceJSON { U128::from((id * 10u32) as u128 * YOCTO_UNITS) }
 pub fn get_max_tokens_to_release_per_stnear() -> BalanceJSON { U128::from(27 * YOCTO_UNITS) }
 pub const KATHERINE_FEE_PERCENT: BasisPoints = 200;
 
@@ -71,6 +72,12 @@ impl Now {
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards")
                 .as_nanos()
+        }
+    }
+
+    pub fn new_from_epoch_milis(epoch_milis: EpochMillis) -> Self {
+        Self {
+            nanosecs: (epoch_milis * 1000) as u128
         }
     }
 
@@ -156,7 +163,9 @@ pub fn get_kickstarter_token(id: u32) -> AccountId {
     format!("kickstarter_{}.near", id)
 }
 
+#[derive(Clone)]
 pub struct TestKickstarter {
+    pub id: u32,
     pub name: String,
     pub slug: String,
     pub owner_id: AccountId,
@@ -178,6 +187,7 @@ impl TestKickstarter {
         let open = Now::new().increment_min(now_open_delta_mins);
         let close = open.increment_min(open_close_delta_mins);
         Self {
+            id,
             name: name.clone(),
             slug: slug::slugify(&name),
             owner_id: get_kickstarter_owner(id),
@@ -187,6 +197,40 @@ impl TestKickstarter {
             deposits_hard_cap: get_deposits_hard_cap(),
             max_tokens_to_release_per_stnear: get_max_tokens_to_release_per_stnear(),
             token_contract_decimals: 24,
+        }
+    }
+}
+
+pub struct TestGoal {
+    pub kickstarter_id: KickstarterIdJSON,
+    pub name: String,
+    pub desired_amount: BalanceJSON,
+    pub unfreeze_timestamp: EpochMillis,
+    pub tokens_to_release_per_stnear: BalanceJSON,
+    pub cliff_timestamp: EpochMillis,
+    pub end_timestamp: EpochMillis,
+}
+
+impl TestGoal {
+    pub fn new(
+        test_kickstarter: TestKickstarter,
+        goal_id: u32,
+        close_unfreeze_end_delta_mins: u128,
+        close_cliff_delta_mins: u128
+    ) -> Self {
+        assert!(goal_id <= 10, "Goal id: {}, cannot be greater than 10.", goal_id);
+        let name = format!("goal_{}", goal_id);
+        let close = Now::new_from_epoch_milis(test_kickstarter.close_timestamp);
+        let unfreeze = close.increment_min(close_unfreeze_end_delta_mins);
+        let cliff = close.increment_min(close_cliff_delta_mins);
+        Self {
+            kickstarter_id: test_kickstarter.id,
+            name,
+            desired_amount: get_desired_amount_from_goal_id(goal_id),
+            unfreeze_timestamp: unfreeze.to_epoch_milis(),
+            tokens_to_release_per_stnear: get_max_tokens_to_release_per_stnear(),
+            cliff_timestamp: cliff.to_epoch_milis(),
+            end_timestamp: unfreeze.to_epoch_milis(),
         }
     }
 }
