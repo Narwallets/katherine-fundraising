@@ -95,7 +95,7 @@ impl KatherineFundraising {
             get_current_epoch_millis() < kickstarter.close_timestamp,
             "Kickstarter Tokens should be provided before the funding period ends."
         );
-        let amount = kickstarter.less_to_24_decimals(amount);
+        let amount = kickstarter.less_to_yocto_decimals(amount);
         let max_tokens_to_release = self.calculate_max_tokens_to_release(&kickstarter);
         let min_tokens_to_allow_support = max_tokens_to_release
             + self.calculate_katherine_fee(max_tokens_to_release);

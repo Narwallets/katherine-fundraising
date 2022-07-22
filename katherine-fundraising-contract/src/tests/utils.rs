@@ -188,7 +188,7 @@ pub fn get_kickstarter_owner(id: u32) -> AccountId {
 }
 
 pub fn get_kickstarter_token(id: u32) -> AccountId {
-    format!("kickstarter_{}.near", id)
+    format!("kickstarter_ptoken_{}.near", id)
 }
 
 pub fn get_supporter_account() -> AccountId {
@@ -226,7 +226,7 @@ impl TestKickstarter {
             owner_id: get_kickstarter_owner(id),
             open_timestamp: open.to_epoch_milis(),
             close_timestamp: close.to_epoch_milis(),
-            token_contract_address: get_kickstarter_token(1),
+            token_contract_address: get_kickstarter_token(id),
             deposits_hard_cap: get_deposits_hard_cap(),
             max_tokens_to_release_per_stnear: get_max_tokens_to_release_per_stnear(),
             token_contract_decimals: 24,

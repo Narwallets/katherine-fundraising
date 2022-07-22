@@ -276,7 +276,7 @@ impl Kickstarter {
         }
     }
 
-    pub(crate) fn less_to_24_decimals(&self, amount: Balance) -> Balance {
+    pub(crate) fn less_to_yocto_decimals(&self, amount: Balance) -> Balance {
         let token_decimals = self.token_contract_decimals;
         assert!(token_decimals <= 24, "Tokens decimals are above 24.");
         if token_decimals < 24 {

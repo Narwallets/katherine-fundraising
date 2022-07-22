@@ -23,7 +23,7 @@ impl KatherineFundraising {
         let kickstarter_id = kickstarter.id;
         let amount_tokens = kickstarter.yocto_to_less_decimals(requested_amount.0);
         assert!(amount_tokens > 0, "Requested amount is too small.");
-        let amount_truncated = kickstarter.less_to_24_decimals(amount_tokens);
+        let amount_truncated = kickstarter.less_to_yocto_decimals(amount_tokens);
         self.update_supporter_claims(
             amount_truncated,
             kickstarter,
