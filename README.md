@@ -1,10 +1,10 @@
 # Katherine Fundraising
 
-Allow any project to bootstrap liquidity through staking on Meta Pool.
+Allow any project to bootstrap liquidity through staking Near on Meta Pool.
 
 ## Versions
 
-The last version of the deployed contract in Near `mainnet` is in the `stable` branch.
+The last version of the deployed contract, in Near `mainnet`, is in the `stable` branch.
 
 Current stable version: [**v0.2.0**](https://github.com/Narwallets/katherine-fundraising/releases/tag/v0.2.0)
 Check all releases in [Katherine Releases](https://github.com/Narwallets/katherine-fundraising/releases).
